@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { recordRun, recordFailure } from './metrics';
 
 let running = false;
 
@@ -14,6 +15,7 @@ export function startBuildProcessor(intervalMs = 5000) {
       const now = new Date();
       const items = await db.select().from(table.buildQueue).all();
       const due = items.filter((i) => new Date(i.eta).getTime() <= now.getTime());
+      let processed = 0;
       for (const item of due) {
         // process in transaction: move to player_ships and delete queue
         await db.transaction(async (ctx) => {
@@ -25,9 +27,12 @@ export function startBuildProcessor(intervalMs = 5000) {
           }
           await ctx.delete(table.buildQueue).where(eq(table.buildQueue.id, item.id)).run();
         });
+        processed += 1;
       }
+      recordRun(processed);
     } catch (err) {
       console.error('Build processor error', err);
+      recordFailure(err);
     }
   }, intervalMs);
 }
