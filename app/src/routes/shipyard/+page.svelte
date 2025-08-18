@@ -42,9 +42,9 @@
         <div>
           <div class="font-semibold">{t.name}</div>
           <div class="text-sm text-muted">{t.role} • {t.buildTime}s</div>
-          <div class="mt-3 flex items-center gap-3">
+          <div class="mt-3 flex items-center gap-2">
             <span class="badge badge-outline">{t.costCredits} cr</span>
-            <button class="btn btn-primary" on:click={() => build(t.id)}>Build</button>
+            <button class="btn btn-sm btn-primary" on:click={() => build(t.id)}>Build</button>
           </div>
         </div>
       </div>
@@ -59,9 +59,14 @@
   {:else}
     <div class="space-y-2 mt-3">
       {#each queue as item}
-        <div class="card p-3 flex justify-between items-center">
-          <div>{item.shipTemplateId} <span class="text-sm text-muted">x{item.quantity}</span></div>
-          <div class="text-sm text-muted">ETA: {new Date(item.eta).toLocaleString()}</div>
+        <div class="card p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div>{item.shipTemplateId} <span class="text-sm text-muted">x{item.quantity}</span></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-sm text-muted">ETA: {new Date(item.eta).toLocaleString()}</div>
+            <!-- keep small action area for future buttons -->
+          </div>
         </div>
       {/each}
     </div>
