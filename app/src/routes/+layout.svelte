@@ -68,18 +68,32 @@
 				<header class="w-full bg-base-100/80 backdrop-blur border-b border-base-300">
 					<div class="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
 						<div class="flex items-center gap-3">
-							<label for="app-drawer" class="btn btn-ghost btn-square">
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-							</label>
+							{#if user}
+								<label for="app-drawer" class="btn btn-ghost btn-square">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="h-6 w-6"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+										><path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M4 6h16M4 12h16M4 18h16"
+										/></svg
+									>
+								</label>
+							{/if}
 							<a href="/" class="font-bold text-lg">Galaxy Empire</a>
 						</div>
 						<!-- navigation moved to sidebar drawer -->
 						<div class="hidden lg:flex items-center gap-2" aria-hidden="true"></div>
 						<div class="flex-1"></div>
 						{#if user}
-						<div class="hidden md:flex items-center">
-							<ResourceBar />
-						</div>
+							<div class="hidden md:flex items-center">
+								<ResourceBar />
+							</div>
 						{/if}
 					</div>
 				</header>
@@ -96,31 +110,39 @@
 				</footer>
 			</div>
 			{#if user}
-			<div class="drawer-side">
-				<label for="app-drawer" class="drawer-overlay"></label>
-				<aside class="w-72 bg-base-200 text-base-content p-4 relative z-10 border-r border-base-300">
-					<div class="mb-4">
-						<a href="/" class="text-2xl font-bold">Galaxy Empire</a>
-						<p class="text-sm opacity-70">Command center</p>
-					</div>
-										<Sidebar on:navigate={closeDrawerOnMobile} />
-										<div class="mt-4">
-											<ChipsPanel />
-										</div>
-										<div class="mt-6">
-						<div class="card bg-base-100 border border-base-300 p-3">
-							<div class="text-sm">Theme</div>
-							<div class="mt-2 flex flex-wrap gap-2">
-								{#each themes as t}
-									<button class="btn btn-xs" class:btn-outline={theme !== t} class:btn-primary={theme === t} on:click={() => applyTheme(t)} aria-pressed={theme === t}>{t}</button>
-								{/each}
+				<div class="drawer-side">
+					<label for="app-drawer" class="drawer-overlay"></label>
+					<aside
+						class="w-72 bg-base-200 text-base-content p-4 relative z-10 border-r border-base-300"
+					>
+						<div class="mb-4">
+							<a href="/" class="text-2xl font-bold">Galaxy Empire</a>
+							<p class="text-sm opacity-70">Command center</p>
+						</div>
+						<Sidebar on:navigate={closeDrawerOnMobile} />
+						<div class="mt-4">
+							<ChipsPanel />
+						</div>
+						<div class="mt-6">
+							<div class="card bg-base-100 border border-base-300 p-3">
+								<div class="text-sm">Theme</div>
+								<div class="mt-2 flex flex-wrap gap-2">
+									{#each themes as t}
+										<button
+											class="btn btn-xs"
+											class:btn-outline={theme !== t}
+											class:btn-primary={theme === t}
+											on:click={() => applyTheme(t)}
+											aria-pressed={theme === t}>{t}</button
+										>
+									{/each}
+								</div>
 							</div>
 						</div>
-					</div>
-				</aside>
-				<!-- global toast container -->
-				<Toast />
-			</div>
+					</aside>
+					<!-- global toast container -->
+					<Toast />
+				</div>
 			{/if}
 		</div>
 	</div>
