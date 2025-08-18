@@ -8,6 +8,7 @@
     { href: '/fleet', label: 'Fleet', icon: 'menu' },
     { href: '/shipyard', label: 'Shipyard', icon: 'dock' }
   ];
+  links.splice(2,0,{ href: '/research', label: 'Research', icon: 'play' });
 
   function isActive(path: string, current: string) {
     if (path === '/') return current === '/';

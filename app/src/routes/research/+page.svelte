@@ -1,0 +1,39 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  let techs = [] as any[];
+  let loading = true;
+  async function load() {
+    loading = true;
+    const res = await fetch('/api/demo/research/list');
+    if (res.ok) techs = (await res.json()).techs;
+    loading = false;
+  }
+  onMount(load);
+
+  async function start(tid: string) {
+    await fetch('/api/demo/research/start', { method: 'POST', body: JSON.stringify({ techId: tid }), headers: { 'Content-Type': 'application/json' } });
+    await load();
+  }
+</script>
+
+<div class="p-4">
+  <h2 class="text-xl font-semibold">Research Lab</h2>
+  <div class="divider"></div>
+  {#if loading}
+    <div>Loading…</div>
+  {:else}
+    <div class="grid gap-2">
+      {#each techs as t}
+        <div class="card p-3 flex items-center justify-between">
+          <div>
+            <div class="font-medium">{t.name}</div>
+            <div class="text-sm text-muted">{t.description}</div>
+          </div>
+          <div>
+            <button class="btn btn-sm" on:click={() => start(t.id)}>Start</button>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
+</div>

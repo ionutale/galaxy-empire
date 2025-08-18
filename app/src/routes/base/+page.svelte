@@ -24,6 +24,11 @@
       error = 'process_failed';
     }
   }
+
+  async function upgradeBuilding(id: string) {
+    const res = await fetch('/api/demo/buildings/upgrade', { method: 'POST', body: JSON.stringify({ buildingId: id }), headers: { 'Content-Type': 'application/json' } });
+    if (res.ok) state = (await res.json()).state;
+  }
 </script>
 
 {#if error}
@@ -58,7 +63,10 @@
       {#if state.buildings}
         <ul class="grid grid-cols-2 gap-2">
           {#each Object.entries(state.buildings) as [id, lvl]}
-            <li class="badge badge-outline">{id} — Lvl {lvl}</li>
+            <li class="badge badge-outline flex items-center justify-between">
+              <span>{id} — Lvl {lvl}</span>
+              <button class="btn btn-xs btn-secondary" on:click={() => upgradeBuilding(id)}>Upgrade</button>
+            </li>
           {/each}
         </ul>
       {:else}
