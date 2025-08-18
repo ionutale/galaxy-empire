@@ -2,6 +2,8 @@ import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { recordRun, recordFailure } from './metrics';
+import * as table from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
 
 let running = false;
 
@@ -38,12 +40,58 @@ export function startBuildProcessor(intervalMs = 5000) {
         }
       }
       recordRun(processed);
-      // process missions completion: mark in_progress missions as complete when ETA passed
+      // process missions completion: resolve in_progress missions when ETA passed
       try {
         const missions = await db.select().from(table.missions).all();
         const dueMissions = missions.filter((m) => new Date(m.eta).getTime() <= Date.now() && m.status === 'in_progress');
         for (const ms of dueMissions) {
-          await db.update(table.missions).set({ status: 'complete' }).where(eq(table.missions.id, ms.id)).run();
+          try {
+            // simple combat/resolution model
+            await db.transaction(async (ctx) => {
+              // determine ship role weight from template
+              const tmpl = (await ctx.select().from(table.shipTemplate).where(eq(table.shipTemplate.id, ms.shipTemplateId)).all())[0];
+              const roleWeight = tmpl?.role === 'scout' ? 1 : tmpl?.role === 'fighter' ? 3 : tmpl?.role === 'cruiser' ? 6 : 2;
+              // compute chance of victory (naive): higher role weight -> better outcome
+              const winChance = Math.min(0.95, 0.3 + roleWeight * 0.1);
+              const rnd = Math.random();
+              const outcome = rnd < winChance ? 'success' : 'failure';
+              // losses: on success small losses, on failure larger
+              const lossPct = outcome === 'success' ? 0.1 : 0.5;
+              const quantityLost = Math.floor(ms.quantity * lossPct);
+              const survivors = Math.max(0, ms.quantity - quantityLost);
+
+              // rewards: simple formula based on role weight and survivors
+              const baseReward = roleWeight * 10;
+              const rewardCredits = baseReward * survivors;
+              const rewardMetal = Math.floor(baseReward * 0.5 * survivors);
+              const rewardCrystal = Math.floor(baseReward * 0.25 * survivors);
+
+              // update missions status
+              await ctx.update(table.missions).set({ status: 'complete' }).where(eq(table.missions.id, ms.id)).run();
+
+              // record processed mission
+              await ctx.insert(table.processedMissions).values({ id: crypto.randomUUID(), missionId: ms.id, userId: ms.userId, shipTemplateId: ms.shipTemplateId, quantity: ms.quantity, quantityLost, outcome, rewardCredits, rewardMetal, rewardCrystal, completedAt: new Date() }).run();
+
+              // apply rewards to player_state
+              const state = (await ctx.select().from(table.playerState).where(eq(table.playerState.userId, ms.userId)).all())[0];
+              if (state) {
+                await ctx.update(table.playerState).set({ credits: state.credits + rewardCredits, metal: state.metal + rewardMetal, crystal: state.crystal + rewardCrystal }).where(eq(table.playerState.userId, ms.userId)).run();
+              }
+
+              // if survivors remain, give them back to player_ships
+              if (survivors > 0) {
+                const existing = (await ctx.select().from(table.playerShips).where(eq(table.playerShips.userId, ms.userId)).all()).find((s) => s.shipTemplateId === ms.shipTemplateId);
+                if (existing) {
+                  await ctx.update(table.playerShips).set({ quantity: existing.quantity + survivors }).where(eq(table.playerShips.id, existing.id)).run();
+                } else {
+                  await ctx.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: ms.userId, shipTemplateId: ms.shipTemplateId, quantity: survivors }).run();
+                }
+              }
+            });
+          } catch (err) {
+            console.error('Failed resolving mission', ms.id, err);
+            recordFailure(err);
+          }
         }
       } catch (err) {
         console.error('Mission processing error', err);

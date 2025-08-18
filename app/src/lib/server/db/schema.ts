@@ -79,5 +79,22 @@ export const missions = sqliteTable('missions', {
 	status: text('status').notNull().default('in_progress')
 });
 
+export const processedMissions = sqliteTable('processed_missions', {
+	id: text('id').primaryKey(),
+	missionId: text('mission_id').notNull().references(() => missions.id),
+	userId: text('user_id').notNull().references(() => user.id),
+	shipTemplateId: text('ship_template_id').notNull().references(() => shipTemplate.id),
+	quantity: integer('quantity').notNull(),
+	quantityLost: integer('quantity_lost').notNull().default(0),
+	outcome: text('outcome').notNull(),
+	rewardCredits: integer('reward_credits').notNull().default(0),
+	rewardMetal: integer('reward_metal').notNull().default(0),
+	rewardCrystal: integer('reward_crystal').notNull().default(0),
+	completedAt: integer('completed_at', { mode: 'timestamp' }).notNull(),
+	rolledBack: integer('rolled_back').notNull().default(0),
+	rolledBackAt: integer('rolled_back_at', { mode: 'timestamp' })
+});
+
 export type ProcessedBuild = typeof processedBuilds.$inferSelect;
 export type Mission = typeof missions.$inferSelect;
+export type ProcessedMission = typeof processedMissions.$inferSelect;
