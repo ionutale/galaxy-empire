@@ -48,16 +48,13 @@
 				<header class="w-full bg-transparent border-b border-base-200">
 					<div class="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
 						<div class="flex items-center gap-3">
-							<label for="app-drawer" class="btn btn-ghost btn-square lg:hidden">
+							<label for="app-drawer" class="btn btn-ghost btn-square">
 								<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
 							</label>
 							<a href="/" class="font-bold text-lg">Galaxy Empire</a>
 						</div>
-						<div class="hidden lg:flex items-center gap-2">
-							<a class="btn btn-ghost" href="/fleet">Fleet</a>
-							<a class="btn btn-ghost" href="/shipyard">Shipyard</a>
-							<a class="btn btn-ghost" href="/admin/overview">Admin</a>
-						</div>
+						<!-- navigation moved to sidebar drawer -->
+						<div class="hidden lg:flex items-center gap-2" aria-hidden="true"></div>
 						<div class="flex-1"></div>
 						<div class="hidden md:flex items-center">
 							<ResourceBar />

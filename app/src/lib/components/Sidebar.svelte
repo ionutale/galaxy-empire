@@ -6,7 +6,8 @@
     { href: '/', label: 'Home', icon: 'home' },
     { href: '/base', label: 'Base', icon: 'target' },
     { href: '/fleet', label: 'Fleet', icon: 'menu' },
-    { href: '/shipyard', label: 'Shipyard', icon: 'dock' }
+  { href: '/shipyard', label: 'Shipyard', icon: 'dock' },
+  { href: '/admin/overview', label: 'Admin', icon: 'user-plus' }
   ];
   links.splice(2,0,{ href: '/research', label: 'Research', icon: 'play' });
 
