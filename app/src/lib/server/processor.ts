@@ -1,5 +1,6 @@
 import { readJson, writeJson } from '$lib/server/demoStorage';
 import { RESEARCH_DATA, BUILDING_DATA, SHIP_TEMPLATES } from '$lib/data/gameData';
+import { env } from '$env/dynamic/private';
 
 const BUILDS_FILE = 'builds.json';
 const FLEETS_FILE = 'fleets.json';
@@ -99,6 +100,24 @@ export async function processBuilds(tickSeconds = 5) {
             player.ships = player.ships ?? {};
             const prev = Number(player.ships[t] ?? 0);
             player.ships[t] = prev + count;
+            // also persist ship count to sqlite when available
+            if (env.DATABASE_URL) {
+              try {
+                const { db } = await import('$lib/server/db');
+                const table = await import('$lib/server/db/schema');
+                const existing = (await db.select().from(table.playerShips).where((table as any).playerShips.userId.eq('demo_player')).all()).find((s: any) => s.shipTemplateId === t);
+                if (existing) {
+                  await db.update(table.playerShips).set({ quantity: existing.quantity + count }).where((table as any).playerShips.id.eq(existing.id)).run();
+                } else {
+                  await db.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: 'demo_player', shipTemplateId: t, quantity: count }).run();
+                }
+                // record processed build
+                await db.insert(table.processedBuilds).values({ id: crypto.randomUUID(), userId: 'demo_player', shipTemplateId: t, quantity: count, processedAt: new Date() }).run();
+              } catch (err) {
+                // ignore db errors to keep demo running
+                console.error('db sync error', err);
+              }
+            }
           }
         }
         processed.push(b);

@@ -21,7 +21,7 @@
       } else {
         state = null;
       }
-    } catch (e) {
+  } catch (e) {
       state = null;
     } finally {
       loading = false;
@@ -37,6 +37,15 @@
     }
   }
 
+  // start a continuous demo worker when using demo mode
+  async function startDemoWorker() {
+    try {
+      await fetch('/api/demo/process/worker', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'start', seconds: 5 }) });
+    } catch (e) {
+      // ignore
+    }
+  }
+
   import { onDestroy } from 'svelte';
 
   function onDemoChanged() { load(); }
@@ -44,9 +53,14 @@
   onMount(() => {
     load();
     window.addEventListener('demo:changed', onDemoChanged as EventListener);
+    // attempt to start demo worker once
+    startDemoWorker();
+    // poll every 5s for updated demo resources when demo is active
+    const poll = setInterval(() => { if (usingDemo) load(); }, 5000);
     return () => window.removeEventListener('demo:changed', onDemoChanged as EventListener);
   });
-
+  
+  onDestroy(() => clearInterval(poll));
   onDestroy(() => {
     try { window.removeEventListener('demo:changed', onDemoChanged as EventListener); } catch {}
   });
