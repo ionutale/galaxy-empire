@@ -61,29 +61,20 @@
       <a href="/register" class="btn btn-primary btn-sm join-item">Register</a>
     </div>
   {:else}
-    <div class="flex items-center gap-2">
-      <div class="stats stats-horizontal shadow hidden md:grid">
-      <div class="stat">
-        <div class="stat-title">Credits</div>
-        <div class="stat-value text-primary text-xl">{state.resources?.credits ?? state.credits}</div>
-      </div>
-      <div class="stat">
-        <div class="stat-title">Metal</div>
-        <div class="stat-value text-xl">{state.resources?.metal ?? state.metal}</div>
-      </div>
-      <div class="stat">
-        <div class="stat-title">Crystal</div>
-        <div class="stat-value text-xl">{state.resources?.crystal ?? state.crystal}</div>
-      </div>
-      <div class="stat">
-        <div class="stat-title">Fuel</div>
-        <div class="stat-value text-xl">{state.resources?.fuel ?? state.fuel}</div>
-      </div>
+    <div class="hidden md:flex items-center gap-2">
+      <div class="rounded-full bg-white/5 backdrop-blur border border-white/10 px-3 py-1 text-xs flex items-center gap-3">
+        <span class="opacity-70">Cr</span><span class="font-semibold">{state.resources?.credits ?? state.credits}</span>
+        <span class="opacity-30">•</span>
+        <span class="opacity-70">Me</span><span class="font-semibold">{state.resources?.metal ?? state.metal}</span>
+        <span class="opacity-30">•</span>
+        <span class="opacity-70">Xt</span><span class="font-semibold">{state.resources?.crystal ?? state.crystal}</span>
+        <span class="opacity-30">•</span>
+        <span class="opacity-70">Fu</span><span class="font-semibold">{state.resources?.fuel ?? state.fuel}</span>
       </div>
       {#if usingDemo}
-        <div class="flex flex-col items-center">
-          <button class="btn btn-xs btn-outline" on:click={() => tickDemo(5)}>Tick</button>
-          <button class="btn btn-ghost btn-xs mt-1" on:click={() => tickDemo(60)}>+1m</button>
+        <div class="flex items-center gap-1">
+          <button class="btn btn-xs btn-outline" on:click={() => tickDemo(5)}>+5s</button>
+          <button class="btn btn-xs btn-ghost" on:click={() => tickDemo(60)}>+1m</button>
         </div>
       {/if}
     </div>
@@ -91,6 +82,5 @@
 </div>
 
 <style>
-  .stat-title { opacity: .8; }
-  .stat-value { font-weight: 700; }
+  :global(.link){ text-decoration: underline; }
 </style>

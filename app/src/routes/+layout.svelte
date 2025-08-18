@@ -40,12 +40,12 @@
 {#if !isPhoneDemo}
 	<!-- Responsive drawer (sidebar) layout using daisyUI -->
 	<div class="min-h-screen bg-base-100 text-base-content relative">
-		<div aria-hidden="true" class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,theme(colors.cyan.500/.15),transparent_60%),radial-gradient(ellipse_at_bottom,theme(colors.emerald.500/.1),transparent_60%)]"></div>
+		<div aria-hidden="true" class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,theme(colors.primary/10),transparent_60%),radial-gradient(ellipse_at_bottom,theme(colors.secondary/10),transparent_60%)]"></div>
 		<div class="drawer drawer-mobile">
 			<input id="app-drawer" type="checkbox" class="drawer-toggle" />
 			<div class="drawer-content flex flex-col">
 				<!-- Top bar for mobile with menu toggle -->
-				<header class="w-full bg-transparent border-b border-base-200">
+				<header class="w-full bg-base-100/80 backdrop-blur border-b border-base-300">
 					<div class="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
 						<div class="flex items-center gap-3">
 							<label for="app-drawer" class="btn btn-ghost btn-square">
@@ -75,21 +75,21 @@
 			</div>
 			<div class="drawer-side">
 				<label for="app-drawer" class="drawer-overlay"></label>
-				<aside class="w-64 bg-gradient-to-b from-emerald-600 to-cyan-500 text-white p-4 relative z-10">
+				<aside class="w-72 bg-base-200 text-base-content p-4 relative z-10 border-r border-base-300">
 					<div class="mb-4">
 						<a href="/" class="text-2xl font-bold">Galaxy Empire</a>
-						<p class="text-sm opacity-90">Command center</p>
+						<p class="text-sm opacity-70">Command center</p>
 					</div>
 										<Sidebar />
 										<div class="mt-4">
 											<ChipsPanel />
 										</div>
 										<div class="mt-6">
-						<div class="card bg-white/10 p-3">
+						<div class="card bg-base-100 border border-base-300 p-3">
 							<div class="text-sm">Theme</div>
 							<div class="mt-2 flex flex-wrap gap-2">
 								{#each themes as t}
-									<button class="btn btn-xs" class:btn-outline={theme !== t} class:btn-accent={theme === t} on:click={() => applyTheme(t)} aria-pressed={theme === t}>{t}</button>
+									<button class="btn btn-xs" class:btn-outline={theme !== t} class:btn-primary={theme === t} on:click={() => applyTheme(t)} aria-pressed={theme === t}>{t}</button>
 								{/each}
 							</div>
 						</div>
