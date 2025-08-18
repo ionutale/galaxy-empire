@@ -1,1 +1,57 @@
-[]
+[
+  {
+    "id": "build-1755549638483",
+    "type": "building",
+    "buildingId": "controlCenter",
+    "createdAt": "2025-08-18T20:40:38.483Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "id": "build-1755549643452",
+    "type": "building",
+    "buildingId": "crystalSynthesizer",
+    "createdAt": "2025-08-18T20:40:43.452Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "id": "build-1755550112075",
+    "type": "building",
+    "buildingId": "controlCenter",
+    "createdAt": "2025-08-18T20:48:32.075Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "id": "build-1755550118387",
+    "type": "building",
+    "buildingId": "deuteriumRefinery",
+    "createdAt": "2025-08-18T20:48:38.387Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "id": "build-1755550123589",
+    "type": "building",
+    "buildingId": "deuteriumRefinery",
+    "createdAt": "2025-08-18T20:48:43.589Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  }
+]

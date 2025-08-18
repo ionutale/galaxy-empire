@@ -89,105 +89,122 @@
 {:else if !state}
   <div class="flex justify-center"><progress class="progress w-56"></progress></div>
 {:else}
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="card bg-base-200 p-4">
-      <h3 class="text-lg font-semibold">Commander: {state.username}</h3>
-      <p class="text-sm text-muted">Level: {state.level} · Power: {state.power}</p>
-  <div class="divider"></div>
-      <h4 class="font-medium">Resources</h4>
-      <ul class="space-y-1 mt-2">
-        <li class="badge badge-outline">Credits: {state.resources.credits}</li>
-        <li class="badge badge-outline">Metal: {state.resources.metal}</li>
-        <li class="badge badge-outline">Crystal: {state.resources.crystal}</li>
-        <li class="badge badge-outline">Fuel: {state.resources.fuel}</li>
-      </ul>
-    </div>
+  <div class="container mx-auto p-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div class="card bg-base-200 p-4">
+        <h3 class="text-lg font-semibold">Commander: {state.username}</h3>
+        <p class="text-sm text-muted">Level: {state.level} · Power: {state.power}</p>
+        <div class="divider"></div>
+        <h4 class="font-medium">Resources</h4>
+        <ul class="space-y-1 mt-2">
+          <li class="badge badge-outline">Credits: {state.resources.credits}</li>
+          <li class="badge badge-outline">Metal: {state.resources.metal}</li>
+          <li class="badge badge-outline">Crystal: {state.resources.crystal}</li>
+          <li class="badge badge-outline">Fuel: {state.resources.fuel}</li>
+        </ul>
+      </div>
 
-    <div class="card bg-base-200 p-4">
-      <h3 class="text-lg font-semibold">Buildings</h3>
-      <div class="divider"></div>
-      {#if state.buildings}
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {#each Object.keys(BUILDING_DATA) as bid}
-            {#if BUILDING_DATA[bid]}
-              <div class="card p-3 shadow-sm cursor-pointer hover:shadow-md" on:click={() => openBuilding(bid)}>
+      <div class="card col-span-2 bg-base-200 p-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Ships</h3>
+          <button class="btn btn-sm btn-secondary" on:click={processBuilds}>Process builds</button>
+        </div>
+        <div class="divider"></div>
+        {#if state.ships && state.ships.length > 0}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {#each state.ships as s}
+              <div class="card p-3 shadow-sm">
                 <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-3">
-                      <div class="text-2xl"><BuildingIcon id={bid} className="text-2xl" /></div>
-                    <div>
-                      <div class="font-medium">{BUILDING_DATA[bid].name}</div>
-                      <div class="text-sm text-muted">Lvl {state.buildings[bid] ?? 0}</div>
-                      {#if BUILDING_DATA[bid].production}
-                        <div class="text-xs text-muted">Production/hr: {BUILDING_DATA[bid].production(state.buildings[bid] ?? 0)}</div>
-                      {/if}
-                    </div>
+                  <div>
+                    <div class="font-medium">{s.shipTemplateId}</div>
+                    <div class="text-sm text-muted">Quantity: {s.quantity}</div>
                   </div>
                   <div>
-                    <button class="btn btn-xs btn-outline" on:click|stopPropagation={() => upgradeBuilding(bid)}>Upgrade</button>
+                    <span class="badge badge-info">x{s.quantity}</span>
                   </div>
                 </div>
               </div>
-            {/if}
-          {/each}
-        </div>
-      {:else}
-        <p class="text-sm text-muted">No buildings data</p>
-      {/if}
+            {/each}
+          </div>
+        {:else}
+          <p class="text-muted">No ships yet.</p>
+        {/if}
+      </div>
     </div>
 
-    <div class="card col-span-2 bg-base-200 p-4">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold">Ships</h3>
-        <button class="btn btn-sm btn-secondary" on:click={processBuilds}>Process builds</button>
-      </div>
-  <div class="divider"></div>
-      {#if state.ships && state.ships.length > 0}
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {#each state.ships as s}
-            <div class="card p-3 shadow-sm">
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="font-medium">{s.shipTemplateId}</div>
-                  <div class="text-sm text-muted">Quantity: {s.quantity}</div>
-                </div>
-                <div>
-                  <span class="badge badge-info">x{s.quantity}</span>
+    <div>
+      <h3 class="text-2xl font-bold mb-4">Base Buildings</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {#each Object.keys(BUILDING_DATA) as bid}
+          {#if BUILDING_DATA[bid]}
+            <div
+              class="card bg-base-200 shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+              role="button"
+              tabindex="0"
+              on:click={() => openBuilding(bid)}
+              on:keydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openBuilding(bid);
+                }
+              }}
+            >
+              <div class="p-4">
+                <div class="flex items-center gap-4">
+                  <div class="text-4xl text-primary">
+                    <BuildingIcon id={bid} className="text-4xl" />
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-lg">{BUILDING_DATA[bid].name}</h4>
+                    <p class="text-sm text-muted">Level {state.buildings?.[bid] ?? 0}</p>
+                  </div>
                 </div>
               </div>
             </div>
-          {/each}
-        </div>
-      {:else}
-        <p class="text-muted">No ships yet.</p>
-      {/if}
+          {/if}
+        {/each}
+      </div>
     </div>
   </div>
 {/if}
 
 {#if showModal && selectedBuilding}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div class="bg-base-100 p-6 rounded-lg w-11/12 max-w-2xl">
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60" on:click={closeModal}>
+    <div
+      class="bg-base-100 p-6 rounded-lg w-11/12 max-w-2xl shadow-xl"
+      on:click|stopPropagation
+    >
       <div class="flex items-start justify-between">
-          <div class="flex items-center gap-3">
-          <div class="text-3xl"><BuildingIcon id={selectedBuilding} className="text-3xl" /></div>
+        <div class="flex items-center gap-4">
+          <div class="text-5xl text-primary">
+            <BuildingIcon id={selectedBuilding!} className="text-5xl" />
+          </div>
           <div>
-            <h3 class="text-xl font-semibold">{BUILDING_DATA[selectedBuilding].name}</h3>
-            <div class="text-sm text-muted">Level {state.buildings[selectedBuilding] ?? 0}</div>
+            <h3 class="text-2xl font-bold">{BUILDING_DATA[selectedBuilding].name}</h3>
+            <p class="text-md text-muted">
+              Level {state.buildings?.[selectedBuilding] ?? 0}
+            </p>
           </div>
         </div>
-        <button class="btn btn-sm btn-ghost" on:click={closeModal}>Close</button>
+        <button class="btn btn-sm btn-ghost" on:click={closeModal}>✕</button>
       </div>
-      <div class="divider"></div>
-      <p class="mb-3">{BUILDING_DATA[selectedBuilding].description}</p>
-      <div class="grid grid-cols-2 gap-4">
+      <div class="divider my-4"></div>
+      <p class="mb-4 text-lg">{BUILDING_DATA[selectedBuilding].description}</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <h4 class="font-medium">Benefit</h4>
-          <p class="text-sm text-muted">{typeof BUILDING_DATA[selectedBuilding].benefit === 'function' ? BUILDING_DATA[selectedBuilding].benefit(state.buildings[selectedBuilding] ?? 0) : BUILDING_DATA[selectedBuilding].benefit}</p>
+          <h4 class="font-semibold text-xl mb-2">Benefit</h4>
+          <p class="text-md">
+            {typeof BUILDING_DATA[selectedBuilding!].benefit === 'function'
+              ? (BUILDING_DATA[selectedBuilding!].benefit as any)(
+                  state.buildings?.[selectedBuilding!] ?? 0
+                )
+              : BUILDING_DATA[selectedBuilding!].benefit}
+          </p>
         </div>
         <div>
-          <h4 class="font-medium">Requirements</h4>
-          <div class="text-sm text-muted">
-            <ul class="list-disc ml-4">
+          <h4 class="font-semibold text-xl mb-2">Requirements</h4>
+          <div class="text-md">
+            <ul class="list-disc list-inside">
               {#each formatRequirements(BUILDING_DATA[selectedBuilding].requires ?? {}) as line}
                 <li>{line}</li>
               {/each}
@@ -195,24 +212,43 @@
           </div>
         </div>
       </div>
-      <div class="divider"></div>
-      <div class="flex items-center justify-between">
-        <div>
-          {#if BUILDING_DATA[selectedBuilding].cost}
-            <div class="text-sm text-muted">Upgrade to Lvl {nextLevel}</div>
-            <div class="flex gap-2 mt-2">
-              {#each Object.entries(BUILDING_DATA[selectedBuilding].cost(nextLevel)) as [res, amt]}
-                <div class="badge badge-outline">{res}: {amt}</div>
-              {/each}
-            </div>
-            <div class="text-sm text-muted mt-2">Time: {BUILDING_DATA[selectedBuilding].time ? BUILDING_DATA[selectedBuilding].time(nextLevel) + 's' : '—'}</div>
-          {:else}
-            <div class="text-sm text-muted">No cost data</div>
-          {/if}
-        </div>
-        <div class="flex items-center gap-2">
-          <button class="btn btn-primary" on:click={() => { upgradeBuilding(selectedBuilding); closeModal(); }}>Upgrade</button>
-          <button class="btn btn-ghost" on:click={closeModal}>Cancel</button>
+      <div class="divider my-4"></div>
+      <div>
+        <h4 class="font-semibold text-xl mb-2">Upgrade to Level {nextLevel}</h4>
+        <div class="flex items-center justify-between">
+          <div>
+            {#if BUILDING_DATA[selectedBuilding!].cost}
+              <div class="flex gap-4 items-center">
+                <div>
+                  <p class="font-bold">Cost:</p>
+                  <div class="flex gap-2 mt-1">
+                    {#each Object.entries(BUILDING_DATA[selectedBuilding!].cost?.(nextLevel) ?? {}) as [res, amt]}
+                      <div class="badge badge-secondary">{res}: {amt}</div>
+                    {/each}
+                  </div>
+                </div>
+                <div>
+                  <p class="font-bold">Time:</p>
+                  <p class="mt-1">
+                    {BUILDING_DATA[selectedBuilding!].time
+                      ? BUILDING_DATA[selectedBuilding!].time(nextLevel) + 's'
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+            {:else}
+              <p class="text-md">No cost data</p>
+            {/if}
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              class="btn btn-primary btn-lg"
+              on:click={() => {
+                upgradeBuilding(selectedBuilding!);
+                closeModal();
+              }}>Upgrade</button
+            >
+          </div>
         </div>
       </div>
     </div>

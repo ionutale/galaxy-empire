@@ -51,24 +51,61 @@
   import { BUILDING_DATA } from '$lib/data/gameData';
 
   // compute production per-second from buildings
+  // explicit mapping of building id -> resource key for production
+  const BUILDING_PRODUCTION_RESOURCE: Record<string, 'metal' | 'crystal' | 'fuel' | 'credits'> = {
+    metalMine: 'metal',
+    crystalSynthesizer: 'crystal',
+    deuteriumRefinery: 'fuel',
+    // other mines can be added here; defaults will go to credits
+  };
+
   function computeProductionPerSecond(s: any) {
-    if (!s || !s.buildings) return { metal: 0, crystal: 0, fuel: 0, credits: 0 };
     let metal = 0, crystal = 0, fuel = 0, credits = 0;
+    // buildings
     for (const [bid, def] of Object.entries(BUILDING_DATA)) {
-      const lvl = s.buildings?.[bid] ?? 0;
+      const lvl = s?.buildings?.[bid] ?? 0;
       if (def.production && typeof def.production === 'function') {
-        const perHour = def.production(lvl);
+        const perHour = def.production(lvl) || 0;
         const perSec = perHour / 3600;
-        // heuristically map production to resource types by building id
-        if (bid.toLowerCase().includes('metal')) metal += perSec;
-        else if (bid.toLowerCase().includes('crystal')) crystal += perSec;
-        else if (bid.toLowerCase().includes('deuterium') || bid.toLowerCase().includes('fuel') || bid.toLowerCase().includes('refinery')) fuel += perSec;
-        else credits += perSec; // fallback
+        const target = BUILDING_PRODUCTION_RESOURCE[bid];
+        if (target === 'metal') metal += perSec;
+        else if (target === 'crystal') crystal += perSec;
+        else if (target === 'fuel') fuel += perSec;
+        else credits += perSec;
       }
     }
-    // mining ships and other ship-based mining could be added here
+
+    // ships: mining vessels produce metal (assumption: miningRate is per hour)
+    if (s?.ships && Array.isArray(s.ships)) {
+      for (const shp of s.ships) {
+        if (!shp) continue;
+        const qty = shp.quantity ?? 0;
+        const templateId = shp.shipTemplateId ?? shp.shipId ?? shp.id;
+        const template = BUILDING_DATA ? null : null; // no-op to keep type
+        // try to find miningRate in SHIP_TEMPLATES via dynamic import to avoid circular deps
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const { SHIP_TEMPLATES } = require('$lib/data/gameData');
+          const t = SHIP_TEMPLATES.find((x: any) => x.shipId === templateId);
+          if (t && t.miningRate) {
+            const perHour = (t.miningRate as number) * qty;
+            metal += perHour / 3600;
+          }
+        } catch (e) {
+          // ignore; fallback: if ship id contains 'mining', assume miningRate 50/hr
+          if (String(templateId).toLowerCase().includes('mining')) {
+            metal += (50 * qty) / 3600;
+          }
+        }
+      }
+    }
+
     return { metal, crystal, fuel, credits };
   }
+
+  // reactive production snapshot used in template
+  let prod: { metal: number; crystal: number; fuel: number; credits: number } = { metal: 0, crystal: 0, fuel: 0, credits: 0 };
+  $: prod = computeProductionPerSecond(state);
 
   function onDemoChanged() { load(); }
 
@@ -108,7 +145,6 @@
   {:else}
     <div class="hidden md:flex items-center gap-2">
       <div class="rounded-full bg-white/5 backdrop-blur border border-white/10 px-3 py-1 text-xs flex items-center gap-3">
-        {#let prod = computeProductionPerSecond(state)}
           <span class="opacity-70">Cr</span><span class="font-semibold">{state.resources?.credits ?? state.credits}</span>
           <span class="text-xs text-success">+{Math.round(prod.credits * 3600)}/h</span>
           <span class="opacity-30">•</span>
@@ -120,7 +156,7 @@
           <span class="opacity-30">•</span>
           <span class="opacity-70">Fu</span><span class="font-semibold">{state.resources?.fuel ?? state.fuel}</span>
           <span class="text-xs text-success">+{Math.round(prod.fuel * 3600)}/h</span>
-        {/let}
+        
       </div>
       {#if usingDemo}
         <div class="flex items-center gap-1">
