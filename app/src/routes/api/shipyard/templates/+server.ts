@@ -1,19 +1,23 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
+import { SHIP_TEMPLATES } from '$lib/data/gameData';
 
 export const GET: RequestHandler = async () => {
   let templates = await db.select().from(table.shipTemplate).all();
   if (templates.length === 0) {
     // seed a few simple templates
     const now = new Date();
-    const samples = [
-      { id: 'scout', name: 'Scout', role: 'scout', buildTime: 10, costCredits: 50 },
-      { id: 'fighter', name: 'Fighter', role: 'fighter', buildTime: 30, costCredits: 150 },
-      { id: 'cruiser', name: 'Cruiser', role: 'cruiser', buildTime: 90, costCredits: 500 }
-    ];
-    for (const s of samples) {
-      await db.insert(table.shipTemplate).values(s).run();
+    // seed from canonical SHIP_TEMPLATES
+    for (const s of SHIP_TEMPLATES) {
+      const row = {
+        id: s.shipId,
+        name: s.name,
+        role: s.role,
+        buildTime: s.buildTime,
+        costCredits: s.buildCost?.credits || 0
+      } as any;
+      await db.insert(table.shipTemplate).values(row).run();
     }
     templates = await db.select().from(table.shipTemplate).all();
   }
