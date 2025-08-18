@@ -42,7 +42,7 @@
     <div class="card bg-base-200 p-4">
       <h3 class="text-lg font-semibold">Commander: {state.username}</h3>
       <p class="text-sm text-muted">Level: {state.level} · Power: {state.power}</p>
-      <div class="divider" />
+  <div class="divider"></div>
       <h4 class="font-medium">Resources</h4>
       <ul class="space-y-1 mt-2">
         <li class="badge badge-outline">Credits: {state.resources.credits}</li>
@@ -57,7 +57,7 @@
         <h3 class="text-lg font-semibold">Ships</h3>
         <button class="btn btn-sm btn-secondary" on:click={processBuilds}>Process builds</button>
       </div>
-      <div class="divider" />
+  <div class="divider"></div>
       {#if state.ships && state.ships.length > 0}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {#each state.ships as s}

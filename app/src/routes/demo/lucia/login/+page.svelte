@@ -10,12 +10,12 @@
 		<h1 class="text-xl font-semibold mb-3">Login / Register</h1>
 		<form method="post" action="?/login" use:enhance class="space-y-3">
 			<div class="form-control">
-				<label class="label"><span class="label-text">Username</span></label>
-				<input name="username" class="input input-bordered" />
+				<label class="label" for="lucia-username"><span class="label-text">Username</span></label>
+				<input id="lucia-username" name="username" class="input input-bordered" />
 			</div>
 			<div class="form-control">
-				<label class="label"><span class="label-text">Password</span></label>
-				<input type="password" name="password" class="input input-bordered" />
+				<label class="label" for="lucia-password"><span class="label-text">Password</span></label>
+				<input id="lucia-password" type="password" name="password" class="input input-bordered" />
 			</div>
 			<div class="flex gap-2">
 				<button class="btn btn-primary">Login</button>

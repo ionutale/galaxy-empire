@@ -50,9 +50,9 @@ async function rollback(id: string) {
 
   <div class="card p-4">
     <div class="form-control">
-      <label class="label"><span class="label-text">Admin Key</span></label>
+      <label class="label" for="admin-key-missions"><span class="label-text">Admin Key</span></label>
       <div class="flex gap-2">
-        <input class="input input-bordered flex-1" bind:value={adminKey} placeholder="paste admin key" />
+        <input id="admin-key-missions" class="input input-bordered flex-1" bind:value={adminKey} placeholder="paste admin key" />
         <button class="btn btn-primary" on:click={load} disabled={loading}>{loading ? 'Loading…' : 'Load'}</button>
       </div>
     </div>
@@ -66,7 +66,7 @@ async function rollback(id: string) {
       <h3 class="font-semibold">Entries</h3>
       <div class="text-sm text-muted">{items.length} items</div>
     </div>
-    <div class="divider" />
+  <div class="divider"></div>
     {#if items.length === 0}
       <p class="text-muted">No processed missions</p>
     {:else}
