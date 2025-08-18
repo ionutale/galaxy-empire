@@ -37,13 +37,10 @@ export const POST: RequestHandler = async (event) => {
   try {
     const { retryAsync } = await import('$lib/server/retry');
     await retryAsync(async () => {
-      await db.transaction(async (ctx) => {
+      db.transaction((ctx) => {
         const newCredits = (stateRow.credits ?? 0) - totalCost;
-        await ctx.update(table.playerState).set({ credits: newCredits }).where(eq(table.playerState.userId, user.id)).run();
-        await ctx
-          .insert(table.buildQueue)
-          .values({ id, userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta) })
-          .run();
+        ctx.update(table.playerState).set({ credits: newCredits }).where(eq(table.playerState.userId, user.id)).run();
+        ctx.insert(table.buildQueue).values({ id, userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta) }).run();
       });
     }, 3, 200, 2);
   } catch (err) {

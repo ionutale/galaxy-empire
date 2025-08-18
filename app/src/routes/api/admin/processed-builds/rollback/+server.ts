@@ -26,14 +26,14 @@ export const POST: RequestHandler = async ({ request }) => {
     return new Response(JSON.stringify({ error: 'insufficient_ships' }), { status: 400 });
   }
 
-  await db.transaction(async (ctx) => {
+  db.transaction((ctx) => {
     const newQty = existing.quantity - record.quantity;
     if (newQty > 0) {
-      await ctx.update(table.playerShips).set({ quantity: newQty }).where(eq(table.playerShips.id, existing.id)).run();
+      ctx.update(table.playerShips).set({ quantity: newQty }).where(eq(table.playerShips.id, existing.id)).run();
     } else {
-      await ctx.delete(table.playerShips).where(eq(table.playerShips.id, existing.id)).run();
+      ctx.delete(table.playerShips).where(eq(table.playerShips.id, existing.id)).run();
     }
-    await ctx.update(table.processedBuilds).set({ rolledBack: 1, rolledBackAt: new Date() }).where(eq(table.processedBuilds.id, id)).run();
+    ctx.update(table.processedBuilds).set({ rolledBack: 1, rolledBackAt: new Date() }).where(eq(table.processedBuilds.id, id)).run();
   });
 
   return new Response(JSON.stringify({ rolledBack: true }));

@@ -22,15 +22,16 @@ export function startBuildProcessor(intervalMs = 5000) {
         try {
           const { retryAsync } = await import('$lib/server/retry');
           await retryAsync(async () => {
-            await db.transaction(async (ctx) => {
-              const existing = (await ctx.select().from(table.playerShips).where(eq(table.playerShips.userId, item.userId)).all()).find((s) => s.shipTemplateId === item.shipTemplateId);
+            db.transaction((ctx) => {
+              const existingRows = ctx.select().from(table.playerShips).where(eq(table.playerShips.userId, item.userId)).all();
+              const existing = existingRows.find((s) => s.shipTemplateId === item.shipTemplateId);
               if (existing) {
-                await ctx.update(table.playerShips).set({ quantity: existing.quantity + item.quantity }).where(eq(table.playerShips.id, existing.id)).run();
+                ctx.update(table.playerShips).set({ quantity: existing.quantity + item.quantity }).where(eq(table.playerShips.id, existing.id)).run();
               } else {
-                await ctx.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: item.userId, shipTemplateId: item.shipTemplateId, quantity: item.quantity }).run();
+                ctx.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: item.userId, shipTemplateId: item.shipTemplateId, quantity: item.quantity }).run();
               }
-              await ctx.insert(table.processedBuilds).values({ id: crypto.randomUUID(), userId: item.userId, shipTemplateId: item.shipTemplateId, quantity: item.quantity, processedAt: new Date() }).run();
-              await ctx.delete(table.buildQueue).where(eq(table.buildQueue.id, item.id)).run();
+              ctx.insert(table.processedBuilds).values({ id: crypto.randomUUID(), userId: item.userId, shipTemplateId: item.shipTemplateId, quantity: item.quantity, processedAt: new Date() }).run();
+              ctx.delete(table.buildQueue).where(eq(table.buildQueue.id, item.id)).run();
             });
           }, 3, 200, 2);
           processed += 1;
@@ -46,15 +47,15 @@ export function startBuildProcessor(intervalMs = 5000) {
         const dueMissions = missions.filter((m) => new Date(m.eta).getTime() <= Date.now() && m.status === 'in_progress');
         for (const ms of dueMissions) {
           try {
-            await db.transaction(async (ctx) => {
+            db.transaction((ctx) => {
               // determine ship role from template and resolve mission
-              const tmpl = (await ctx.select().from(table.shipTemplate).where(eq(table.shipTemplate.id, ms.shipTemplateId)).all())[0];
+              const tmpl = ctx.select().from(table.shipTemplate).where(eq(table.shipTemplate.id, ms.shipTemplateId)).all()[0];
               const shipRole = tmpl?.role;
               const result = resolveMission(shipRole, ms.quantity);
               const { outcome, quantityLost, survivors, rewardCredits, rewardMetal, rewardCrystal } = result;
 
               // update missions status
-              await ctx.update(table.missions).set({ status: 'complete' }).where(eq(table.missions.id, ms.id)).run();
+              ctx.update(table.missions).set({ status: 'complete' }).where(eq(table.missions.id, ms.id)).run();
 
               // record processed mission (only include rewards when enabled)
               type RecordValues = {
@@ -77,23 +78,23 @@ export function startBuildProcessor(intervalMs = 5000) {
                 recordValues.rewardMetal = rewardMetal;
                 recordValues.rewardCrystal = rewardCrystal;
               }
-              await ctx.insert(table.processedMissions).values(recordValues).run();
+              ctx.insert(table.processedMissions).values(recordValues).run();
 
               // apply rewards to player_state when feature enabled
               if (features.isFeatureEnabled('MISSION_REWARDS')) {
-                const state = (await ctx.select().from(table.playerState).where(eq(table.playerState.userId, ms.userId)).all())[0];
+                const state = ctx.select().from(table.playerState).where(eq(table.playerState.userId, ms.userId)).all()[0];
                 if (state) {
-                  await ctx.update(table.playerState).set({ credits: state.credits + rewardCredits, metal: state.metal + rewardMetal, crystal: state.crystal + rewardCrystal }).where(eq(table.playerState.userId, ms.userId)).run();
+                  ctx.update(table.playerState).set({ credits: state.credits + rewardCredits, metal: state.metal + rewardMetal, crystal: state.crystal + rewardCrystal }).where(eq(table.playerState.userId, ms.userId)).run();
                 }
               }
 
               // if survivors remain, give them back to player_ships
               if (survivors > 0) {
-                const existing = (await ctx.select().from(table.playerShips).where(eq(table.playerShips.userId, ms.userId)).all()).find((s) => s.shipTemplateId === ms.shipTemplateId);
+                const existing = ctx.select().from(table.playerShips).where(eq(table.playerShips.userId, ms.userId)).all().find((s) => s.shipTemplateId === ms.shipTemplateId);
                 if (existing) {
-                  await ctx.update(table.playerShips).set({ quantity: existing.quantity + survivors }).where(eq(table.playerShips.id, existing.id)).run();
+                  ctx.update(table.playerShips).set({ quantity: existing.quantity + survivors }).where(eq(table.playerShips.id, existing.id)).run();
                 } else {
-                  await ctx.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: ms.userId, shipTemplateId: ms.shipTemplateId, quantity: survivors }).run();
+                  ctx.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: ms.userId, shipTemplateId: ms.shipTemplateId, quantity: survivors }).run();
                 }
               }
             });
