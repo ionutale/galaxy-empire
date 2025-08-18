@@ -1,8 +1,45 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { BUILDING_DATA, RESEARCH_DATA } from '$lib/data/gameData';
+  import BuildingIcon from '$lib/icons/BuildingIcon.svelte';
   let state: any = null;
   let error = '';
   let upgrading = new Set<string>();
+
+  // UI modal state for building details
+  let selectedBuilding: string | null = null;
+  let showModal = false;
+
+  // BuildingIcon component provides consistent SVG icons for buildings
+
+  // format requirement objects into human-friendly lines
+  function formatRequirements(req: any) {
+    if (!req) return ['None'];
+    const lines: string[] = [];
+    if (req.building) {
+      const name = BUILDING_DATA[req.building]?.name ?? req.building;
+      lines.push(`${name} — level ≥ ${req.level ?? 1}`);
+    }
+    if (req.research) {
+      const rname = RESEARCH_DATA[req.research]?.name ?? req.research;
+      lines.push(`Research: ${rname} — level ≥ ${req.level ?? 1}`);
+    }
+    if (Object.keys(req).length === 0) return ['None'];
+    return lines.length ? lines : [JSON.stringify(req)];
+  }
+
+  function openBuilding(id: string) {
+    selectedBuilding = id;
+    showModal = true;
+  }
+
+  function closeModal() {
+    showModal = false;
+    selectedBuilding = null;
+  }
+
+  // computed helper used by modal template
+  $: nextLevel = selectedBuilding ? ((state?.buildings?.[selectedBuilding] ?? 0) + 1) : 1;
 
   onMount(async () => {
     const res = await fetch('/api/player/state');
@@ -70,14 +107,29 @@
       <h3 class="text-lg font-semibold">Buildings</h3>
       <div class="divider"></div>
       {#if state.buildings}
-        <ul class="grid grid-cols-2 gap-2">
-          {#each Object.entries(state.buildings) as [id, lvl]}
-            <li class="badge badge-outline flex items-center justify-between">
-              <span>{id} — Lvl {lvl}</span>
-              <button class="btn btn-xs btn-secondary" on:click={() => upgradeBuilding(id)}>Upgrade</button>
-            </li>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {#each Object.keys(BUILDING_DATA) as bid}
+            {#if BUILDING_DATA[bid]}
+              <div class="card p-3 shadow-sm cursor-pointer hover:shadow-md" on:click={() => openBuilding(bid)}>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                      <div class="text-2xl"><BuildingIcon id={bid} className="text-2xl" /></div>
+                    <div>
+                      <div class="font-medium">{BUILDING_DATA[bid].name}</div>
+                      <div class="text-sm text-muted">Lvl {state.buildings[bid] ?? 0}</div>
+                      {#if BUILDING_DATA[bid].production}
+                        <div class="text-xs text-muted">Production/hr: {BUILDING_DATA[bid].production(state.buildings[bid] ?? 0)}</div>
+                      {/if}
+                    </div>
+                  </div>
+                  <div>
+                    <button class="btn btn-xs btn-outline" on:click|stopPropagation={() => upgradeBuilding(bid)}>Upgrade</button>
+                  </div>
+                </div>
+              </div>
+            {/if}
           {/each}
-        </ul>
+        </div>
       {:else}
         <p class="text-sm text-muted">No buildings data</p>
       {/if}
@@ -108,6 +160,61 @@
       {:else}
         <p class="text-muted">No ships yet.</p>
       {/if}
+    </div>
+  </div>
+{/if}
+
+{#if showModal && selectedBuilding}
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="bg-base-100 p-6 rounded-lg w-11/12 max-w-2xl">
+      <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3">
+          <div class="text-3xl"><BuildingIcon id={selectedBuilding} className="text-3xl" /></div>
+          <div>
+            <h3 class="text-xl font-semibold">{BUILDING_DATA[selectedBuilding].name}</h3>
+            <div class="text-sm text-muted">Level {state.buildings[selectedBuilding] ?? 0}</div>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-ghost" on:click={closeModal}>Close</button>
+      </div>
+      <div class="divider"></div>
+      <p class="mb-3">{BUILDING_DATA[selectedBuilding].description}</p>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <h4 class="font-medium">Benefit</h4>
+          <p class="text-sm text-muted">{typeof BUILDING_DATA[selectedBuilding].benefit === 'function' ? BUILDING_DATA[selectedBuilding].benefit(state.buildings[selectedBuilding] ?? 0) : BUILDING_DATA[selectedBuilding].benefit}</p>
+        </div>
+        <div>
+          <h4 class="font-medium">Requirements</h4>
+          <div class="text-sm text-muted">
+            <ul class="list-disc ml-4">
+              {#each formatRequirements(BUILDING_DATA[selectedBuilding].requires ?? {}) as line}
+                <li>{line}</li>
+              {/each}
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="flex items-center justify-between">
+        <div>
+          {#if BUILDING_DATA[selectedBuilding].cost}
+            <div class="text-sm text-muted">Upgrade to Lvl {nextLevel}</div>
+            <div class="flex gap-2 mt-2">
+              {#each Object.entries(BUILDING_DATA[selectedBuilding].cost(nextLevel)) as [res, amt]}
+                <div class="badge badge-outline">{res}: {amt}</div>
+              {/each}
+            </div>
+            <div class="text-sm text-muted mt-2">Time: {BUILDING_DATA[selectedBuilding].time ? BUILDING_DATA[selectedBuilding].time(nextLevel) + 's' : '—'}</div>
+          {:else}
+            <div class="text-sm text-muted">No cost data</div>
+          {/if}
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="btn btn-primary" on:click={() => { upgradeBuilding(selectedBuilding); closeModal(); }}>Upgrade</button>
+          <button class="btn btn-ghost" on:click={closeModal}>Cancel</button>
+        </div>
+      </div>
     </div>
   </div>
 {/if}

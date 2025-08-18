@@ -48,6 +48,27 @@
   }
 
   import { onDestroy } from 'svelte';
+  import { BUILDING_DATA } from '$lib/data/gameData';
+
+  // compute production per-second from buildings
+  function computeProductionPerSecond(s: any) {
+    if (!s || !s.buildings) return { metal: 0, crystal: 0, fuel: 0, credits: 0 };
+    let metal = 0, crystal = 0, fuel = 0, credits = 0;
+    for (const [bid, def] of Object.entries(BUILDING_DATA)) {
+      const lvl = s.buildings?.[bid] ?? 0;
+      if (def.production && typeof def.production === 'function') {
+        const perHour = def.production(lvl);
+        const perSec = perHour / 3600;
+        // heuristically map production to resource types by building id
+        if (bid.toLowerCase().includes('metal')) metal += perSec;
+        else if (bid.toLowerCase().includes('crystal')) crystal += perSec;
+        else if (bid.toLowerCase().includes('deuterium') || bid.toLowerCase().includes('fuel') || bid.toLowerCase().includes('refinery')) fuel += perSec;
+        else credits += perSec; // fallback
+      }
+    }
+    // mining ships and other ship-based mining could be added here
+    return { metal, crystal, fuel, credits };
+  }
 
   function onDemoChanged() { load(); }
 
@@ -57,7 +78,7 @@
     // attempt to start demo worker once
     startDemoWorker();
     // poll every 5s for updated demo resources when demo is active
-    poll = setInterval(() => { if (usingDemo) load(); }, 5000);
+  poll = setInterval(() => { if (usingDemo) load(); }, 5000);
     return () => {
       window.removeEventListener('demo:changed', onDemoChanged as EventListener);
       if (poll) {
@@ -87,13 +108,19 @@
   {:else}
     <div class="hidden md:flex items-center gap-2">
       <div class="rounded-full bg-white/5 backdrop-blur border border-white/10 px-3 py-1 text-xs flex items-center gap-3">
-        <span class="opacity-70">Cr</span><span class="font-semibold">{state.resources?.credits ?? state.credits}</span>
-        <span class="opacity-30">•</span>
-        <span class="opacity-70">Me</span><span class="font-semibold">{state.resources?.metal ?? state.metal}</span>
-        <span class="opacity-30">•</span>
-        <span class="opacity-70">Xt</span><span class="font-semibold">{state.resources?.crystal ?? state.crystal}</span>
-        <span class="opacity-30">•</span>
-        <span class="opacity-70">Fu</span><span class="font-semibold">{state.resources?.fuel ?? state.fuel}</span>
+        {#let prod = computeProductionPerSecond(state)}
+          <span class="opacity-70">Cr</span><span class="font-semibold">{state.resources?.credits ?? state.credits}</span>
+          <span class="text-xs text-success">+{Math.round(prod.credits * 3600)}/h</span>
+          <span class="opacity-30">•</span>
+          <span class="opacity-70">Me</span><span class="font-semibold">{state.resources?.metal ?? state.metal}</span>
+          <span class="text-xs text-success">+{Math.round(prod.metal * 3600)}/h</span>
+          <span class="opacity-30">•</span>
+          <span class="opacity-70">Xt</span><span class="font-semibold">{state.resources?.crystal ?? state.crystal}</span>
+          <span class="text-xs text-success">+{Math.round(prod.crystal * 3600)}/h</span>
+          <span class="opacity-30">•</span>
+          <span class="opacity-70">Fu</span><span class="font-semibold">{state.resources?.fuel ?? state.fuel}</span>
+          <span class="text-xs text-success">+{Math.round(prod.fuel * 3600)}/h</span>
+        {/let}
       </div>
       {#if usingDemo}
         <div class="flex items-center gap-1">
