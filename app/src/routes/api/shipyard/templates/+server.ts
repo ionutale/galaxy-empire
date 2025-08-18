@@ -19,7 +19,7 @@ export const GET: RequestHandler = async () => {
         id: s.shipId,
         name: s.name,
         role: s.role,
-        buildTime: s.buildTime,
+        buildTime: s.buildTime || 0,
         costCredits: s.buildCost?.credits || 0
       };
       await db.insert(table.shipTemplate).values(row).run();

@@ -1,6 +1,7 @@
 <script lang="ts">
 import { onMount } from 'svelte';
-let items: unknown[] = [];
+type MissionItem = { id: string; shipTemplateId: string; quantity: number; completedAt: string | number; outcome?: string; rolledBack?: boolean };
+let items: MissionItem[] = [];
 let adminKey = '';
 let error = '';
 let loading = false;

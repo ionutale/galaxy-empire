@@ -1,6 +1,7 @@
 <script lang="ts">
 import { onMount } from 'svelte';
-let builds: unknown[] = [];
+type BuildItem = { id: string; shipTemplateId: string; quantity: number; processedAt: string | number; rolledBack?: boolean };
+let builds: BuildItem[] = [];
 let adminKey = '';
 let error = '';
 let loading = false;
