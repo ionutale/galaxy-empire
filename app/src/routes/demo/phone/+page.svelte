@@ -5,6 +5,32 @@
   let planetsTab: 'galaxy' | 'system' = 'galaxy';
   let showDeployModal = false;
   let toast: string | null = null;
+  let builds: any[] = [];
+  let fleets: any[] = [];
+  let pollId: number | null = null;
+
+  async function loadQueues() {
+    try {
+      const [bRes, fRes] = await Promise.all([fetch('/api/demo/builds'), fetch('/api/demo/fleets')]);
+      if (bRes.ok) builds = (await bRes.json()).builds ?? [];
+      if (fRes.ok) fleets = (await fRes.json()).fleets ?? [];
+    } catch {
+      // ignore
+    }
+  }
+
+  function startPolling() {
+    if (pollId) return;
+    pollId = (globalThis as any).setInterval(() => loadQueues(), 5000) as number;
+    loadQueues();
+  }
+
+  function stopPolling() {
+    if (pollId) { clearInterval(pollId); pollId = null; }
+  }
+
+  // start polling when the page is mounted
+  startPolling();
 
   async function postBuild(type = 'scout', count = 1) {
     try {
@@ -74,13 +100,32 @@
       <div class="h-full p-4 overflow-y-auto [scrollbar-width:thin]">
         <h1 class="text-2xl font-bold text-center mb-6 text-cyan-300 [text-shadow:0_0_8px_rgba(0,255,255,.6)]">PLANET BASE</h1>
         <div class="grid grid-cols-2 gap-4">
-          {#each Array(6) as _, i}
+          {#each Array(4) as _, i}
             <div class="p-3 text-center flex flex-col items-center rounded-lg bg-gradient-to-b from-gray-800 to-gray-700 border border-slate-600 relative overflow-hidden shadow hover:-translate-y-1 transition">
               <div class="absolute inset-0 pointer-events-none opacity-30 bg-[linear-gradient(45deg,rgba(0,255,255,.1)_0%,transparent_50%,rgba(0,255,255,.1)_100%)]"></div>
               <img alt="building" class="w-full h-20 object-contain" src={`https://placehold.co/200x80/1f2937/a0aec0?text=Building+${i+1}`}/>
               <span class="mt-2 text-sm font-semibold text-blue-200">Lv. {Math.min(9, i+4)}</span>
             </div>
           {/each}
+        </div>
+
+        <div class="mt-6">
+          <h2 class="text-lg font-semibold text-cyan-200 mb-2">Build Queue</h2>
+          {#if builds.length === 0}
+            <div class="text-sm text-gray-400">No builds queued.</div>
+          {:else}
+            <div class="space-y-2">
+              {#each builds as b}
+                <div class="p-2 rounded bg-slate-800 border border-slate-700 text-sm text-blue-200 flex justify-between items-center">
+                  <div>
+                    <div class="font-semibold">{b.type ?? 'ship'}</div>
+                    <div class="text-xs text-gray-400">{b.status} · {b.createdAt}</div>
+                  </div>
+                  <div class="text-xs">{b.remainingSeconds ?? b.durationSeconds ?? '–' }s</div>
+                </div>
+              {/each}
+            </div>
+          {/if}
         </div>
       </div>
     {/if}
@@ -141,14 +186,37 @@
                 <div class="absolute inset-0 pointer-events-none opacity-30 bg-[linear-gradient(45deg,rgba(0,255,255,.1)_0%,transparent_50%,rgba(0,255,255,.1)_100%)]"></div>
                 <img alt="ship" class="w-full h-20 object-contain" src={`https://placehold.co/200x80/1f2937/a0aec0?text=Ship+${i+1}`}/>
                 <div class="mt-2 text-sm font-semibold text-blue-200">Class {i+1}</div>
-                <button class="mt-2 px-3 py-1 rounded-md border border-cyan-400 text-cyan-300 hover:bg-cyan-400/10">Select</button>
+                <button class="mt-2 px-3 py-1 rounded-md border border-cyan-400 text-cyan-300 hover:bg-cyan-400/10" on:click={() => postBuild('scout', 1)}>Build</button>
               </div>
             {/each}
           </div>
         {:else}
-          <div class="text-center pt-8">
-            <p class="text-gray-400">No fleets currently in flight.</p>
-            <img src="https://placehold.co/200x150/1c212e/a0aec0?text=Empty+Space" alt="Empty Space" class="mx-auto mt-4 rounded-lg opacity-70" />
+          <div class="space-y-3">
+            <h2 class="text-lg font-semibold text-cyan-200">In Flight</h2>
+            {#if fleets.length === 0}
+              <div class="text-sm text-gray-400">No fleets currently in flight.</div>
+            {:else}
+              <div class="space-y-2">
+                {#each fleets as f}
+                  <div class="p-2 rounded bg-slate-800 border border-slate-700 text-sm text-blue-200">
+                    <div class="flex justify-between items-center">
+                      <div>
+                        <div class="font-semibold">Fleet {f.id}</div>
+                        <div class="text-xs text-gray-400">{f.status} · {new Date(f.createdAt).toLocaleTimeString()}</div>
+                      </div>
+                      <div class="text-xs">ETA: {f.etaSeconds}s</div>
+                    </div>
+                    {#if f.combat}
+                      <div class="mt-2 text-xs text-gray-300">
+                        <div>Combat result: {f.combat.attackerWins ? 'Attacker victory' : 'Defender victory'}</div>
+                        <div>Attacker losses: {f.combat.attackerLosses} · Defender losses: {f.combat.defenderLosses}</div>
+                        <div class="mt-1 text-[11px] text-gray-500">Seed: {f.combat.seed}</div>
+                      </div>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {/if}
           </div>
         {/if}
 
