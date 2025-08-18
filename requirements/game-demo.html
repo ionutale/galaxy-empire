@@ -1,786 +1,546 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Futuristic Galaxy Empire UI</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0d111c; /* Dark background */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            overflow: hidden; /* Prevent body scroll if content overflows */
-        }
+import React, { useState, useEffect, useCallback, useReducer } from 'react';
 
-        .phone-mockup {
-            width: 100%;
-            max-width: 400px; /* Typical phone width */
-            height: 100vh; /* Full viewport height for mobile feel */
-            max-height: 800px; /* Limit height for larger screens */
-            background-image: url('https://placehold.co/400x800/1e293b/a0aec0?text=SPACE+BACKGROUND'); /* Placeholder for space background */
-            background-size: cover;
-            background-position: center;
-            border-radius: 3rem;
-            border: 8px solid #000;
-            box-shadow: 0 0 40px rgba(0, 255, 255, 0.5), 0 0 20px rgba(0, 0, 0, 0.8) inset;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; /* Keep content within mockup */
-            position: relative;
-        }
+//-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+// MOCK DATA & CONFIGURATION
+// In a real application, this would come from a server.
+//-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 
-        /* Custom gradients and effects */
-        .gradient-border {
-            border-image-slice: 1;
-            border-width: 2px;
-            border-image-source: linear-gradient(to right, #00c6ff, #0072ff);
-        }
+const BUILDING_DATA = {
+  'controlCenter': { name: 'Control Center', description: 'The heart of your colony. Upgrading unlocks new buildings and expands build slots.', cost: (level) => ({ metal: 100 * Math.pow(1.8, level), crystal: 50 * Math.pow(1.8, level) }), time: (level) => 60 * Math.pow(1.5, level), benefit: (level) => `Unlocks new building options.` },
+  'metalMine': { name: 'Metal Mine', description: 'Extracts and refines metal ore from the planet\'s crust.', cost: (level) => ({ metal: 60 * Math.pow(1.5, level), crystal: 15 * Math.pow(1.5, level) }), time: (level) => 45 * Math.pow(1.6, level), production: (level) => 30 * level * Math.pow(1.1, level), benefit: (level) => `Production/hr: ${formatNumber(30 * level * Math.pow(1.1, level))} -> ${formatNumber(30 * (level+1) * Math.pow(1.1, level+1))}` },
+  'crystalSynthesizer': { name: 'Crystal Synthesizer', description: 'Grows valuable crystals used in advanced electronics and research.', cost: (level) => ({ metal: 48 * Math.pow(1.6, level), crystal: 24 * Math.pow(1.6, level) }), time: (level) => 50 * Math.pow(1.6, level), production: (level) => 20 * level * Math.pow(1.1, level), benefit: (level) => `Production/hr: ${formatNumber(20 * level * Math.pow(1.1, level))} -> ${formatNumber(20 * (level+1) * Math.pow(1.1, level+1))}` },
+  'deuteriumRefinery': { name: 'Deuterium Refinery', description: 'Synthesizes Deuterium, the fuel for your fleets.', cost: (level) => ({ metal: 225 * Math.pow(1.5, level), crystal: 75 * Math.pow(1.5, level) }), time: (level) => 120 * Math.pow(1.7, level), production: (level) => 10 * level * Math.pow(1.1, level), benefit: (level) => `Production/hr: ${formatNumber(10 * level * Math.pow(1.1, level))} -> ${formatNumber(10 * (level+1) * Math.pow(1.1, level+1))}` },
+  'shipyard': { name: 'Shipyard', description: 'Constructs your fleets and defensive structures.', cost: (level) => ({ metal: 400 * Math.pow(2, level), crystal: 200 * Math.pow(2, level) }), time: (level) => 300 * Math.pow(1.8, level), requires: { building: 'controlCenter', level: 2 }, benefit: (level) => `Reduces ship construction time.` },
+  'researchLab': { name: 'Research Lab', description: 'Unlocks powerful new technologies for your empire.', cost: (level) => ({ metal: 200 * Math.pow(2, level), crystal: 400 * Math.pow(2, level) }), time: (level) => 300 * Math.pow(1.8, level), requires: { building: 'controlCenter', level: 1 }, benefit: (level) => `Reduces research time.` },
+  'terraformer': { name: 'Terraformer', description: 'Improves planet habitability and increases maximum population/production.', cost: (level) => ({ metal: 1000 * Math.pow(1.9, level), crystal: 800 * Math.pow(1.9, level) }), time: (level) => 600 * Math.pow(1.7, level), requires: { building: 'controlCenter', level: 3 }, benefit: (level) => `Increases base production by ${Math.floor(5 * level)}%` },
+  'naniteFactory': { name: 'Nanite Factory', description: 'Speeds up construction and repairs using nanotechnology.', cost: (level) => ({ metal: 1500 * Math.pow(2, level), crystal: 1200 * Math.pow(2, level) }), time: (level) => 900 * Math.pow(1.8, level), requires: { building: 'shipyard', level: 2 }, benefit: (level) => `Reduces build times by ${Math.min(50, 5 * level)}%` },
+  'fusionReactor': { name: 'Fusion Reactor', description: 'Provides large amounts of energy to power advanced systems.', cost: (level) => ({ metal: 800 * Math.pow(1.8, level), crystal: 600 * Math.pow(1.8, level), deuterium: 200 * Math.pow(1.6, level) }), time: (level) => 700 * Math.pow(1.7, level), benefit: (level) => `Increases energy cap and improves efficiency.` },
+  'missileSilo': { name: 'Missile Silo', description: 'Houses defensive missiles to protect your colonies.', cost: (level) => ({ metal: 500 * Math.pow(1.6, level), crystal: 300 * Math.pow(1.6, level) }), time: (level) => 400 * Math.pow(1.6, level), requires: { building: 'controlCenter', level: 2 }, benefit: (level) => `Adds anti-ship defensive capability.` },
+  'sensorPhalanx': { name: 'Sensor Phalanx', description: 'Long-range sensors that reveal fleet movements and cloaked targets.', cost: (level) => ({ metal: 600 * Math.pow(1.7, level), crystal: 600 * Math.pow(1.7, level) }), time: (level) => 450 * Math.pow(1.6, level), requires: { research: 'laserTechnology', level: 1 }, benefit: (level) => `Increases detection range and intel accuracy.` },
+  );
+}
 
-        .gradient-bg-blue {
-            background: linear-gradient(to bottom, #1a202c, #2d3748);
-        }
+  'cruiser': { name: 'Cruiser', cost: { metal: 20000, crystal: 7000 }, attack: 400, defense: 150, speed: 10000, time: 90, requires: { research: 'impulseDrive', level: 2 } },
+  'battleship': { name: 'Battleship', cost: { metal: 45000, crystal: 15000 }, attack: 1000, defense: 500, speed: 7500, time: 240, requires: { research: 'hyperspaceDrive', level: 4 } },
+  'colonyShip': { name: 'Colony Ship', cost: { metal: 10000, crystal: 20000, deuterium: 10000 }, attack: 0, defense: 100, speed: 2500, time: 300, requires: { research: 'impulseDrive', level: 3 } },
+};
 
-        .gradient-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
-            pointer-events: none; /* Allow interaction with elements beneath */
-            z-index: 1;
-        }
+const RESEARCH_DATA = {
+    'energyTechnology': { name: 'Energy Technology', description: 'Improves energy production efficiency.', cost: (level) => ({ crystal: 800 * Math.pow(2, level), deuterium: 400 * Math.pow(2, level) }), time: (level) => 600 * Math.pow(1.8, level), requires: { building: 'researchLab', level: 1 } },
+    'combustionDrive': { name: 'Combustion Drive', description: 'Basic propulsion for light ships.', cost: (level) => ({ metal: 400 * Math.pow(2, level), deuterium: 600 * Math.pow(2, level) }), time: (level) => 900 * Math.pow(1.8, level), requires: { research: 'energyTechnology', level: 1 } },
+    'impulseDrive': { name: 'Impulse Drive', description: 'Advanced propulsion for medium ships.', cost: (level) => ({ metal: 2000 * Math.pow(2, level), deuterium: 4000 * Math.pow(2, level) }), time: (level) => 1800 * Math.pow(1.8, level), requires: { research: 'combustionDrive', level: 3 } },
+    'hyperspaceDrive': { name: 'Hyperspace Drive', description: 'Top-tier propulsion for capital ships.', cost: (level) => ({ metal: 10000 * Math.pow(2, level), deuterium: 20000 * Math.pow(2, level) }), time: (level) => 3600 * Math.pow(1.8, level), requires: { research: 'impulseDrive', level: 5 } },
+    'laserTechnology': { name: 'Laser Technology', description: 'Unlocks basic laser weaponry.', cost: (level) => ({ metal: 200 * Math.pow(2, level), crystal: 100 * Math.pow(2, level) }), time: (level) => 750 * Math.pow(1.8, level), requires: { research: 'energyTechnology', level: 2 } },
+    'armorTechnology': { name: 'Armor Technology', description: 'Increases structural integrity of all units by 10% per level.', cost: (level) => ({ metal: 1000 * Math.pow(2, level) }), time: (level) => 1200 * Math.pow(1.8, level), requires: { building: 'researchLab', level: 2 } },
+};
 
-        .text-glow {
-            text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
-        }
+// Additional game collectibles / modules ("chips") used to augment ships or empire-wide stats
+const CHIP_DATA = {
+  'attackChip': { name: 'Attack Chip', description: 'Increases ship attack by 10% per level.', cost: (level) => ({ crystal: 500 * Math.pow(1.7, level), deuterium: 200 * Math.pow(1.6, level) }), time: (level) => 300 * Math.pow(1.6, level), effect: (level) => `+${10 * level}% attack` },
+  'defenseChip': { name: 'Defense Chip', description: 'Increases ship defense by 10% per level.', cost: (level) => ({ metal: 400 * Math.pow(1.7, level), crystal: 400 * Math.pow(1.7, level) }), time: (level) => 300 * Math.pow(1.6, level), effect: (level) => `+${10 * level}% defense` },
+  'speedChip': { name: 'Speed Chip', description: 'Improves ship travel speed (reduces travel time).', cost: (level) => ({ crystal: 600 * Math.pow(1.6, level), deuterium: 300 * Math.pow(1.5, level) }), time: (level) => 400 * Math.pow(1.5, level), effect: (level) => `-${5 * level}% travel time` },
+  'cargoChip': { name: 'Cargo Chip', description: 'Increases cargo hold efficiency for fleets.', cost: (level) => ({ metal: 300 * Math.pow(1.5, level), crystal: 500 * Math.pow(1.5, level) }), time: (level) => 350 * Math.pow(1.5, level), effect: (level) => `+${10 * level}% cargo` },
+};
 
-        .button-glow {
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.4), 0 0 5px rgba(0, 255, 255, 0.2) inset;
-            transition: all 0.2s ease-in-out;
-        }
-        .button-glow:hover {
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.7), 0 0 8px rgba(0, 255, 255, 0.4) inset;
-            transform: translateY(-1px);
-        }
+// Systems represent meta-game systems/features that can be unlocked or interacted with
+const SYSTEMS_DATA = {
+  'trade': { name: 'Trade System', description: 'Enables resource trading, market orders, and price discovery.', requires: { building: 'controlCenter', level: 1 } },
+  'espionage': { name: 'Espionage', description: 'Spy on other players, steal limited intel and sabotage operations.', requires: { research: 'energyTechnology', level: 1 } },
+  'diplomacy': { name: 'Diplomacy', description: 'Formalize alliances, treaties and war declarations.', requires: { building: 'controlCenter', level: 1 } },
+  'automation': { name: 'Automation', description: 'Enable automation scripts: auto-build, auto-research and simple macros.', requires: { building: 'controlCenter', level: 3 } },
+};
 
-        .active-tab {
-            background: linear-gradient(to bottom, #00bfff, #0080ff);
-            border: 2px solid #00c6ff;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
-        }
+// This is now mutable for colonization simulation
+let GALAXY_DATA = Array.from({ length: 9 }, (_, i) => ({
+  id: i + 1,
+  systems: Array.from({ length: 499 }, (_, j) => {
+    const hasPlayer = Math.random() > 0.95;
+    const defensePower = hasPlayer ? Math.floor(Math.random() * 50000) : 0;
+    return {
+      id: j + 1,
+      player: hasPlayer ? `Player${Math.floor(Math.random() * 10000)}` : null,
+      planets: hasPlayer ? Math.floor(Math.random() * 5) + 1 : 0,
+      isHostile: Math.random() > 0.9,
+      defense: defensePower,
+    };
+  }),
+}));
+GALAXY_DATA[0].systems[0].player = 'Player1'; // Ensure home system is owned.
 
-        .ship-card, .building-card, .galactonite-item, .galaxy-card, .planet-card {
-            background: linear-gradient(to bottom, #1f2937, #374151);
-            border: 1px solid #4a5568;
-            border-radius: 0.75rem;
-            transition: transform 0.2s ease-in-out;
-            position: relative;
-            overflow: hidden;
-        }
-        .ship-card::before, .building-card::before, .galactonite-item::before, .galaxy-card::before, .planet-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, rgba(0, 255, 255, 0.1) 0%, transparent 50%, rgba(0, 255, 255, 0.1) 100%);
-            opacity: 0.3;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .ship-card:hover, .building-card:hover, .galactonite-item:hover, .galaxy-card:hover, .planet-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 255, 255, 0.2), 0 0 30px rgba(0, 255, 255, 0.1);
-        }
+//-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+// UTILITY & HELPER FUNCTIONS
+//-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 
-        .bottom-nav-item .bottom-nav-icon {
-            font-size: 1.5rem;
-            color: #a0aec0;
-            transition: color 0.2s ease-in-out, text-shadow 0.2s ease-in-out;
-        }
-        .bottom-nav-item.active .bottom-nav-icon, .bottom-nav-item:hover .bottom-nav-icon {
-            color: #00e5ff;
-            text-shadow: 0 0 10px #00e5ff;
-        }
+const formatNumber = (num) => {
+  if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return Math.floor(num).toString();
+};
 
-        /* Ensure images within cards are responsive */
-        .ship-image, .building-image, .galactonite-image, .galaxy-image {
-            width: 100%;
-            height: 80px; /* Fixed height for consistency */
-            object-fit: contain; /* Ensure entire image is visible */
-        }
-        .planet-image-large {
-            width: 150px; /* Larger for the main planet display */
-            height: 150px;
-            object-fit: cover;
-            border-radius: 50%;
-            border: 2px solid #00c6ff;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-        }
+const formatTime = (seconds) => {
+  if (seconds <= 0) return '00:00:00';
+  const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+  const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+  const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${s}`;
+};
 
-        /* Custom scrollbar for content areas */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #1a202c;
-            border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background-color: #00c6ff;
-            border-radius: 10px;
-            border: 2px solid #1a202c;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background-color: #0072ff;
-        }
+//-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+// GAME STATE MANAGEMENT (useReducer)
+//-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 
-        /* Deploy modal styling */
-        .deploy-modal {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 50;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease-in-out;
-        }
-        .deploy-modal.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .deploy-modal-content {
-            background: linear-gradient(to bottom, #1a202c, #2d3748);
-            border: 2px solid #00c6ff;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            width: 90%;
-            max-width: 350px;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-            animation: slideIn 0.3s ease-out;
-        }
+const initialPlanetState = {
+    id: 1,
+    name: "Homeworld",
+    coordinates: "1:1",
+    resources: { metal: 500, crystal: 500, deuterium: 0 },
+    buildings: { controlCenter: 1, metalMine: 1, crystalSynthesizer: 1, deuteriumRefinery: 0, shipyard: 0, researchLab: 0 },
+    ships: { lightFighter: 5, cruiser: 0, battleship: 0, colonyShip: 0 },
+    buildQueue: [],
+    shipQueue: [],
+};
 
-        @keyframes slideIn {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-    </style>
-</head>
-<body class="bg-gray-900 text-gray-200">
-    <div class="phone-mockup relative">
-        <!-- Background elements (mock planet/stars) -->
-        <div class="absolute inset-0 z-0 opacity-50">
-            <div class="absolute top-1/4 left-1/4 w-32 h-32 bg-blue-500 rounded-full mix-blend-screen opacity-30 blur-xl"></div>
-            <div class="absolute bottom-1/3 right-1/3 w-24 h-24 bg-purple-500 rounded-full mix-blend-screen opacity-20 blur-xl"></div>
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-green-500 rounded-full mix-blend-screen opacity-25 blur-xl"></div>
+const initialState = {
+  planets: [initialPlanetState],
+  currentPlanetId: 1,
+  research: { energyTechnology: 0, combustionDrive: 0, impulseDrive: 0, hyperspaceDrive: 0, laserTechnology: 0, armorTechnology: 0 },
+  researchQueue: null,
+  fleetMovements: [],
+  battleReports: [],
+  alliance: null,
+  notifications: [],
+  darkMatter: 1000,
+};
+
+function gameReducer(state, action) {
+  // Helper to find and update a specific planet
+  const updatePlanet = (planetId, updater) => {
+    return state.planets.map(p => p.id === planetId ? updater(p) : p);
+  };
+
+  switch (action.type) {
+    case 'SET_CURRENT_PLANET':
+        return { ...state, currentPlanetId: action.payload };
+    case 'TICK': {
+        const newPlanets = state.planets.map(planet => {
+            const metalProd = planet.buildings.metalMine > 0 ? BUILDING_DATA.metalMine.production(planet.buildings.metalMine) / 3600 : 0;
+            const crystalProd = planet.buildings.crystalSynthesizer > 0 ? BUILDING_DATA.crystalSynthesizer.production(planet.buildings.crystalSynthesizer) / 3600 : 0;
+            const deuteriumProd = planet.buildings.deuteriumRefinery > 0 ? BUILDING_DATA.deuteriumRefinery.production(planet.buildings.deuteriumRefinery) / 3600 : 0;
+            return {
+                ...planet,
+                resources: { ...planet.resources, metal: planet.resources.metal + metalProd, crystal: planet.resources.crystal + crystalProd, deuterium: planet.resources.deuterium + deuteriumProd },
+                buildQueue: planet.buildQueue.map(item => ({...item, timeLeft: item.timeLeft - 1})).filter(item => item.timeLeft >= 0),
+                shipQueue: planet.shipQueue.map(item => ({...item, timeLeft: item.timeLeft - 1})).filter(item => item.timeLeft >= 0),
+            };
+        });
+        const newResearchQueue = state.researchQueue ? { ...state.researchQueue, timeLeft: state.researchQueue.timeLeft - 1 } : null;
+        const newFleetMovements = state.fleetMovements.map(fleet => ({...fleet, timeLeft: fleet.timeLeft - 1})).filter(fleet => fleet.timeLeft >= 0);
+        return { ...state, planets: newPlanets, researchQueue: newResearchQueue, fleetMovements: newFleetMovements };
+    }
+    case 'FINISH_BUILDING': {
+        const { planetId, item } = action.payload;
+        const newPlanets = updatePlanet(planetId, p => ({ ...p, buildings: { ...p.buildings, [item.id]: item.level } }));
+        return { ...state, planets: newPlanets, notifications: [...state.notifications, { id: Date.now(), type: 'success', message: `${item.name} Lvl ${item.level} on ${newPlanets.find(p=>p.id===planetId).name} complete!` }] };
+    }
+    case 'FINISH_SHIP': {
+        const { planetId, item } = action.payload;
+        const newPlanets = updatePlanet(planetId, p => ({ ...p, ships: { ...p.ships, [item.id]: p.ships[item.id] + 1 } }));
+        return { ...state, planets: newPlanets, notifications: [...state.notifications, { id: Date.now(), type: 'info', message: `A new ${item.name} constructed at ${newPlanets.find(p=>p.id===planetId).name}.` }] };
+    }
+    case 'FINISH_RESEARCH': {
+        const finishedItem = action.payload;
+        return { ...state, research: { ...state.research, [finishedItem.id]: finishedItem.level }, researchQueue: null, notifications: [...state.notifications, { id: Date.now(), type: 'success', message: `${finishedItem.name} Level ${finishedItem.level} researched!` }] };
+    }
+    case 'RESOLVE_COMBAT': {
+        const fleet = action.payload;
+        const attackerPower = Object.entries(fleet.ships).reduce((sum, [id, count]) => sum + (SHIP_DATA[id].attack * count), 0);
+        const defenderPower = fleet.target.defense;
+        const attackerLossRate = Math.min(1, defenderPower / (attackerPower * 2 + 1));
+        const defenderLossRate = Math.min(1, attackerPower / (defenderPower * 2 + 1));
+        const shipsLost = Object.fromEntries(Object.entries(fleet.ships).map(([id, count]) => [id, Math.floor(count * attackerLossRate)]));
+        const shipsReturning = Object.fromEntries(Object.entries(fleet.ships).map(([id, count]) => [id, count - shipsLost[id]]));
+        const newPlanets = updatePlanet(fleet.originPlanetId, p => {
+            const updatedShips = { ...p.ships };
+            Object.entries(shipsReturning).forEach(([id, count]) => updatedShips[id] += count);
+            return { ...p, ships: updatedShips };
+        });
+        const report = { id: Date.now(), target: `${fleet.target.galaxy}:${fleet.target.system}`, outcome: attackerPower > defenderPower ? 'Victory' : 'Defeat', attackerLosses: shipsLost, defenderLosses: (defenderPower * defenderLossRate).toFixed(0) };
+        return { ...state, planets: newPlanets, battleReports: [report, ...state.battleReports], notifications: [...state.notifications, { id: Date.now(), type: 'warning', message: `Fleet returned from ${report.target}. Outcome: ${report.outcome}`}] };
+    }
+    case 'FINISH_COLONIZATION': {
+        const fleet = action.payload;
+        const newPlanetId = state.planets.length + 1;
+        const newPlanet = {
+            ...initialPlanetState,
+            id: newPlanetId,
+            name: `Colony ${newPlanetId}`,
+            coordinates: `${fleet.target.galaxy}:${fleet.target.system}`,
+            resources: { metal: 500, crystal: 500, deuterium: 0 },
+            buildings: { controlCenter: 1, metalMine: 0, crystalSynthesizer: 0, deuteriumRefinery: 0, shipyard: 0, researchLab: 0 },
+            ships: {},
+        };
+        // Simulate updating galaxy map data
+        GALAXY_DATA[fleet.target.galaxy - 1].systems[fleet.target.system - 1].player = 'Player1';
+        return { ...state, planets: [...state.planets, newPlanet], notifications: [...state.notifications, { id: Date.now(), type: 'success', message: `New colony established at ${newPlanet.coordinates}!` }] };
+    }
+    case 'ADD_TO_BUILD_QUEUE': {
+        const { planetId, id } = action.payload;
+        const planet = state.planets.find(p => p.id === planetId);
+        const level = planet.buildings[id] + 1;
+        const { cost, time } = BUILDING_DATA[id];
+        const item = { ...BUILDING_DATA[id], id, level, timeLeft: time(level - 1) };
+        const resCost = cost(level - 1);
+        const newPlanets = updatePlanet(planetId, p => ({ ...p, resources: { ...p.resources, metal: p.resources.metal - resCost.metal, crystal: p.resources.crystal - resCost.crystal }, buildQueue: [...p.buildQueue, item] }));
+        return { ...state, planets: newPlanets };
+    }
+    case 'ADD_TO_SHIP_QUEUE': {
+        const { planetId, id, amount } = action.payload;
+        const ship = SHIP_DATA[id];
+        const newQueueItems = Array.from({ length: amount }, () => ({ ...ship, id, timeLeft: ship.time }));
+        const newPlanets = updatePlanet(planetId, p => ({ ...p, resources: { ...p.resources, metal: p.resources.metal - ship.cost.metal * amount, crystal: p.resources.crystal - ship.cost.crystal * amount }, shipQueue: [...p.shipQueue, ...newQueueItems] }));
+        return { ...state, planets: newPlanets };
+    }
+    case 'START_RESEARCH': {
+        const { id, cost, time } = action.payload;
+        const level = state.research[id] + 1;
+        const item = { ...RESEARCH_DATA[id], id, level, timeLeft: time(level - 1) };
+        const resCost = cost(level-1);
+        // Research costs are empire-wide, so we take from the current planet
+        const newPlanets = updatePlanet(state.currentPlanetId, p => ({ ...p, resources: { ...p.resources, metal: p.resources.metal - (resCost.metal || 0), crystal: p.resources.crystal - (resCost.crystal || 0), deuterium: p.resources.deuterium - (resCost.deuterium || 0) }}));
+        return { ...state, planets: newPlanets, researchQueue: item };
+    }
+    case 'LAUNCH_FLEET': {
+        const { originPlanetId, ships, target, mission } = action.payload;
+        const newFleet = { id: Date.now(), originPlanetId, ships, target, mission, timeLeft: 300 }; // Simplified travel time
+        const newPlanets = updatePlanet(originPlanetId, p => {
+            const newShips = { ...p.ships };
+            Object.entries(ships).forEach(([id, count]) => newShips[id] -= count);
+            return { ...p, ships: newShips };
+        });
+        return { ...state, planets: newPlanets, fleetMovements: [...state.fleetMovements, newFleet] };
+    }
+    case 'CREATE_ALLIANCE': return { ...state, alliance: { name: action.payload, members: ['You'] } };
+    case 'REMOVE_NOTIFICATION': return { ...state, notifications: state.notifications.filter(n => n.id !== action.payload) };
+    default: return state;
+  }
+}
+
+//-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+// UI COMPONENTS
+//-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+
+const ResourceBar = ({ resources, darkMatter, planets, currentPlanetId, setCurrentPlanetId }) => (
+  <div className="fixed top-0 left-0 right-0 bg-black bg-opacity-50 backdrop-blur-sm p-2 z-50 text-white text-xs md:text-sm">
+    <div className="flex justify-around items-center">
+        <div className="flex items-center space-x-1"><span>🔩</span><span>Metal: {formatNumber(resources.metal)}</span></div>
+        <div className="flex items-center space-x-1"><span>💎</span><span>Crystal: {formatNumber(resources.crystal)}</span></div>
+        <div className="flex items-center space-x-1"><span>💧</span><span>Deuterium: {formatNumber(resources.deuterium)}</span></div>
+        <div className="flex items-center space-x-1"><span>✨</span><span>Dark Matter: {formatNumber(darkMatter)}</span></div>
+    </div>
+    {planets.length > 1 && (
+        <div className="flex justify-center items-center mt-2 space-x-2">
+            {planets.map(p => (
+                <button key={p.id} onClick={() => setCurrentPlanetId(p.id)} className={`btn btn-xs ${p.id === currentPlanetId ? 'btn-primary' : 'btn-ghost'}`}>{p.name} [{p.coordinates}]</button>
+            ))}
         </div>
+    )}
+  </div>
+);
 
-        <div class="gradient-overlay"></div>
+const BottomNav = ({ activeView, setActiveView }) => {
+  const navItems = ['Planet', 'Galaxy', 'Fleet', 'Research', 'Alliance'];
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-black bg-opacity-70 backdrop-blur-md z-50 flex justify-around p-1">
+      {navItems.map(item => (
+        <button key={item} onClick={() => setActiveView(item)} className={`btn btn-ghost btn-sm md:btn-md flex-col h-16 transition-all duration-300 ${activeView === item ? 'text-cyan-400 scale-110' : 'text-gray-400'}`}>
+          <span className="text-2xl">{item === 'Planet' ? '🌍' : item === 'Galaxy' ? '🌌' : item === 'Fleet' ? '🚀' : item === 'Research' ? '🔬' : '🤝'}</span>
+          <span className="text-xs">{item}</span>
+        </button>
+      ))}
+    </div>
+  );
+};
 
-        <!-- Top Header Bar -->
-        <div class="relative z-10 p-4 flex items-center justify-between bg-gradient-to-b from-blue-900 to-blue-950 rounded-b-xl border-b-2 border-blue-700 shadow-xl">
-            <span class="text-xs text-gray-400">1318</span>
-            <div class="flex items-center space-x-2">
-                <div class="flex items-center text-blue-300 text-sm font-bold">
-                    <svg class="w-4 h-4 mr-1 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 14V6h2v8H9z"></path></svg>
-                    9.21M
+const PlanetView = ({ planet, dispatch }) => {
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
+
+  const handleUpgrade = (id) => {
+    dispatch({ type: 'ADD_TO_BUILD_QUEUE', payload: { planetId: planet.id, id } });
+    setSelectedBuilding(null);
+  };
+
+  const BuildingModal = ({ buildingId, onClose }) => {
+    const building = BUILDING_DATA[buildingId];
+    const currentLevel = planet.buildings[buildingId];
+    const nextLevel = currentLevel + 1;
+    const upgradeCost = building.cost(currentLevel);
+    const upgradeTime = building.time(currentLevel);
+    
+    const canAfford = planet.resources.metal >= upgradeCost.metal && planet.resources.crystal >= upgradeCost.crystal;
+    const requirements = building.requires;
+    const reqsMet = !requirements || planet.buildings[requirements.building] >= requirements.level;
+    const isQueueFull = planet.buildQueue.length >= 5;
+    const canUpgrade = canAfford && reqsMet && !isQueueFull;
+
+    return (
+        <div className="modal modal-open">
+            <div className="modal-box bg-gray-900 border border-cyan-700 shadow-cyan-500/50 shadow-lg">
+                <h3 className="font-bold text-lg">{building.name} (Lvl {currentLevel})</h3>
+                <p className="py-2 text-sm text-gray-400">{building.description}</p>
+                
+                <div className="divider my-2">Info/Upgrade</div>
+
+                <div className="space-y-3 text-sm">
+                    <h4 className="font-bold text-cyan-400">Upgrade to Level {nextLevel}</h4>
+                    <p className="text-green-400"><strong>Benefit:</strong> {building.benefit(currentLevel)}</p>
+                    
+                    <h4 className="font-bold mt-2">Requirements:</h4>
+                    <p>Time: {formatTime(upgradeTime)}</p>
+                    <p className={planet.resources.metal >= upgradeCost.metal ? '' : 'text-red-400'}>
+                        🔩 Metal: {formatNumber(upgradeCost.metal)}
+                    </p>
+                    <p className={planet.resources.crystal >= upgradeCost.crystal ? '' : 'text-red-400'}>
+                        💎 Crystal: {formatNumber(upgradeCost.crystal)}
+                    </p>
+                    {requirements && (
+                        <p className={reqsMet ? '' : 'text-red-400'}>
+                            Requires: {BUILDING_DATA[requirements.building].name} Level {requirements.level}
+                        </p>
+                    )}
                 </div>
-                <div class="flex items-center text-blue-300 text-sm font-bold">
-                    <svg class="w-4 h-4 mr-1 text-purple-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 13l3-3m-3 0l-3 3"></path></svg>
-                    8650
+
+                <div className="modal-action mt-6">
+                     <div data-tip={!canUpgrade ? (isQueueFull ? "Build queue is full" : !reqsMet ? "Requirements not met" : "Not enough resources") : "Start Upgrade"} className="tooltip">
+                        <button className="btn btn-primary" disabled={!canUpgrade} onClick={() => handleUpgrade(buildingId)}>Upgrade</button>
+                    </div>
+                    <button className="btn" onClick={onClose}>Close</button>
                 </div>
-                <div class="flex items-center text-blue-300 text-sm font-bold">
-                    <svg class="w-4 h-4 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 13l3-3m-3 0l-3 3"></path></path></svg>
-                    4.30M
-                </div>
-                <div class="flex items-center text-blue-300 text-sm font-bold">
-                    <svg class="w-4 h-4 mr-1 text-orange-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 13l3-3m-3 0l-3 3"></path></svg>
-                    1368
-                </div>
-            </div>
-            <div class="flex items-center space-x-2">
-                <span class="text-sm font-semibold">meitbe</span>
-                <span class="relative inline-block">
-                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>
-                    <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">7</span>
-                </span>
             </div>
         </div>
+    );
+  };
 
-        <!-- Main Content Area - All Pages -->
-        <div class="flex-grow flex flex-col p-4 relative z-10 overflow-hidden">
-
-            <!-- Home Page (Planet Base) -->
-            <div id="home-page" class="absolute inset-4 flex-col custom-scrollbar hidden">
-                <h1 class="text-2xl font-bold text-center mb-6 text-cyan-300 text-glow">PLANET BASE</h1>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="building-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Metal+Mine" alt="Metal Mine" class="building-image mb-2">
-                        <span class="text-xs text-gray-300 mb-2">Metal Mine</span>
-                        <span class="text-sm font-semibold text-blue-200">Lv. 12</span>
-                    </div>
-                    <div class="building-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Crystal+Mine" alt="Crystal Mine" class="building-image mb-2">
-                        <span class="text-xs text-gray-300 mb-2">Crystal Mine</span>
-                        <span class="text-sm font-semibold text-blue-200">Lv. 10</span>
-                    </div>
-                    <div class="building-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Gas+Storage" alt="Gas Storage" class="building-image mb-2">
-                        <span class="text-xs text-gray-300 mb-2">Gas Storage</span>
-                        <span class="text-sm font-semibold text-blue-200">Lv. 7</span>
-                    </div>
-                    <div class="building-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Solar+Plant" alt="Solar Plant" class="building-image mb-2">
-                        <span class="text-xs text-gray-300 mb-2">Solar Plant</span>
-                        <span class="text-sm font-semibold text-blue-200">Lv. 15</span>
-                    </div>
-                    <div class="building-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Metal+Storage" alt="Metal Storage" class="building-image mb-2">
-                        <span class="text-xs text-gray-300 mb-2">Metal Storage</span>
-                        <span class="text-sm font-semibold text-blue-200">Lv. 8</span>
-                    </div>
-                    <div class="building-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Shipyard" alt="Shipyard" class="building-image mb-2">
-                        <span class="text-xs text-gray-300 mb-2">Shipyard</span>
-                        <span class="text-sm font-semibold text-blue-200">Lv. 9</span>
-                    </div>
-                     <div class="building-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Galactonite+Center" alt="Galactonite Center" class="building-image mb-2">
-                        <span class="text-xs text-gray-300 mb-2">Galactonite Center</span>
-                        <span class="text-sm font-semibold text-blue-200">Lv. 6</span>
-                    </div>
-                     <div class="building-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Robotics+Factory" alt="Robotics Factory" class="building-image mb-2">
-                        <span class="text-xs text-gray-300 mb-2">Robotics Factory</span>
-                        <span class="text-sm font-semibold text-blue-200">Lv. 7</span>
-                    </div>
-                     <div class="building-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Research+Center" alt="Research Center" class="building-image mb-2">
-                        <span class="text-xs text-gray-300 mb-2">Research Center</span>
-                        <span class="text-sm font-semibold text-blue-200">Lv. 11</span>
-                    </div>
-                     <div class="building-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Radar+Facility" alt="Radar Facility" class="building-image mb-2">
-                        <span class="text-xs text-gray-300 mb-2">Radar Facility</span>
-                        <span class="text-sm font-semibold text-blue-200">Lv. 5</span>
-                    </div>
-                </div>
+  return (
+    <div className="p-4 pt-24 pb-24 text-white">
+      <h1 className="text-3xl font-bold text-center mb-4 text-cyan-300">{planet.name} [{planet.coordinates}]</h1>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {Object.entries(BUILDING_DATA).map(([id, data]) => {
+          const level = planet.buildings[id] || 0;
+          const isBuilding = planet.buildQueue.some(item => item.id === id);
+          const requirementsMet = !data.requires || planet.buildings[data.requires.building] >= data.requires.level;
+          const canSelect = level > 0 || (level === 0 && requirementsMet);
+          return (
+            <div key={id} className={`card bg-gray-800 shadow-xl image-full ${canSelect ? 'opacity-100 cursor-pointer' : 'opacity-40'}`} onClick={() => canSelect && setSelectedBuilding(id)}>
+              <figure><img src={`https://placehold.co/400x300/000000/333333?text=${data.name.replace(' ', '+')}`} alt={data.name} className="opacity-30" /></figure>
+              <div className="card-body justify-between"><h2 className="card-title">{data.name}</h2><p>Level: {level}</p>{isBuilding && <span className="loading loading-spinner loading-xs text-cyan-400"></span>}</div>
             </div>
+          );
+        })}
+      </div>
+      {selectedBuilding && <BuildingModal buildingId={selectedBuilding} onClose={() => setSelectedBuilding(null)} />}
+    </div>
+  );
+};
 
-            <!-- Planets Navigation Page -->
-            <div id="planets-page" class="absolute inset-4 flex-col custom-scrollbar hidden">
-                <h1 class="text-2xl font-bold text-center mb-6 text-cyan-300 text-glow">EXPLORE THE GALAXY</h1>
+const GalaxyView = ({ dispatch, planets, currentPlanetId }) => {
+  const [galaxy, setGalaxy] = useState(1);
+  const [system, setSystem] = useState(1);
+  const [target, setTarget] = useState(null);
+  const [fleetToSend, setFleetToSend] = useState({});
+  const [missionType, setMissionType] = useState('attack');
+  const currentPlanet = planets.find(p => p.id === currentPlanetId);
 
-                <!-- Top Navigation for Galaxy/System View -->
-                <div class="bg-gradient-to-r from-blue-900 to-blue-950 p-1 rounded-full flex justify-between items-center mb-6 border border-blue-700 shadow-lg relative">
-                    <button class="flex-1 py-2 px-4 rounded-full text-sm font-semibold text-gray-300 transition-all duration-300 button-glow active-tab" id="galaxy-view-tab">
-                        Galaxy
-                    </button>
-                    <button class="flex-1 py-2 px-4 rounded-full text-sm font-semibold text-gray-300 transition-all duration-300 button-glow" id="system-view-tab">
-                        System
-                    </button>
+  const handleLaunch = () => {
+    const finalFleet = missionType === 'colonize' ? { colonyShip: 1 } : fleetToSend;
+    dispatch({ type: 'LAUNCH_FLEET', payload: { originPlanetId: currentPlanet.id, ships: finalFleet, target, mission: missionType } });
+    setTarget(null); setFleetToSend({});
+  };
+  
+  return (
+    <div className="p-4 pt-24 pb-24 text-white">
+      <h1 className="text-3xl font-bold text-center mb-4 text-cyan-300">Galaxy Map</h1>
+      <div className="bg-gray-800 p-2 rounded-lg mb-4 flex justify-between items-center"><div className="flex items-center space-x-2"><button className="btn btn-xs btn-primary" onClick={() => setGalaxy(g => Math.max(1, g - 1))}>&lt;</button><span>Galaxy: {galaxy}</span><button className="btn btn-xs btn-primary" onClick={() => setGalaxy(g => Math.min(9, g + 1))}>&gt;</button></div><div className="flex items-center space-x-2"><button className="btn btn-xs btn-primary" onClick={() => setSystem(s => Math.max(1, s - 1))}>&lt;</button><span>System: {system}</span><button className="btn btn-xs btn-primary" onClick={() => setSystem(s => Math.min(499, s + 1))}>&gt;</button></div></div>
+      <div className="bg-black bg-opacity-50 rounded-lg p-4 h-[60vh] overflow-y-auto">
+        <ul className="space-y-2">
+          {GALAXY_DATA[galaxy - 1].systems.slice(system - 1, system + 14).map((sys, index) => (
+            <li key={index} className="flex justify-between items-center p-2 rounded hover:bg-gray-700">
+              <div className="flex items-center space-x-4"><span>🪐</span><div><p className="font-bold">{galaxy}:{sys.id}</p>{sys.player ? <p className="text-sm text-cyan-400">{sys.player} ({sys.planets} planets)</p> : <p className="text-sm text-gray-400">(Unoccupied)</p>}</div></div>
+              <div className="flex space-x-2">
+                {sys.player && sys.player !== "Player1" && <button className="btn btn-xs btn-error" onClick={() => {setTarget({...sys, galaxy, system: sys.id}); setMissionType('attack');}}>Attack</button>}
+                {!sys.player && currentPlanet.ships.colonyShip > 0 && <button className="btn btn-xs btn-success" onClick={() => {setTarget({...sys, galaxy, system: sys.id}); setMissionType('colonize');}}>Colonize</button>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {target && (
+        <div className="modal modal-open">
+            <div className="modal-box bg-gray-900 border border-cyan-500">
+                <h3 className="font-bold text-lg">{missionType === 'attack' ? `Attack ${target.player}` : `Colonize`} at {target.galaxy}:{target.system}</h3>
+                <div className="py-4 space-y-2">
+                    {missionType === 'attack' && Object.entries(currentPlanet.ships).filter(([_, count]) => count > 0).map(([id, count]) => (
+                        <div key={id} className="form-control"><label className="label"><span className="label-text text-white">{SHIP_DATA[id].name} (Available: {count})</span></label><input type="number" max={count} min="0" defaultValue="0" onChange={(e) => setFleetToSend({...fleetToSend, [id]: parseInt(e.target.value)})} className="input input-bordered w-full bg-gray-700" /></div>
+                    ))}
+                    {missionType === 'colonize' && <p>This will consume one Colony Ship.</p>}
                 </div>
-
-                <!-- Galaxy View Content -->
-                <div id="galaxy-view-content" class="grid grid-cols-2 gap-4 flex-grow custom-scrollbar">
-                    <div class="galaxy-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x100/3f51b5/ffffff?text=Galaxy+1" alt="Galaxy 1" class="galaxy-image mb-2">
-                        <span class="text-sm font-semibold text-blue-200">1 [1:140]</span>
-                    </div>
-                    <div class="galaxy-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x100/8bc34a/ffffff?text=Galaxy+2" alt="Galaxy 2" class="galaxy-image mb-2">
-                        <span class="text-sm font-semibold text-blue-200">2 [1:142]</span>
-                    </div>
-                    <div class="galaxy-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x100/ff9800/ffffff?text=Galaxy+3" alt="Galaxy 3" class="galaxy-image mb-2">
-                        <span class="text-sm font-semibold text-blue-200">3 [1:156]</span>
-                    </div>
-                    <div class="galaxy-card p-2 text-center flex flex-col items-center button-glow">
-                        <img src="https://placehold.co/100x100/e91e63/ffffff?text=Galaxy+4" alt="Galaxy 4" class="galaxy-image mb-2">
-                        <span class="text-sm font-semibold text-blue-200">4 [1:160]</span>
-                    </div>
-                    <!-- More galaxies can be added here -->
-                </div>
-
-                <!-- System View Content -->
-                <div id="system-view-content" class="flex-col flex-grow custom-scrollbar hidden">
-                    <div class="bg-gradient-to-r from-blue-900 to-blue-950 p-2 rounded-lg border border-blue-700 shadow-lg mb-4">
-                        <div class="flex items-center justify-between text-sm mb-2">
-                            <span class="text-gray-300">Galaxy:</span>
-                            <input type="number" value="1" class="w-16 bg-blue-800 border border-blue-600 rounded-md text-center text-blue-200 px-1 py-0.5">
-                            <span class="text-gray-300">System:</span>
-                            <input type="number" value="43" class="w-16 bg-blue-800 border border-blue-600 rounded-md text-center text-blue-200 px-1 py-0.5">
-                            <button class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded-md button-glow">OK</button>
-                        </div>
-                        <div class="text-center text-gray-400 text-xs">Coordinates: [1:43:21]</div>
-                    </div>
-
-                    <!-- Planet Navigation and Details -->
-                    <div class="flex items-center justify-center mb-4">
-                        <button class="p-2 bg-blue-700 rounded-full button-glow hover:bg-blue-600 mr-4 text-white">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                        </button>
-                        <img src="https://placehold.co/150x150/5f2120/ffffff?text=Planet" alt="Current Planet" class="planet-image-large">
-                        <button class="p-2 bg-blue-700 rounded-full button-glow hover:bg-blue-600 ml-4 text-white">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                        </button>
-                    </div>
-
-                    <!-- Planet Status and Info -->
-                    <div class="bg-gradient-to-r from-blue-900 to-blue-950 p-4 rounded-lg border border-blue-700 shadow-lg mb-4 text-center">
-                        <h3 class="text-lg font-bold text-blue-300 mb-2">Alien Brood <span class="text-gray-400">(Lv 24)</span></h3>
-                        <p class="text-sm text-gray-300 mb-2">The forces of evil</p>
-                        <p class="text-sm text-gray-400 mb-2">Coordinates: <span class="text-blue-200">[1:43:21]</span></p>
-                        <p class="text-sm text-gray-400 mb-4">Refresh time: <span class="text-yellow-300">7h, 2m, 22s</span></p>
-
-                        <div class="flex flex-wrap justify-center gap-2 mb-4">
-                            <span class="inline-flex items-center bg-gray-700 text-red-300 text-xs px-2.5 py-0.5 rounded-full button-glow">
-                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
-                                too strong
-                            </span>
-                            <span class="inline-flex items-center bg-gray-700 text-green-300 text-xs px-2.5 py-0.5 rounded-full button-glow">
-                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                                active
-                            </span>
-                             <span class="inline-flex items-center bg-gray-700 text-yellow-300 text-xs px-2.5 py-0.5 rounded-full button-glow">
-                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M7 3a1 1 0 00-1 1v12a1 1 0 001 1h6a1 1 0 001-1V4a1 1 0 00-1-1H7zM5 4a3 3 0 013-3h4a3 3 0 013 3v12a3 3 0 01-3 3H8a3 3 0 01-3-3V4zm5 2a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zM5 16a1 1 0 00-1 1v1a1 1 0 001 1h10a1 1 0 001-1v-1a1 1 0 00-1-1H5z"></path></svg>
-                                has debris
-                            </span>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3 mt-4">
-                            <button class="bg-blue-700 text-blue-100 py-2 rounded-md font-bold button-glow hover:bg-blue-600 flex items-center justify-center space-x-2" id="transport-btn">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 00-1 1v2H5a2 2 0 00-2 2v2a2 2 0 002 2h2.586l1.293 1.293A1 1 0 0010 14.414V13h2a2 2 0 002-2V9a2 2 0 00-2-2h-3V3a1 1 0 00-1-1z"></path></svg>
-                                <span>Transport</span>
-                            </button>
-                            <button class="bg-blue-700 text-blue-100 py-2 rounded-md font-bold button-glow hover:bg-blue-600 flex items-center justify-center space-x-2" id="deploy-btn-system-view">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></path></svg>
-                                <span>Deploy</span>
-                            </button>
-                            <button class="w-full col-span-2 bg-green-700 text-green-100 py-2 rounded-md font-bold button-glow hover:bg-green-600 flex items-center justify-center space-x-2">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 13l3-3m-3 0l-3 3"></path></svg>
-                                <span>Teleport</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-gradient-to-r from-blue-900 to-blue-950 p-4 rounded-lg border border-blue-700 shadow-lg hidden">
-                        <!-- This block was for Transport/Deploy/Teleport; keeping it hidden as it might be part of Planet Details interactions -->
-                    </div>
-                </div>
+                <div className="modal-action"><button className={`btn ${missionType === 'attack' ? 'btn-error' : 'btn-success'}`} onClick={handleLaunch}>Launch</button><button className="btn" onClick={() => setTarget(null)}>Cancel</button></div>
             </div>
-
-            <!-- Fleet Page (Existing content) -->
-            <div id="fleet-page" class="absolute inset-4 flex-col custom-scrollbar hidden">
-                <h1 class="text-2xl font-bold text-center mb-6 text-cyan-300 text-glow">BUILD YOUR FLEET</h1>
-
-                <!-- Top Navigation/Tabs -->
-                <div class="bg-gradient-to-r from-blue-900 to-blue-950 p-1 rounded-full flex justify-between items-center mb-6 border border-blue-700 shadow-lg relative">
-                    <button class="flex-1 py-2 px-4 rounded-full text-sm font-semibold text-gray-300 transition-all duration-300 button-glow active-tab" id="dispatch-tab">
-                        Dispatch
-                    </button>
-                    <button class="flex-1 py-2 px-4 rounded-full text-sm font-semibold text-gray-300 transition-all duration-300 button-glow" id="in-flight-tab">
-                        In Flight
-                    </button>
-                </div>
-
-                <!-- Ship List / Content for Dispatch Tab -->
-                <div id="dispatch-content" class="grid grid-cols-2 gap-4 flex-grow overflow-y-auto pb-4 custom-scrollbar">
-                    <!-- Ship Card 1 -->
-                    <div class="ship-card p-2 text-center flex flex-col items-center justify-between button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Destroyer" alt="Destroyer" class="ship-image mb-2">
-                        <span class="text-sm font-semibold text-blue-200">1000</span>
-                        <span class="text-xs text-gray-300 mb-2">Destroyer</span>
-                        <button class="w-full py-1.5 bg-blue-700 text-blue-100 rounded-md text-xs font-bold border border-blue-500 button-glow hover:bg-blue-600">
-                            Select
-                        </button>
-                    </div>
-                    <!-- Ship Card 2 -->
-                    <div class="ship-card p-2 text-center flex flex-col items-center justify-between button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Cargo+Ship" alt="Cargo Ship" class="ship-image mb-2">
-                        <span class="text-sm font-semibold text-blue-200">1</span>
-                        <span class="text-xs text-gray-300 mb-2">Cargo Ship</span>
-                        <button class="w-full py-1.5 bg-blue-700 text-blue-100 rounded-md text-xs font-bold border border-blue-500 button-glow hover:bg-blue-600">
-                            Select
-                        </button>
-                    </div>
-                    <!-- Ship Card 3 -->
-                    <div class="ship-card p-2 text-center flex flex-col items-center justify-between button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=L+Cargo+Ship" alt="L Cargo Ship" class="ship-image mb-2">
-                        <span class="text-sm font-semibold text-blue-200">3500</span>
-                        <span class="text-xs text-gray-300 mb-2">L Cargo Ship</span>
-                        <button class="w-full py-1.5 bg-blue-700 text-blue-100 rounded-md text-xs font-bold border border-blue-500 button-glow hover:bg-blue-600">
-                            Select
-                        </button>
-                    </div>
-                    <!-- Ship Card 4 -->
-                    <div class="ship-card p-2 text-center flex flex-col items-center justify-between button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Colony+Ship" alt="Colony Ship" class="ship-image mb-2">
-                        <span class="text-sm font-semibold text-blue-200">0</span>
-                        <span class="text-xs text-gray-300 mb-2">Colony Ship</span>
-                        <button class="w-full py-1.5 bg-blue-700 text-blue-100 rounded-md text-xs font-bold border border-blue-500 button-glow hover:bg-blue-600">
-                            Select
-                        </button>
-                    </div>
-                    <!-- Ship Card 5 -->
-                    <div class="ship-card p-2 text-center flex flex-col items-center justify-between button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Recycler" alt="Recycler" class="ship-image mb-2">
-                        <span class="text-sm font-semibold text-blue-200">0</span>
-                        <span class="text-xs text-gray-300 mb-2">Recycler</span>
-                        <button class="w-full py-1.5 bg-blue-700 text-blue-100 rounded-md text-xs font-bold border border-blue-500 button-glow hover:bg-blue-600">
-                            Select
-                        </button>
-                    </div>
-                    <!-- Ship Card 6 -->
-                    <div class="ship-card p-2 text-center flex flex-col items-center justify-between button-glow">
-                        <img src="https://placehold.co/100x80/2f4f4f/ffffff?text=Probe" alt="Probe" class="ship-image mb-2">
-                        <span class="text-sm font-semibold text-blue-200">0</span>
-                        <span class="text-xs text-gray-300 mb-2">Probe</span>
-                        <button class="w-full py-1.5 bg-blue-700 text-blue-100 rounded-md text-xs font-bold border border-blue-500 button-glow hover:bg-blue-600">
-                            Select
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Content for In Flight Tab (initially hidden) -->
-                <div id="in-flight-content" class="hidden flex-grow overflow-y-auto text-center pt-8 custom-scrollbar">
-                    <p class="text-gray-400">No fleets currently in flight.</p>
-                    <img src="https://placehold.co/200x150/1c212e/a0aec0?text=Empty+Space" alt="Empty Space" class="mx-auto mt-4 rounded-lg opacity-70">
-                </div>
-
-                <!-- Bottom Section for Fleet Destination -->
-                <div class="relative z-10 bg-gradient-to-t from-blue-900 to-blue-950 p-3 rounded-t-xl border-t-2 border-blue-700 mt-4 shadow-xl">
-                    <div class="flex items-center justify-between text-sm mb-2 text-blue-300 font-semibold">
-                        <span>From Guest4's Home planet [1:43:15] to:</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <div class="flex-grow flex space-x-2 bg-blue-900 border border-blue-700 rounded-md p-2">
-                            <span class="text-gray-300">Galaxy 0</span>
-                            <span class="text-gray-300">System 0</span>
-                            <span class="text-gray-300">Planet 0</span>
-                        </div>
-                        <button class="p-2 bg-green-700 rounded-md border border-green-500 button-glow hover:bg-green-600">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Galactonite Page -->
-            <div id="galactonite-page" class="absolute inset-4 flex-col custom-scrollbar hidden">
-                <h1 class="text-2xl font-bold text-center mb-6 text-cyan-300 text-glow">GALACTONITE FUSER</h1>
-                <div class="bg-gradient-to-r from-blue-900 to-blue-950 p-4 rounded-lg border border-blue-700 shadow-lg mb-4 text-center">
-                    <span class="text-sm text-gray-300">Select to start with 20 times.</span>
-                    <div class="flex items-center justify-center space-x-2 mt-2">
-                        <input type="number" id="fuse-quantity-input" value="1" min="1" class="w-20 bg-blue-800 border border-blue-600 rounded-md text-center text-blue-200 px-1 py-0.5">
-                        <button id="fuse-galactonite-btn" class="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-1.5 rounded-md button-glow">Fuse Galactonite</button>
-                    </div>
-                    <p id="galactonite-message" class="text-xs text-yellow-300 mt-2 h-4"></p>
-                </div>
-
-                <div id="galactonite-items-container" class="bg-gradient-to-r from-blue-900 to-blue-950 p-4 rounded-lg border border-blue-700 shadow-lg grid grid-cols-4 gap-2 custom-scrollbar flex-grow">
-                    <!-- Galactonite Items will be dynamically added here -->
-                    <div class="galactonite-item p-1 flex flex-col items-center">
-                        <img src="https://placehold.co/60x60/3f51b5/ffffff?text=G1" alt="Galactonite 1" class="galactonite-image mb-1">
-                    </div>
-                    <div class="galactonite-item p-1 flex flex-col items-center">
-                        <img src="https://placehold.co/60x60/8bc34a/ffffff?text=G2" alt="Galactonite 2" class="galactonite-image mb-1">
-                    </div>
-                    <div class="galactonite-item p-1 flex flex-col items-center">
-                        <img src="https://placehold.co/60x60/ff9800/ffffff?text=G3" alt="Galactonite 3" class="galactonite-image mb-1">
-                    </div>
-                    <div class="galactonite-item p-1 flex flex-col items-center">
-                        <img src="https://placehold.co/60x60/e91e63/ffffff?text=G4" alt="Galactonite 4" class="galactonite-image mb-1">
-                    </div>
-                </div>
-                <button id="decompose-all-btn" class="w-full mt-4 py-2 bg-red-700 text-red-100 rounded-md font-bold border border-red-500 button-glow hover:bg-red-600">
-                    Decompose all
-                </button>
-            </div>
-
-            <!-- Capsule Page (Placeholder) -->
-            <div id="capsule-page" class="absolute inset-4 flex-col custom-scrollbar hidden text-center pt-8">
-                <h1 class="text-2xl font-bold text-cyan-300 text-glow mb-6">CAPSULE</h1>
-                <p class="text-gray-400">Content for Capsule page will go here.</p>
-                <img src="https://placehold.co/200x150/1c212e/a0aec0?text=Capsule+Coming+Soon" alt="Capsule Page" class="mx-auto mt-4 rounded-lg opacity-70">
-            </div>
-
-            <!-- Deploy Modal (hidden by default) -->
-            <div id="deploy-modal" class="deploy-modal">
-                <div class="deploy-modal-content">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-cyan-300 text-glow">Deploy Fleet</h2>
-                        <button id="close-deploy-modal" class="text-gray-400 hover:text-gray-200 text-2xl font-bold">&times;</button>
-                    </div>
-                    <p class="text-gray-300 mb-4">Select ships and target coordinates for deployment.</p>
-                    <div class="mb-4">
-                        <label for="deploy-quantity" class="block text-sm font-semibold text-blue-300 mb-1">Quantity:</label>
-                        <input type="number" id="deploy-quantity" value="1" min="1" class="w-full bg-blue-900 border border-blue-700 rounded-md px-3 py-2 text-blue-200">
-                    </div>
-                    <div class="mb-4">
-                        <label for="target-coords" class="block text-sm font-semibold text-blue-300 mb-1">Target Coordinates (G:S:P):</label>
-                        <input type="text" id="target-coords" placeholder="e.g., 1:2:3" class="w-full bg-blue-900 border border-blue-700 rounded-md px-3 py-2 text-blue-200">
-                    </div>
-                    <button class="w-full bg-green-700 text-green-100 py-2 rounded-md font-bold border border-green-500 button-glow hover:bg-green-600">
-                        Confirm Deployment
-                    </button>
-                </div>
-            </div>
-
         </div>
+      )}
+    </div>
+  );
+};
 
-        <!-- Bottom Navigation Bar -->
-        <div class="relative z-20 w-full p-2 bg-gradient-to-t from-blue-950 to-blue-900 rounded-t-xl border-t-2 border-blue-700 flex justify-around items-center text-xs text-gray-400 font-semibold shadow-2xl">
-            <a href="#" class="bottom-nav-item flex flex-col items-center p-2 rounded-md hover:bg-blue-800 active" data-page="home-page">
-                <svg class="bottom-nav-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
-                <span>Home</span>
-            </a>
-            <a href="#" class="bottom-nav-item flex flex-col items-center p-2 rounded-md hover:bg-blue-800" data-page="planets-page">
-                <svg class="bottom-nav-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM5 9a1 1 0 11-2 0 1 1 0 012 0zM17 9a1 1 0 11-2 0 1 1 0 012 0zM7 13a1 1 0 11-2 0 1 1 0 012 0zM15 13a1 1 0 11-2 0 1 1 0 012 0z"></path></svg>
-                <span>Planets</span>
-            </a>
-            <a href="#" class="bottom-nav-item flex flex-col items-center p-2 rounded-md hover:bg-blue-800" data-page="fleet-page">
-                <svg class="bottom-nav-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l.006-.001 6.364-3.571 2.306 4.025c.078.136.244.195.408.149l.01-.002.302-.098a1 1 0 00.373-1.002l-.114-.416-2.31-4.026 6.364 3.571a1 1 0 001.169-1.409l.006-.001-7-14z"></path></svg>
-                <span>Fleet</span>
-            </a>
-            <a href="#" class="bottom-nav-item flex flex-col items-center p-2 rounded-md hover:bg-blue-800" data-page="galactonite-page">
-                <svg class="bottom-nav-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M7 3a1 1 0 00-1 1v12a1 1 0 001 1h6a1 1 0 001-1V4a1 1 0 00-1-1H7zM5 4a3 3 0 013-3h4a3 3 0 013 3v12a3 3 0 01-3 3H8a3 3 0 01-3-3V4zm5 2a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zM5 16a1 1 0 00-1 1v1a1 1 0 001 1h10a1 1 0 001-1v-1a1 1 0 00-1-1H5z"></path></svg>
-                <span>Galactonite</span>
-            </a>
-            <a href="#" class="bottom-nav-item flex flex-col items-center p-2 rounded-md hover:bg-blue-800" data-page="capsule-page">
-                <svg class="bottom-nav-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M7 3a1 1 0 00-1 1v12a1 1 0 001 1h6a1 1 0 001-1V4a1 1 0 00-1-1H7zM5 4a3 3 0 013-3h4a3 3 0 013 3v12a3 3 0 01-3 3H8a3 3 0 01-3-3V4zm5 2a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zM5 16a1 1 0 00-1 1v1a1 1 0 001 1h10a1 1 0 001-1v-1a1 1 0 00-1-1H5z"></path></svg>
-                <span>Capsule</span>
-            </a>
+const FleetView = ({ planet, dispatch, research }) => {
+    const [selectedShip, setSelectedShip] = useState(null);
+    const [buildAmount, setBuildAmount] = useState(1);
+    const handleBuild = () => {
+        const ship = SHIP_DATA[selectedShip];
+        const canAfford = planet.resources.metal >= ship.cost.metal * buildAmount && planet.resources.crystal >= ship.cost.crystal * buildAmount;
+        if(canAfford) {
+            dispatch({ type: 'ADD_TO_SHIP_QUEUE', payload: { planetId: planet.id, id: selectedShip, amount: buildAmount } });
+        } else { alert("Not enough resources."); }
+        setSelectedShip(null); setBuildAmount(1);
+    };
+    return (
+        <div className="p-4 pt-24 pb-24 text-white">
+            <h1 className="text-3xl font-bold text-center mb-4 text-cyan-300">Shipyard at {planet.name}</h1>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {Object.entries(SHIP_DATA).map(([id, data]) => {
+                    const requirementsMet = research[data.requires.research] >= data.requires.level;
+                    return (
+                        <div key={id} className={`card bg-gray-800 shadow-xl ${requirementsMet ? 'opacity-100 cursor-pointer' : 'opacity-40'}`} onClick={() => requirementsMet && setSelectedShip(id)}>
+                            <figure><img src={`https://placehold.co/400x300/111827/555555?text=${data.name.replace(' ', '+')}`} alt={data.name} className="opacity-50" /></figure>
+                            <div className="card-body"><h2 className="card-title">{data.name}</h2><p>Owned: {planet.ships[id] || 0}</p></div>
+                        </div>
+                    );
+                })}
+            </div>
+            {selectedShip && (
+                <div className="modal modal-open">
+                    <div className="modal-box bg-gray-900 border border-cyan-500">
+                        <h3 className="font-bold text-lg">Build {SHIP_DATA[selectedShip].name}</h3><p className="py-2">Attack: {SHIP_DATA[selectedShip].attack} | Defense: {SHIP_DATA[selectedShip].defense}</p>
+                        <div className="my-2"><p>Cost (per unit): 🔩 {formatNumber(SHIP_DATA[selectedShip].cost.metal)} 💎 {formatNumber(SHIP_DATA[selectedShip].cost.crystal)}</p><p>Time: {formatTime(SHIP_DATA[selectedShip].time)}</p></div>
+                        <div className="form-control"><label className="label"><span className="label-text text-white">Amount</span></label><input type="number" value={buildAmount} onChange={(e) => setBuildAmount(parseInt(e.target.value))} min="1" max="100" className="input input-bordered w-full bg-gray-700" /></div>
+                        <div className="modal-action"><button className="btn btn-primary" onClick={handleBuild}>Build {buildAmount}</button><button className="btn" onClick={() => setSelectedShip(null)}>Close</button></div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const ResearchView = ({ research, researchQueue, dispatch, planets, currentPlanetId }) => {
+    const currentPlanet = planets.find(p => p.id === currentPlanetId);
+    const handleResearch = (id) => {
+        const level = research[id];
+        const { cost, time } = RESEARCH_DATA[id];
+        const resCost = cost(level);
+        const canAfford = currentPlanet.resources.metal >= (resCost.metal || 0) && currentPlanet.resources.crystal >= (resCost.crystal || 0) && currentPlanet.resources.deuterium >= (resCost.deuterium || 0);
+        if (canAfford && !researchQueue) {
+            dispatch({ type: 'START_RESEARCH', payload: { id, cost, time } });
+        } else { alert("Cannot afford or research is in progress."); }
+    };
+    return (
+        <div className="p-4 pt-24 pb-24 text-white">
+            <h1 className="text-3xl font-bold text-center mb-4 text-cyan-300">Research Lab</h1>
+            <div className="space-y-4">
+                {Object.entries(RESEARCH_DATA).map(([id, data]) => {
+                    const level = research[id];
+                    const reqBuildingMet = planets.some(p => p.buildings[data.requires.building] >= data.requires.level);
+                    const reqResearchMet = !data.requires.research || research[data.requires.research] >= data.requires.level;
+                    const canResearch = reqBuildingMet && reqResearchMet;
+                    return (
+                        <div key={id} className={`card card-side bg-gray-800 shadow-xl ${canResearch ? '' : 'opacity-50'}`}>
+                            <div className="card-body"><h2 className="card-title">{data.name} (Level {level})</h2><p>{data.description}</p><p className="text-xs">Requires: {data.requires.building ? `${BUILDING_DATA[data.requires.building].name} Lvl ${data.requires.level}` : ''} {data.requires.research ? `${RESEARCH_DATA[data.requires.research].name} Lvl ${data.requires.level}` : ''}</p><div className="card-actions justify-end"><button className="btn btn-primary" disabled={!canResearch || researchQueue} onClick={() => handleResearch(id)}>Research Lvl {level + 1}</button></div></div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const AllianceView = ({ alliance, dispatch }) => {
+    const [allianceName, setAllianceName] = useState('');
+    if (alliance) {
+        return (<div className="p-4 pt-24 pb-24 text-white text-center"><h1 className="text-3xl font-bold mb-4 text-cyan-300">{alliance.name}</h1><h2 className="text-xl font-semibold mb-2">Members</h2><ul className="list-disc list-inside bg-gray-800 p-4 rounded-lg">{alliance.members.map(m => <li key={m}>{m}</li>)}</ul></div>);
+    }
+    return (<div className="p-4 pt-24 pb-24 text-white text-center"><h1 className="text-3xl font-bold mb-4 text-cyan-300">Join an Alliance</h1><p className="mb-4">You are not currently in an alliance.</p><div className="form-control w-full max-w-xs mx-auto"><input type="text" placeholder="Enter Alliance Name" className="input input-bordered w-full bg-gray-700" value={allianceName} onChange={(e) => setAllianceName(e.target.value)} /><button className="btn btn-primary mt-2" onClick={() => dispatch({type: 'CREATE_ALLIANCE', payload: allianceName})}>Create Alliance</button></div></div>);
+};
+
+const QueueDisplay = ({ planets, currentPlanetId, researchQueue, fleetMovements }) => {
+    const currentPlanet = planets.find(p => p.id === currentPlanetId);
+    if (!currentPlanet) return null;
+    return (
+    <div className="fixed top-24 right-2 w-64 bg-black bg-opacity-70 backdrop-blur-md p-2 rounded-lg z-40 text-white text-sm">
+        <h3 className="font-bold border-b border-cyan-500 pb-1 mb-2">Activity</h3>
+        <div className="max-h-64 overflow-y-auto">
+            {currentPlanet.buildQueue.length === 0 && currentPlanet.shipQueue.length === 0 && !researchQueue && fleetMovements.length === 0 && <p className="text-gray-400 text-xs">No active queues.</p>}
+            {researchQueue && <div className="flex justify-between items-center text-xs text-yellow-300"><span>{researchQueue.name} (Lvl {researchQueue.level})</span><span>{formatTime(researchQueue.timeLeft)}</span></div>}
+            {currentPlanet.buildQueue.map((item, index) => (<div key={`b-${index}`} className="flex justify-between items-center text-xs"><span>{item.name} (Lvl {item.level})</span><span>{formatTime(item.timeLeft)}</span></div>))}
+            {currentPlanet.shipQueue.map((item, index) => (<div key={`s-${index}`} className="flex justify-between items-center text-xs"><span>{item.name}</span><span>{formatTime(item.timeLeft)}</span></div>))}
+            {fleetMovements.map((item) => (<div key={item.id} className="flex justify-between items-center text-xs text-red-400"><span>{item.mission} to {item.target.galaxy}:{item.target.system}</span><span>{formatTime(item.timeLeft)}</span></div>))}
         </div>
     </div>
+)};
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
-            const pages = document.querySelectorAll('.flex-col.absolute.inset-4'); // Select all pages
+const NotificationHandler = ({ notifications, dispatch }) => (
+    <div className="toast toast-top toast-center z-[100]">
+        {notifications.map(note => (
+            <div key={note.id} className={`alert alert-${note.type} bg-opacity-80`}><span>{note.message}</span><button className="btn btn-xs btn-ghost" onClick={() => dispatch({type: 'REMOVE_NOTIFICATION', payload: note.id})}>X</button></div>
+        ))}
+    </div>
+);
 
-            // Fleet Page Tabs
-            const dispatchTab = document.getElementById('dispatch-tab');
-            const inFlightTab = document.getElementById('in-flight-tab');
-            const dispatchContent = document.getElementById('dispatch-content');
-            const inFlightContent = document.getElementById('in-flight-content');
+//-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+// MAIN APP COMPONENT
+//-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
 
-            // Planets Page Tabs
-            const galaxyViewTab = document.getElementById('galaxy-view-tab');
-            const systemViewTab = document.getElementById('system-view-tab');
-            const galaxyViewContent = document.getElementById('galaxy-view-content');
-            const systemViewContent = document.getElementById('system-view-content');
+export default function App() {
+  const [gameState, dispatch] = useReducer(gameReducer, initialState);
+  const [activeView, setActiveView] = useState('Planet');
 
-            // Deploy Modal elements
-            const deployModal = document.getElementById('deploy-modal');
-            const closeDeployModal = document.getElementById('close-deploy-modal');
+  const setCurrentPlanetId = (id) => dispatch({ type: 'SET_CURRENT_PLANET', payload: id });
+  const currentPlanet = gameState.planets.find(p => p.id === gameState.currentPlanetId);
 
-            // Galactonite Fuser elements
-            const fuseQuantityInput = document.getElementById('fuse-quantity-input');
-            const fuseGalactoniteBtn = document.getElementById('fuse-galactonite-btn');
-            const decomposeAllBtn = document.getElementById('decompose-all-btn');
-            const galactoniteItemsContainer = document.getElementById('galactonite-items-container');
-            const galactoniteMessage = document.getElementById('galactonite-message');
+  useEffect(() => { const gameTick = setInterval(() => { dispatch({ type: 'TICK' }); }, 1000); return () => clearInterval(gameTick); }, []);
+  
+  useEffect(() => {
+    gameState.planets.forEach(planet => {
+        if (planet.buildQueue.length > 0 && planet.buildQueue[0].timeLeft <= 0) { dispatch({ type: 'FINISH_BUILDING', payload: { planetId: planet.id, item: planet.buildQueue[0] } }); }
+        if (planet.shipQueue.length > 0 && planet.shipQueue[0].timeLeft <= 0) { dispatch({ type: 'FINISH_SHIP', payload: { planetId: planet.id, item: planet.shipQueue[0] } }); }
+    });
+    if (gameState.researchQueue && gameState.researchQueue.timeLeft <= 0) { dispatch({ type: 'FINISH_RESEARCH', payload: gameState.researchQueue }); }
+    if (gameState.fleetMovements.length > 0 && gameState.fleetMovements[0].timeLeft <=0) {
+        const fleet = gameState.fleetMovements[0];
+        if (fleet.mission === 'attack') {
+            dispatch({ type: 'RESOLVE_COMBAT', payload: fleet });
+        } else if (fleet.mission === 'colonize') {
+            dispatch({ type: 'FINISH_COLONIZATION', payload: fleet });
+        }
+    }
+  }, [gameState.planets, gameState.researchQueue, gameState.fleetMovements]);
 
+  const renderView = () => {
+    if (!currentPlanet) return <div>Loading...</div>;
+    switch (activeView) {
+      case 'Planet': return <PlanetView planet={currentPlanet} dispatch={dispatch} />;
+      case 'Galaxy': return <GalaxyView dispatch={dispatch} planets={gameState.planets} currentPlanetId={gameState.currentPlanetId} />;
+      case 'Fleet': return <FleetView planet={currentPlanet} dispatch={dispatch} research={gameState.research} />;
+      case 'Research': return <ResearchView research={gameState.research} researchQueue={gameState.researchQueue} dispatch={dispatch} planets={gameState.planets} currentPlanetId={gameState.currentPlanetId} />;
+      case 'Alliance': return <AllianceView alliance={gameState.alliance} dispatch={dispatch} />;
+      default: return <PlanetView planet={currentPlanet} dispatch={dispatch} />;
+    }
+  };
 
-            // Function to show a specific page and hide others
-            function showPage(pageId) {
-                pages.forEach(page => {
-                    page.classList.add('hidden');
-                });
-                const currentPage = document.getElementById(pageId);
-                if (currentPage) {
-                    currentPage.classList.remove('hidden');
-                } else {
-                    console.error(`Page with ID ${pageId} not found!`);
-                    return; // Stop execution if the page doesn't exist
-                }
-
-
-                bottomNavItems.forEach(item => {
-                    item.classList.remove('active');
-                    if (item.dataset.page === pageId) {
-                        item.classList.add('active');
-                    }
-                });
-
-                // Special handling for the Fleet page tabs
-                if (pageId === 'fleet-page') {
-                    switchFleetTab('dispatch'); // Default to Dispatch tab when entering Fleet page
-                }
-                 // Special handling for the Planets page tabs
-                if (pageId === 'planets-page') {
-                    switchPlanetsView('galaxy'); // Default to Galaxy view when entering Planets page
-                }
-                // Clear galactonite message when changing pages
-                if (galactoniteMessage) {
-                    galactoniteMessage.textContent = '';
-                }
-            }
-
-            // Function to handle tab switching within the Fleet page
-            function switchFleetTab(activeTab) {
-                if (dispatchTab && inFlightTab && dispatchContent && inFlightContent) {
-                    if (activeTab === 'dispatch') {
-                        dispatchTab.classList.add('active-tab');
-                        inFlightTab.classList.remove('active-tab');
-                        dispatchContent.classList.remove('hidden');
-                        inFlightContent.classList.add('hidden');
-                    } else {
-                        inFlightTab.classList.add('active-tab');
-                        dispatchTab.classList.remove('active-tab');
-                        inFlightContent.classList.remove('hidden');
-                        dispatchContent.classList.add('hidden');
-                    }
-                } else {
-                    console.error("One or more Fleet page tab elements not found.");
-                }
-            }
-
-            // Function to handle tab switching within the Planets page (Galaxy/System)
-            function switchPlanetsView(activeView) {
-                if (galaxyViewTab && systemViewTab && galaxyViewContent && systemViewContent) {
-                    if (activeView === 'galaxy') {
-                        galaxyViewTab.classList.add('active-tab');
-                        systemViewTab.classList.remove('active-tab');
-                        galaxyViewContent.classList.remove('hidden');
-                        systemViewContent.classList.add('hidden');
-                    } else {
-                        systemViewTab.classList.add('active-tab');
-                        galaxyViewTab.classList.remove('active-tab');
-                        systemViewContent.classList.remove('hidden');
-                        galaxyViewContent.classList.add('hidden');
-                        // Attempt to set up the deploy button listener when the system view is shown
-                        setupDeployButtonListener();
-                    }
-                } else {
-                    console.error("One or more Planets page view tab elements not found.");
-                }
-            }
-
-            // Function to set up the Deploy button listener
-            function setupDeployButtonListener() {
-                const btn = document.getElementById('deploy-btn-system-view');
-                if (btn && !btn._hasClickListener) { // Add a flag to prevent multiple listeners
-                    btn.addEventListener('click', () => {
-                        if (deployModal) {
-                            deployModal.classList.add('show');
-                        } else {
-                            console.error('Deploy modal element not found!');
-                        }
-                    });
-                    btn._hasClickListener = true; // Mark as having a listener
-                    console.log('Deploy button listener attached.');
-                } else if (!btn) {
-                    console.error('Deploy button (deploy-btn-system-view) not found during setup!');
-                }
-            }
-
-
-            // Event listeners for bottom navigation clicks
-            bottomNavItems.forEach(item => {
-                item.addEventListener('click', (event) => {
-                    event.preventDefault(); // Prevent default link behavior
-                    const pageId = item.dataset.page;
-                    showPage(pageId);
-                });
-            });
-
-            // Event listeners for Fleet page tabs
-            if (dispatchTab) dispatchTab.addEventListener('click', () => switchFleetTab('dispatch'));
-            else console.error('Fleet dispatchTab not found.');
-            if (inFlightTab) inFlightTab.addEventListener('click', () => switchFleetTab('in-flight'));
-            else console.error('Fleet inFlightTab not found.');
-
-
-            // Event listeners for Planets page tabs
-            if (galaxyViewTab) galaxyViewTab.addEventListener('click', () => switchPlanetsView('galaxy'));
-            else console.error('Planets galaxyViewTab not found.');
-            if (systemViewTab) systemViewTab.addEventListener('click', () => switchPlanetsView('system'));
-            else console.error('Planets systemViewTab not found.');
-
-
-            // Event listener for closing Deploy modal
-            if (closeDeployModal) {
-                closeDeployModal.addEventListener('click', () => {
-                    if (deployModal) {
-                        deployModal.classList.remove('show');
-                    }
-                });
-            } else {
-                console.error('Close deploy modal button not found!');
-            }
-
-            // Galactonite Fuser functionality
-            if (fuseGalactoniteBtn) {
-                fuseGalactoniteBtn.addEventListener('click', () => {
-                    if (!fuseQuantityInput || !galactoniteMessage || !galactoniteItemsContainer) {
-                        console.error("One or more Galactonite fuser elements not found.");
-                        return;
-                    }
-                    const quantity = parseInt(fuseQuantityInput.value, 10);
-                    if (isNaN(quantity) || quantity <= 0) {
-                        galactoniteMessage.textContent = 'Please enter a valid quantity.';
-                        return;
-                    }
-                    galactoniteItemsContainer.innerHTML = ''; // Clear existing items
-
-                    const colors = ['3f51b5', '8bc34a', 'ff9800', 'e91e63', '2196f3', '795548', '9e9e9e', 'cddc39'];
-                    for (let i = 0; i < quantity; i++) {
-                        const randomColor = colors[Math.floor(Math.random() * colors.length)];
-                        const galactoniteHtml = `
-                            <div class="galactonite-item p-1 flex flex-col items-center">
-                                <img src="https://placehold.co/60x60/${randomColor}/ffffff?text=G${i + 1}" alt="Galactonite ${i + 1}" class="galactonite-image mb-1">
-                            </div>
-                        `;
-                        galactoniteItemsContainer.insertAdjacentHTML('beforeend', galactoniteHtml);
-                    }
-                    galactoniteMessage.textContent = `Fused ${quantity} Galactonite items!`;
-                    fuseQuantityInput.value = ''; // Clear input after fusing
-                });
-            } else {
-                console.error('Fuse Galactonite button not found!');
-            }
-
-            if (decomposeAllBtn) {
-                decomposeAllBtn.addEventListener('click', () => {
-                    if (!galactoniteItemsContainer || !galactoniteMessage) {
-                        console.error("One or more Galactonite fuser elements not found.");
-                        return;
-                    }
-                    galactoniteItemsContainer.innerHTML = ''; // Clear all items
-                    galactoniteMessage.textContent = 'All Galactonite decomposed!';
-                });
-            } else {
-                console.error('Decompose All button not found!');
-            }
-
-
-            // Set initial page state
-            showPage('home-page'); // Default to Home page
-        });
-    </script>
-</body>
-</html>
+  return (
+    <div data-theme="cyberpunk" className="bg-gray-900 min-h-screen bg-cover bg-center bg-fixed" style={{backgroundImage: "url('https://images.pexels.com/photos/956999/milky-way-starry-sky-night-sky-star-956999.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')"}}>
+      {currentPlanet && <ResourceBar resources={currentPlanet.resources} darkMatter={gameState.darkMatter} planets={gameState.planets} currentPlanetId={gameState.currentPlanetId} setCurrentPlanetId={setCurrentPlanetId} />}
+      <main>{renderView()}</main>
+      <QueueDisplay planets={gameState.planets} currentPlanetId={gameState.currentPlanetId} researchQueue={gameState.researchQueue} fleetMovements={gameState.fleetMovements} />
+      <NotificationHandler notifications={gameState.notifications} dispatch={dispatch} />
+      <BottomNav activeView={activeView} setActiveView={setActiveView} />
+    </div>
+  );
+}

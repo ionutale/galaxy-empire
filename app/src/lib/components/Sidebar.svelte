@@ -1,14 +1,12 @@
 <script lang="ts">
   import { page } from '$app/stores';
 
+  // Simplified core navigation
   const links = [
     { href: '/', label: 'Home', icon: 'home' },
-    { href: '/fleet', label: 'Fleet', icon: 'menu' },
-    { href: '/shipyard', label: 'Shipyard', icon: 'dock' },
     { href: '/base', label: 'Base', icon: 'target' },
-    { href: '/admin/overview', label: 'Admin', icon: 'shield' },
-    { href: '/register', label: 'Register', icon: 'user-plus' },
-    { href: '/login', label: 'Login', icon: 'login' }
+    { href: '/fleet', label: 'Fleet', icon: 'menu' },
+    { href: '/shipyard', label: 'Shipyard', icon: 'dock' }
   ];
 
   function isActive(path: string, current: string) {

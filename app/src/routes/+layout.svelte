@@ -4,6 +4,7 @@
 		import { page } from '$app/stores';
 		import Sidebar from '$lib/components/Sidebar.svelte';
 		import ResourceBar from '$lib/components/ResourceBar.svelte';
+		import ChipsPanel from '$lib/components/ChipsPanel.svelte';
 	import favicon from '$lib/assets/favicon.svg';
 
 		const year = new Date().getFullYear();
@@ -81,8 +82,11 @@
 						<a href="/" class="text-2xl font-bold">Galaxy Empire</a>
 						<p class="text-sm opacity-90">Command center</p>
 					</div>
-					<Sidebar />
-					<div class="mt-6">
+										<Sidebar />
+										<div class="mt-4">
+											<ChipsPanel />
+										</div>
+										<div class="mt-6">
 						<div class="card bg-white/10 p-3">
 							<div class="text-sm">Theme</div>
 							<div class="mt-2 flex flex-wrap gap-2">

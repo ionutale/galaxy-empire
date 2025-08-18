@@ -52,6 +52,20 @@
       </ul>
     </div>
 
+    <div class="card bg-base-200 p-4">
+      <h3 class="text-lg font-semibold">Buildings</h3>
+      <div class="divider"></div>
+      {#if state.buildings}
+        <ul class="grid grid-cols-2 gap-2">
+          {#each Object.entries(state.buildings) as [id, lvl]}
+            <li class="badge badge-outline">{id} — Lvl {lvl}</li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="text-sm text-muted">No buildings data</p>
+      {/if}
+    </div>
+
     <div class="card col-span-2 bg-base-200 p-4">
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-semibold">Ships</h3>

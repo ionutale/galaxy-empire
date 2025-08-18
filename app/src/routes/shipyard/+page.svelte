@@ -53,6 +53,26 @@
 {#if loading}
   <div class="flex justify-center"><progress class="progress w-56"></progress></div>
 {:else}
+  <div class="mb-4">
+    <div class="card bg-base-200 p-3">
+      <h4 class="font-semibold">Buildings</h4>
+      <div class="mt-2 text-sm">
+        {#await fetch('/api/player/state') then res}
+          {#if res.ok}
+            {#await res.json() then body}
+              {#if body.state.buildings}
+                <div class="grid grid-cols-2 gap-2">
+                  {#each Object.entries(body.state.buildings) as [id, lvl]}
+                    <div class="badge badge-outline">{id} L{lvl}</div>
+                  {/each}
+                </div>
+              {/if}
+            {/await}
+          {/if}
+        {/await}
+      </div>
+    </div>
+  </div>
   <div role="tablist" class="tabs tabs-lifted">
     <input type="radio" name="shipyard_tabs" role="tab" class="tab" aria-label="Templates" checked />
     <div role="tabpanel" class="tab-content bg-base-200 border-base-300 rounded-box p-4">

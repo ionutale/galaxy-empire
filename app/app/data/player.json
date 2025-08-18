@@ -15,4 +15,30 @@
     "scout": 24,
     "fighter": 12
   }
+  ,
+  "buildings": {
+    "controlCenter": 1,
+    "metalMine": 3,
+    "crystalSynthesizer": 2,
+    "deuteriumRefinery": 0,
+    "shipyard": 1,
+    "researchLab": 1,
+    "terraformer": 0,
+    "naniteFactory": 0,
+    "fusionReactor": 0,
+    "missileSilo": 0,
+    "sensorPhalanx": 0
+  },
+  "chips": {
+    "attackChip": 0,
+    "defenseChip": 0,
+    "speedChip": 0,
+    "cargoChip": 0
+  },
+  "systems": {
+    "trade": true,
+    "espionage": false,
+    "diplomacy": true,
+    "automation": false
+  }
 }
