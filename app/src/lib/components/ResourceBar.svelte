@@ -4,6 +4,7 @@
   let loading = true;
 
   let usingDemo = false;
+  let poll: ReturnType<typeof setInterval> | null = null;
 
   async function load() {
     loading = true;
@@ -56,13 +57,22 @@
     // attempt to start demo worker once
     startDemoWorker();
     // poll every 5s for updated demo resources when demo is active
-    const poll = setInterval(() => { if (usingDemo) load(); }, 5000);
-    return () => window.removeEventListener('demo:changed', onDemoChanged as EventListener);
+    poll = setInterval(() => { if (usingDemo) load(); }, 5000);
+    return () => {
+      window.removeEventListener('demo:changed', onDemoChanged as EventListener);
+      if (poll) {
+        clearInterval(poll);
+        poll = null;
+      }
+    };
   });
   
-  onDestroy(() => clearInterval(poll));
   onDestroy(() => {
     try { window.removeEventListener('demo:changed', onDemoChanged as EventListener); } catch {}
+    if (poll) {
+      clearInterval(poll);
+      poll = null;
+    }
   });
 </script>
 
