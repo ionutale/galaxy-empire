@@ -1,0 +1,38 @@
+name: Unity CI
+
+on:
+  push:
+    branches: [ main, release/* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: ${{ runner.os }}-unity-library-${{ hashFiles('**/ProjectSettings/ProjectVersion.txt') }}
+
+      - name: Unity Builder
+        uses: webbertakken/unity-builder@v2
+        with:
+          unityVersion: ${{ secrets.UNITY_VERSION }} # set in repo secrets (e.g., 2021.3.0f1)
+          targetPlatform: Android
+          projectPath: .
+          buildName: Build
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }} # Add your Unity license as a secret or use Unity Cloud Build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-build
+          path: build/**
+
+# NOTE: This is a template. Replace secrets/unity action usage with your pipeline's preferred Unity build action and provide license/activation per Unity's licensing terms.
