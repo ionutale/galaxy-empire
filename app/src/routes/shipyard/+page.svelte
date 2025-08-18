@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  let templates = [] as any[];
-  let queue = [] as any[];
+  type Template = { id: string; name: string; role?: string; hp?: number; attack?: number };
+  let templates: Template[] = [];
+  let queue: unknown[] = [];
   let error = '';
   let loading = true;
   let qty: Record<string, number> = {};

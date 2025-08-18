@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from 'svelte';
-let builds = [] as any[];
+let builds: unknown[] = [];
 let adminKey = '';
 let error = '';
 let loading = false;

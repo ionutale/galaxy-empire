@@ -1,12 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  let techs = [] as any[];
+  type Tech = { id: string; name: string; description?: string };
+  let techs: Tech[] = [];
   let loading = true;
   let starting = new Set<string>();
   async function load() {
     loading = true;
-    const res = await fetch('/api/demo/research/list');
-    if (res.ok) techs = (await res.json()).techs;
+  const res = await fetch('/api/demo/research/list');
+  if (res.ok) techs = (await res.json()).techs as Tech[];
     loading = false;
   }
   onMount(load);

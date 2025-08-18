@@ -21,7 +21,7 @@
 
   function startPolling() {
     if (pollId) return;
-    pollId = (globalThis as any).setInterval(() => loadQueues(), 5000) as number;
+  pollId = setInterval(() => loadQueues(), 5000) as unknown as number;
     loadQueues();
   }
 
