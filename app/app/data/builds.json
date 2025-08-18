@@ -108,5 +108,16 @@
     "result": {
       "success": true
     }
+  },
+  {
+    "id": "build-1755551009722",
+    "type": "building",
+    "buildingId": "deuteriumRefinery",
+    "createdAt": "2025-08-18T21:03:29.722Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
   }
 ]

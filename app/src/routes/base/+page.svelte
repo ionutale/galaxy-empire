@@ -41,6 +41,13 @@
   // computed helper used by modal template
   $: nextLevel = selectedBuilding ? ((state?.buildings?.[selectedBuilding] ?? 0) + 1) : 1;
   $: ongoingBuilds = state?.builds?.filter((b: any) => b.status !== 'completed') ?? [];
+  $: resources = state?.resources ?? { metal: 0, crystal: 0, fuel: 0, credits: 0 };
+  $: upgradeCost = selectedBuilding ? BUILDING_DATA[selectedBuilding]?.cost?.(nextLevel) : null;
+  $: canAffordUpgrade = selectedBuilding && upgradeCost ? (resources.metal >= (upgradeCost.metal ?? 0) && resources.crystal >= (upgradeCost.crystal ?? 0)) : false;
+  $: metalMineLevel = state?.buildings?.metalMine ?? 0;
+  $: crystalSynthesizerLevel = state?.buildings?.crystalSynthesizer ?? 0;
+  $: metalProductionRate = BUILDING_DATA.metalMine.production?.(metalMineLevel) ?? 0;
+  $: crystalProductionRate = BUILDING_DATA.crystalSynthesizer.production?.(crystalSynthesizerLevel) ?? 0;
 
   onMount(async () => {
     const res = await fetch('/api/player/state');
@@ -98,10 +105,10 @@
         <div class="divider"></div>
         <h4 class="font-medium">Resources</h4>
         <ul class="space-y-1 mt-2">
-          <li class="badge badge-outline">Credits: {state.resources.credits}</li>
-          <li class="badge badge-outline">Metal: {state.resources.metal}</li>
-          <li class="badge badge-outline">Crystal: {state.resources.crystal}</li>
-          <li class="badge badge-outline">Fuel: {state.resources.fuel}</li>
+          <li class="badge badge-outline">Credits: {resources.credits}</li>
+          <li class="badge badge-outline">Metal: {resources.metal} (+{metalProductionRate}/hr)</li>
+          <li class="badge badge-outline">Crystal: {resources.crystal} (+{crystalProductionRate}/hr)</li>
+          <li class="badge badge-outline">Fuel: {resources.fuel}</li>
         </ul>
       </div>
 
@@ -267,6 +274,7 @@
           <div class="flex items-center gap-2">
             <button
               class="btn btn-primary btn-lg"
+              disabled={!canAffordUpgrade}
               on:click={() => {
                 upgradeBuilding(selectedBuilding!);
                 closeModal();
