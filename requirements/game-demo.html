@@ -371,13 +371,17 @@
                         </div>
 
                         <div class="grid grid-cols-2 gap-3 mt-4">
-                            <button class="bg-blue-700 text-blue-100 py-2 rounded-md font-bold button-glow hover:bg-blue-600 flex items-center justify-center space-x-2">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M12 18a6 6 0 000-12.707l-3.293-3.293a1 1 0 00-1.414 1.414L8.586 6 5.707 8.879a1 1 0 001.414 1.414L8 9.414V13a1 1 0 001 1h2v-2H9.414l2.293-2.293a1 1 0 00-1.414-1.414L9 8.586V7a1 1 0 00-1-1H6a1 1 0 00-1 1v12a1 1 0 001 1h2a1 1 0 001-1v-2h2.586l2.293 2.293a1 1 0 001.414-1.414L14.414 15l2.293-2.293a1 1 0 00-1.414-1.414L13 13.586V10a1 1 0 00-1-1H9a1 1 0 00-1 1v2.586l-2.293 2.293a1 1 0 00-1.414-1.414L5.586 11H3a1 1 0 00-1 1v5a1 1 0 001 1h7a1 1 0 001-1v-2z"></path></svg>
-                                <span>Spy</span>
+                            <button class="bg-blue-700 text-blue-100 py-2 rounded-md font-bold button-glow hover:bg-blue-600 flex items-center justify-center space-x-2" id="transport-btn">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 00-1 1v2H5a2 2 0 00-2 2v2a2 2 0 002 2h2.586l1.293 1.293A1 1 0 0010 14.414V13h2a2 2 0 002-2V9a2 2 0 00-2-2h-3V3a1 1 0 00-1-1z"></path></svg>
+                                <span>Transport</span>
                             </button>
-                            <button class="bg-red-700 text-red-100 py-2 rounded-md font-bold button-glow hover:bg-red-600 flex items-center justify-center space-x-2">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.152A1 1 0 0110 7c.417 0 .807.214 1.055.555l.899 1.474a.5.5 0 00.355.275H14a1 1 0 011 1v3a1 1 0 01-1 1h-2.191a.5.5 0 00-.355.275l-.899 1.474A1 1 0 0110 17c-.417 0-.807-.214-1.055-.555l-.899-1.474a.5.5 0 00-.355-.275H6a1 1 0 01-1-1v-3a1 1 0 011-1h2.191a.5.5 0 00.355-.275l.899-1.474zM10 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path></svg>
-                                <span>Attack</span>
+                            <button class="bg-blue-700 text-blue-100 py-2 rounded-md font-bold button-glow hover:bg-blue-600 flex items-center justify-center space-x-2" id="deploy-btn-system-view">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></path></svg>
+                                <span>Deploy</span>
+                            </button>
+                            <button class="w-full col-span-2 bg-green-700 text-green-100 py-2 rounded-md font-bold button-glow hover:bg-green-600 flex items-center justify-center space-x-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 13l3-3m-3 0l-3 3"></path></svg>
+                                <span>Teleport</span>
                             </button>
                         </div>
                     </div>
@@ -590,7 +594,6 @@
             const systemViewContent = document.getElementById('system-view-content');
 
             // Deploy Modal elements
-            const deployBtnSystemView = document.getElementById('deploy-btn-system-view');
             const deployModal = document.getElementById('deploy-modal');
             const closeDeployModal = document.getElementById('close-deploy-modal');
 
@@ -669,11 +672,32 @@
                         galaxyViewTab.classList.remove('active-tab');
                         systemViewContent.classList.remove('hidden');
                         galaxyViewContent.classList.add('hidden');
+                        // Attempt to set up the deploy button listener when the system view is shown
+                        setupDeployButtonListener();
                     }
                 } else {
                     console.error("One or more Planets page view tab elements not found.");
                 }
             }
+
+            // Function to set up the Deploy button listener
+            function setupDeployButtonListener() {
+                const btn = document.getElementById('deploy-btn-system-view');
+                if (btn && !btn._hasClickListener) { // Add a flag to prevent multiple listeners
+                    btn.addEventListener('click', () => {
+                        if (deployModal) {
+                            deployModal.classList.add('show');
+                        } else {
+                            console.error('Deploy modal element not found!');
+                        }
+                    });
+                    btn._hasClickListener = true; // Mark as having a listener
+                    console.log('Deploy button listener attached.');
+                } else if (!btn) {
+                    console.error('Deploy button (deploy-btn-system-view) not found during setup!');
+                }
+            }
+
 
             // Event listeners for bottom navigation clicks
             bottomNavItems.forEach(item => {
@@ -696,20 +720,6 @@
             else console.error('Planets galaxyViewTab not found.');
             if (systemViewTab) systemViewTab.addEventListener('click', () => switchPlanetsView('system'));
             else console.error('Planets systemViewTab not found.');
-
-
-            // Event listener for Deploy button to open modal (on Planets System View)
-            if (deployBtnSystemView) {
-                deployBtnSystemView.addEventListener('click', () => {
-                    if (deployModal) {
-                        deployModal.classList.add('show');
-                    } else {
-                        console.error('Deploy modal element not found!');
-                    }
-                });
-            } else {
-                console.error('Deploy button (deploy-btn-system-view) not found!');
-            }
 
 
             // Event listener for closing Deploy modal
