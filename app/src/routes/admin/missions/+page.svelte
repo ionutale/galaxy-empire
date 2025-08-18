@@ -25,11 +25,43 @@
 <button on:click={load}>Load</button>
 {#if error}<p style="color:var(--error)">{error}</p>{/if}
 <ul>
-  {#each items as m}
-    <li>{m.id} — mission: {m.missionId} — {m.shipTemplateId} x{m.quantity} — outcome: {m.outcome} — lost: {m.quantityLost} — rewards: {m.rewardCredits}C {m.rewardMetal}M {m.rewardCrystal}X — completed: {new Date(m.completedAt).toLocaleString()} — rolledBack: {m.rolledBack}
-      {#if !m.rolledBack}
-        <button on:click={() => rollback(m.id)}>Rollback</button>
-      {/if}
-    </li>
-  {/each}
-</ul>
+<div class="max-w-3xl mx-auto space-y-4">
+  <div class="card p-4">
+    <div class="form-control">
+      <label class="label"><span class="label-text">Admin Key</span></label>
+      <div class="flex gap-2">
+        <input class="input input-bordered flex-1" bind:value={adminKey} />
+        <button class="btn btn-primary" on:click={load}>Load</button>
+      </div>
+    </div>
+    {#if error}
+      <div class="mt-3 alert alert-error">{error}</div>
+    {/if}
+  </div>
+
+  <section class="card p-4">
+    <h3 class="font-semibold">Processed Missions</h3>
+    <div class="divider" />
+    {#if items.length === 0}
+      <p class="text-muted">No processed missions</p>
+    {:else}
+      <div class="space-y-2">
+        {#each items as m}
+          <div class="flex items-center justify-between p-2 border rounded">
+            <div>
+              <div class="font-medium">{m.shipTemplateId} x{m.quantity} — {m.outcome}</div>
+              <div class="text-sm text-muted">Completed: {new Date(m.completedAt).toLocaleString()}</div>
+            </div>
+            <div>
+              {#if !m.rolledBack}
+                <button class="btn btn-sm btn-warning" on:click={() => { if (confirm('Rollback mission?')) rollback(m.id); }}>Rollback</button>
+              {:else}
+                <span class="badge">Rolled back</span>
+              {/if}
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </section>
+</div>

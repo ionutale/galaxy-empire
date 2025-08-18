@@ -20,16 +20,43 @@
   }
 </script>
 
-<h2>Processed Builds (admin)</h2>
-<label>Admin Key: <input bind:value={adminKey} /></label>
-<button on:click={load}>Load</button>
-{#if error}<p style="color:var(--error)">{error}</p>{/if}
-<ul>
-  {#each builds as b}
-    <li>{b.id} — {b.shipTemplateId} x{b.quantity} — processed: {new Date(b.processedAt).toLocaleString()} — rolledBack: {b.rolledBack}
-      {#if !b.rolledBack}
-        <button on:click={() => rollback(b.id)}>Rollback</button>
-      {/if}
-    </li>
-  {/each}
-</ul>
+<div class="max-w-3xl mx-auto space-y-4">
+  <div class="card p-4">
+    <div class="form-control">
+      <label class="label"><span class="label-text">Admin Key</span></label>
+      <div class="flex gap-2">
+        <input class="input input-bordered flex-1" bind:value={adminKey} />
+        <button class="btn btn-primary" on:click={load}>Load</button>
+      </div>
+    </div>
+    {#if error}
+      <div class="mt-3 alert alert-error">{error}</div>
+    {/if}
+  </div>
+
+  <section class="card p-4">
+    <h3 class="font-semibold">Processed Builds</h3>
+    <div class="divider" />
+    {#if builds.length === 0}
+      <p class="text-muted">No processed builds</p>
+    {:else}
+      <div class="space-y-2">
+        {#each builds as b}
+          <div class="flex items-center justify-between p-2 border rounded">
+            <div>
+              <div class="font-medium">{b.shipTemplateId} x{b.quantity}</div>
+              <div class="text-sm text-muted">Processed: {new Date(b.processedAt).toLocaleString()}</div>
+            </div>
+            <div>
+              {#if !b.rolledBack}
+                <button class="btn btn-sm btn-warning" on:click={() => { if (confirm('Rollback build?')) rollback(b.id); }}>Rollback</button>
+              {:else}
+                <span class="badge">Rolled back</span>
+              {/if}
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </section>
+</div>

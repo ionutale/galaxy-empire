@@ -27,32 +27,56 @@
 </script>
 
 {#if error}
-<p>{error} — <a href="/login">login</a> or <a href="/register">register</a></p>
+  <div class="alert alert-warning">
+    <div>
+      <span>{error} —</span>
+      <a class="link" href="/login"> login</a>
+      <span> or </span>
+      <a class="link" href="/register">register</a>
+    </div>
+  </div>
 {:else if !state}
-<p>Loading...</p>
+  <div class="flex justify-center"><progress class="progress w-56"></progress></div>
 {:else}
-<h2>Base — {state.username}</h2>
-<div>
-  <p>Level: {state.level} | Power: {state.power}</p>
-  <h3>Resources</h3>
-  <ul>
-    <li>Credits: {state.resources.credits}</li>
-    <li>Metal: {state.resources.metal}</li>
-    <li>Crystal: {state.resources.crystal}</li>
-    <li>Fuel: {state.resources.fuel}</li>
-  </ul>
-</div>
-<div>
-  <h3>Ships</h3>
-  {#if state.ships && state.ships.length > 0}
-    <ul>
-      {#each state.ships as s}
-        <li>{s.shipTemplateId} x{s.quantity}</li>
-      {/each}
-    </ul>
-  {:else}
-    <p>No ships yet.</p>
-  {/if}
-  <button on:click={processBuilds}>Process builds (dev)</button>
-</div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="card bg-base-200 p-4">
+      <h3 class="text-lg font-semibold">Commander: {state.username}</h3>
+      <p class="text-sm text-muted">Level: {state.level} · Power: {state.power}</p>
+      <div class="divider" />
+      <h4 class="font-medium">Resources</h4>
+      <ul class="space-y-1 mt-2">
+        <li class="badge badge-outline">Credits: {state.resources.credits}</li>
+        <li class="badge badge-outline">Metal: {state.resources.metal}</li>
+        <li class="badge badge-outline">Crystal: {state.resources.crystal}</li>
+        <li class="badge badge-outline">Fuel: {state.resources.fuel}</li>
+      </ul>
+    </div>
+
+    <div class="card col-span-2 bg-base-200 p-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold">Ships</h3>
+        <button class="btn btn-sm btn-secondary" on:click={processBuilds}>Process builds</button>
+      </div>
+      <div class="divider" />
+      {#if state.ships && state.ships.length > 0}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {#each state.ships as s}
+            <div class="card p-3 shadow-sm">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="font-medium">{s.shipTemplateId}</div>
+                  <div class="text-sm text-muted">Quantity: {s.quantity}</div>
+                </div>
+                <div>
+                  <span class="badge badge-info">x{s.quantity}</span>
+                </div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <p class="text-muted">No ships yet.</p>
+      {/if}
+    </div>
+  </div>
 {/if}

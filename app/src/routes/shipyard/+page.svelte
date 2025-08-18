@@ -29,27 +29,43 @@
   }
 </script>
 
-<h2>Shipyard</h2>
+<h2 class="text-2xl font-semibold mb-4">Shipyard</h2>
 {#if error}
-<p style="color:var(--error)">{error}</p>
+  <div class="alert alert-error">{error}</div>
 {/if}
-<h3>Templates</h3>
-<ul>
-  {#each templates as t}
-    <li>
-      <strong>{t.name}</strong> — {t.role} — {t.costCredits} credits — build {t.buildTime}s
-      <button on:click={() => build(t.id)}>Build x1</button>
-    </li>
-  {/each}
-</ul>
 
-<h3>Queue</h3>
-{#if queue.length === 0}
-<p>No builds queued.</p>
-{:else}
-<ul>
-  {#each queue as item}
-    <li>{item.shipTemplateId} x{item.quantity} — ETA: {new Date(item.eta).toLocaleString()}</li>
-  {/each}
-</ul>
-{/if}
+<section class="mb-6">
+  <h3 class="text-lg font-medium">Templates</h3>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
+    {#each templates as t}
+      <div class="card p-4">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="font-semibold">{t.name}</div>
+            <div class="text-sm text-muted">{t.role} • {t.buildTime}s</div>
+            <div class="mt-2"><span class="badge badge-outline">{t.costCredits} cr</span></div>
+          </div>
+          <div class="flex-shrink-0">
+            <button class="btn btn-primary" on:click={() => build(t.id)}>Build</button>
+          </div>
+        </div>
+      </div>
+    {/each}
+  </div>
+</section>
+
+<section>
+  <h3 class="text-lg font-medium">Queue</h3>
+  {#if queue.length === 0}
+    <p class="text-muted">No builds queued.</p>
+  {:else}
+    <div class="space-y-2 mt-3">
+      {#each queue as item}
+        <div class="card p-3 flex justify-between items-center">
+          <div>{item.shipTemplateId} <span class="text-sm text-muted">x{item.quantity}</span></div>
+          <div class="text-sm text-muted">ETA: {new Date(item.eta).toLocaleString()}</div>
+        </div>
+      {/each}
+    </div>
+  {/if}
+</section>
