@@ -6,7 +6,11 @@
   async function load() {
     loading = true;
     try {
-      const res = await fetch('/api/player/state');
+      let res = await fetch('/api/player/state');
+      if (!res.ok) {
+        // fall back to demo endpoint for unauthenticated/dev
+        res = await fetch('/api/demo/player/state');
+      }
       if (res.ok) {
         const body = await res.json();
         state = body.state;
