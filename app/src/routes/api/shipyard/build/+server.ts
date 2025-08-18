@@ -24,7 +24,6 @@ export const POST: RequestHandler = async (event) => {
 
   const now = Date.now();
   const eta = now + template.buildTime * 1000 * quantity; // buildTime in seconds
-  const id = crypto.randomUUID();
 
   // check and deduct credits
   const [stateRow] = await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id));
@@ -34,19 +33,23 @@ export const POST: RequestHandler = async (event) => {
   }
 
   // perform update + insert in a transaction so a failure rolls back the deduction
+  let queuedId: string | undefined;
   try {
     const { retryAsync } = await import('$lib/server/retry');
-    await retryAsync(async () => {
+    // generate a fresh id per attempt to avoid unique constraint if a retry occurs
+    queuedId = await retryAsync(async () => {
+      const attemptId = crypto.randomUUID();
       db.transaction((ctx) => {
         const newCredits = (stateRow.credits ?? 0) - totalCost;
         ctx.update(table.playerState).set({ credits: newCredits }).where(eq(table.playerState.userId, user.id)).run();
-        ctx.insert(table.buildQueue).values({ id, userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta) }).run();
+        ctx.insert(table.buildQueue).values({ id: attemptId, userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta) }).run();
       });
+      return attemptId;
     }, 3, 200, 2);
   } catch (err) {
     console.error('Failed to queue build transactionally', err);
     return new Response(JSON.stringify({ error: 'internal_error' }), { status: 500 });
   }
 
-  return new Response(JSON.stringify({ queued: true, id }), { headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify({ queued: true, id: queuedId }), { headers: { 'content-type': 'application/json' } });
 };

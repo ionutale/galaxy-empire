@@ -39,13 +39,11 @@
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
     {#each templates as t}
       <div class="card p-4">
-        <div class="flex items-start justify-between">
-          <div>
-            <div class="font-semibold">{t.name}</div>
-            <div class="text-sm text-muted">{t.role} • {t.buildTime}s</div>
-            <div class="mt-2"><span class="badge badge-outline">{t.costCredits} cr</span></div>
-          </div>
-          <div class="flex-shrink-0">
+        <div>
+          <div class="font-semibold">{t.name}</div>
+          <div class="text-sm text-muted">{t.role} • {t.buildTime}s</div>
+          <div class="mt-3 flex items-center gap-3">
+            <span class="badge badge-outline">{t.costCredits} cr</span>
             <button class="btn btn-primary" on:click={() => build(t.id)}>Build</button>
           </div>
         </div>
