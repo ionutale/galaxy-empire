@@ -1,16 +1,26 @@
 <script lang="ts">
 	import '../app.css';
-		import { onMount } from 'svelte';
-		import { page } from '$app/stores';
-		import Sidebar from '$lib/components/Sidebar.svelte';
-		import ResourceBar from '$lib/components/ResourceBar.svelte';
-		import ChipsPanel from '$lib/components/ChipsPanel.svelte';
-		import Toast from '$lib/components/Toast.svelte';
+	import { onMount, setContext } from 'svelte';
+	import { page } from '$app/stores';
+	import Sidebar from '$lib/components/Sidebar.svelte';
+	import ResourceBar from '$lib/components/ResourceBar.svelte';
+	import ChipsPanel from '$lib/components/ChipsPanel.svelte';
+	import Toast from '$lib/components/Toast.svelte';
 	import favicon from '$lib/assets/favicon.svg';
+	import { writable } from 'svelte/store';
+	import type { LayoutData } from './$types';
 
-		const year = new Date().getFullYear();
-		let theme = 'emerald';
-		const themes = ['emerald','synthwave','cyberpunk','coffee','forest','aqua','dark','light'] as const;
+	export let data: LayoutData;
+
+	const session = writable(data);
+	setContext('session', session);
+
+	$: session.set(data);
+	$: user = $session.user;
+
+	const year = new Date().getFullYear();
+	let theme = 'emerald';
+	const themes = ['emerald','synthwave','cyberpunk','coffee','forest','aqua','dark','light'] as const;
 	let drawerOpen = false;
 	function closeDrawerOnMobile() {
 		try {
@@ -66,9 +76,11 @@
 						<!-- navigation moved to sidebar drawer -->
 						<div class="hidden lg:flex items-center gap-2" aria-hidden="true"></div>
 						<div class="flex-1"></div>
+						{#if user}
 						<div class="hidden md:flex items-center">
 							<ResourceBar />
 						</div>
+						{/if}
 					</div>
 				</header>
 
@@ -83,6 +95,7 @@
 					</div>
 				</footer>
 			</div>
+			{#if user}
 			<div class="drawer-side">
 				<label for="app-drawer" class="drawer-overlay"></label>
 				<aside class="w-72 bg-base-200 text-base-content p-4 relative z-10 border-r border-base-300">
@@ -108,6 +121,7 @@
 				<!-- global toast container -->
 				<Toast />
 			</div>
+			{/if}
 		</div>
 	</div>
 {:else}

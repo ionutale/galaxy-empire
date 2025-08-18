@@ -1,4 +1,11 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
+	import type { Writable } from 'svelte/store';
+	import type { LayoutData } from './$types';
+
+	const session = getContext<Writable<LayoutData>>('session');
+	$: user = $session?.user;
+
 	const primaryLinks = [
 		{ href: '/fleet', label: 'Fleet' },
 		{ href: '/shipyard', label: 'Shipyard' },
@@ -16,10 +23,13 @@
 				<h1 class="text-5xl font-bold">Galaxy Empire</h1>
 				<p class="py-4 opacity-80">Build ships, command fleets, and conquer the stars — a SvelteKit mini game powered by Drizzle.</p>
 				<div class="flex flex-wrap gap-3">
-					{#each primaryLinks as l}
-						<a class="btn btn-primary" href={l.href}>{l.label}</a>
-					{/each}
-					<a class="btn btn-outline" href="/register">Get started</a>
+					{#if user}
+						{#each primaryLinks as l}
+							<a class="btn btn-primary" href={l.href}>{l.label}</a>
+						{/each}
+					{:else}
+						<a class="btn btn-outline" href="/register">Get started</a>
+					{/if}
 				</div>
 			</div>
 			<div class="mt-6 lg:mt-0">
@@ -33,6 +43,7 @@
 	</div>
 </section>
 
+{#if !user}
 <section class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
 
 	<div class="card bg-base-200 shadow">
@@ -59,3 +70,4 @@
 		</div>
 	</div>
 </section>
+{/if}
