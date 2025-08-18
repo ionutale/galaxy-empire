@@ -1,4 +1,4 @@
-<script lang="ts"></script>
+<script lang="ts">
   import '../../app.css';
   // Minimal head tags; inherit favicon from app if needed
 </script>
