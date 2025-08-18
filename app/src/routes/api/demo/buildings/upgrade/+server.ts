@@ -2,29 +2,23 @@ import type { RequestHandler } from './$types';
 import { readJson, writeJson } from '$lib/server/demoStorage';
 
 const PLAYER_FILE = 'player.json';
-
-type PlayerState = {
-  chips?: Record<string, number>;
-  equippedChips?: Record<string, boolean>;
-  buildings?: Record<string, number>;
-  research?: Record<string, unknown>;
-  resources?: Record<string, number>;
-  [k: string]: unknown;
-};
-
-const DEFAULT_STATE: PlayerState = {};
+const BUILDS_FILE = 'builds.json';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
     const { buildingId } = await request.json();
     if (!buildingId) return new Response(JSON.stringify({ error: 'missing buildingId' }), { status: 400 });
-    const state = await readJson<PlayerState>(PLAYER_FILE, DEFAULT_STATE);
-    const buildings = state.buildings || {};
-    buildings[buildingId] = (buildings[buildingId] || 0) + 1;
-    const merged = { ...state, buildings };
-    await writeJson<PlayerState>(PLAYER_FILE, merged);
-    return new Response(JSON.stringify({ state: merged }), { headers: { 'Content-Type': 'application/json' } });
-  } catch {
+    // enqueue building upgrade as a build
+    const builds = await readJson(BUILDS_FILE, [] as any[]);
+    const now = new Date().toISOString();
+    const duration = 10; // default duration seconds for demo; could use BUILDING_DATA time func
+    const entry = { id: `build-${Date.now()}`, type: 'building', buildingId, createdAt: now, durationSeconds: duration, status: 'queued' };
+    builds.push(entry);
+    await writeJson(BUILDS_FILE, builds);
+
+    const state = await readJson(PLAYER_FILE, {} as any);
+    return new Response(JSON.stringify({ state, queued: entry }), { headers: { 'Content-Type': 'application/json' } });
+  } catch (err) {
     return new Response(JSON.stringify({ error: 'invalid request' }), { status: 400 });
   }
 };

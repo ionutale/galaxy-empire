@@ -1,5 +1,5 @@
 import { readJson, writeJson } from '$lib/server/demoStorage';
-import { RESEARCH_DATA } from '$lib/data/gameData';
+import { RESEARCH_DATA, BUILDING_DATA, SHIP_TEMPLATES } from '$lib/data/gameData';
 
 const BUILDS_FILE = 'builds.json';
 const FLEETS_FILE = 'fleets.json';
@@ -86,13 +86,20 @@ export async function processBuilds(tickSeconds = 5) {
       }
 
       if (b.status === 'complete') {
-        // apply to player: if build has a type and count, increment player's ships
-        const t = typeof b.type === 'string' ? b.type : (b as Record<string, unknown>)['shipType'] as string | undefined;
-        const count = typeof (b as Record<string, unknown>)['count'] === 'number' ? (b as Record<string, unknown>)['count'] as number : 1;
-        if (t && player) {
-          player.ships = player.ships ?? {};
-          const prev = Number(player.ships[t] ?? 0);
-          player.ships[t] = prev + count;
+        // apply to player: handle building upgrades and ship builds
+        if ((b as any).type === 'building' && (b as any).buildingId && player) {
+          const buildingId = String((b as any).buildingId);
+          player.buildings = player.buildings ?? {};
+          player.buildings[buildingId] = (Number(player.buildings[buildingId] ?? 0) + 1);
+        } else {
+          // fallback: if build has a type string treat it as ship type or shipType field
+          const t = typeof b.type === 'string' ? b.type : (b as Record<string, unknown>)['shipType'] as string | undefined;
+          const count = typeof (b as Record<string, unknown>)['count'] === 'number' ? (b as Record<string, unknown>)['count'] as number : 1;
+          if (t && player) {
+            player.ships = player.ships ?? {};
+            const prev = Number(player.ships[t] ?? 0);
+            player.ships[t] = prev + count;
+          }
         }
         processed.push(b);
         changed = true;
@@ -145,7 +152,50 @@ export async function processTick(tickSeconds = 5) {
   const buildsRes = await processBuilds(tickSeconds);
   const fleetsRes = await processFleets(tickSeconds);
   const researchRes = await processResearch(tickSeconds);
+  const productionRes = await processProduction(tickSeconds);
   return { builds: buildsRes.processed, fleets: fleetsRes.processed, research: researchRes.processed };
+}
+
+export async function processProduction(tickSeconds = 5) {
+  const player = await readJson<Player>(PLAYER_FILE, null);
+  if (!player) return { produced: {} };
+  const buildings = (player as any).buildings || {};
+  const ships = (player as any).ships || {};
+  const produced: Record<string, number> = {};
+
+  // building-based production per second approximated from BUILDING_DATA.production (which is per level/hr in defs)
+  // Here we use simple per-tick additive formula: production(level) / 3600 * tickSeconds
+  for (const [bid, def] of Object.entries(BUILDING_DATA)) {
+    if (typeof def.production === 'function') {
+      const lvl = Number(buildings[bid] ?? 0);
+      if (lvl > 0) {
+        const perHour = def.production(lvl);
+        const perTick = Math.floor((perHour / 3600) * tickSeconds);
+        // naive mapping: metalMine -> metal, crystalSynthesizer -> crystal, deuteriumRefinery -> fuel
+        if (bid === 'metalMine') { produced.metal = (produced.metal ?? 0) + perTick; }
+        if (bid === 'crystalSynthesizer') { produced.crystal = (produced.crystal ?? 0) + perTick; }
+        if (bid === 'deuteriumRefinery') { produced.fuel = (produced.fuel ?? 0) + perTick; }
+      }
+    }
+  }
+
+  // ship-based mining: miningVessel miningRate * count * tickSeconds (assume miningRate is per hour)
+  const miningTemplate = SHIP_TEMPLATES.find(s => s.shipId === 'miningVessel');
+  if (miningTemplate && typeof miningTemplate.miningRate === 'number') {
+    const count = Number(ships['miningVessel'] ?? 0);
+    if (count > 0) {
+      const perHour = miningTemplate.miningRate * count;
+      const perTick = Math.floor((perHour / 3600) * tickSeconds);
+      produced.metal = (produced.metal ?? 0) + perTick;
+    }
+  }
+
+  if (!player.resources) player.resources = {};
+  for (const [k, v] of Object.entries(produced)) {
+    player.resources[k] = (Number(player.resources[k] ?? 0) + v);
+  }
+  await writeJson(PLAYER_FILE, player);
+  return { produced };
 }
 
 export async function processResearch(tickSeconds = 5) {
