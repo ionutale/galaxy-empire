@@ -92,6 +92,20 @@ export async function processBuilds(tickSeconds = 5) {
           const buildingId = String((b as any).buildingId);
           player.buildings = player.buildings ?? {};
           player.buildings[buildingId] = (Number(player.buildings[buildingId] ?? 0) + 1);
+          if (env.DATABASE_URL) {
+            try {
+              const { db } = await import('$lib/server/db');
+              const table = await import('$lib/server/db/schema');
+              const existing = (await db.select().from(table.playerBuildings).where((table as any).playerBuildings.userId.eq('demo_player')).all()).find((r: any) => r.buildingId === buildingId);
+              if (existing) {
+                await db.update(table.playerBuildings).set({ level: existing.level + 1 }).where((table as any).playerBuildings.id.eq(existing.id)).run();
+              } else {
+                await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: 'demo_player', buildingId, level: 1 }).run();
+              }
+            } catch (err) {
+              console.error('db playerBuildings sync error', err);
+            }
+          }
         } else {
           // fallback: if build has a type string treat it as ship type or shipType field
           const t = typeof b.type === 'string' ? b.type : (b as Record<string, unknown>)['shipType'] as string | undefined;
@@ -214,6 +228,20 @@ export async function processProduction(tickSeconds = 5) {
     player.resources[k] = (Number(player.resources[k] ?? 0) + v);
   }
   await writeJson(PLAYER_FILE, player);
+  if (env.DATABASE_URL) {
+    try {
+      const { db } = await import('$lib/server/db');
+      const table = await import('$lib/server/db/schema');
+      const stateRow = (await db.select().from(table.playerState).all())[0];
+      if (stateRow) {
+        await db.update(table.playerState).set({ credits: Number(player.resources.credits ?? stateRow.credits), metal: Number(player.resources.metal ?? stateRow.metal), crystal: Number(player.resources.crystal ?? stateRow.crystal), fuel: Number(player.resources.fuel ?? stateRow.fuel) }).where((table as any).playerState.userId.eq('demo_player')).run();
+      } else {
+        await db.insert(table.playerState).values({ userId: 'demo_player', level: 1, power: 1, credits: Number(player.resources.credits ?? 0), metal: Number(player.resources.metal ?? 0), crystal: Number(player.resources.crystal ?? 0), fuel: Number(player.resources.fuel ?? 0) }).run();
+      }
+    } catch (err) {
+      console.error('db production sync error', err);
+    }
+  }
   return { produced };
 }
 

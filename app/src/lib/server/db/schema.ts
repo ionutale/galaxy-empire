@@ -59,6 +59,23 @@ export const playerShips = sqliteTable('player_ships', {
 export type PlayerState = typeof playerState.$inferSelect;
 export type PlayerShip = typeof playerShips.$inferSelect;
 
+export const playerBuildings = sqliteTable('player_buildings', {
+	id: text('id').primaryKey(),
+	userId: text('user_id').notNull().references(() => user.id),
+	buildingId: text('building_id').notNull(),
+	level: integer('level').notNull()
+});
+
+export const playerResearch = sqliteTable('player_research', {
+	id: text('id').primaryKey(),
+	userId: text('user_id').notNull().references(() => user.id),
+	techId: text('tech_id').notNull(),
+	level: integer('level').notNull()
+});
+
+export type PlayerBuilding = typeof playerBuildings.$inferSelect;
+export type PlayerResearch = typeof playerResearch.$inferSelect;
+
 export const processedBuilds = sqliteTable('processed_builds', {
 	id: text('id').primaryKey(),
 	userId: text('user_id').notNull().references(() => user.id),
