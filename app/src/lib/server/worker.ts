@@ -17,17 +17,24 @@ export function startBuildProcessor(intervalMs = 5000) {
       const due = items.filter((i) => new Date(i.eta).getTime() <= now.getTime());
       let processed = 0;
       for (const item of due) {
-        // process in transaction: move to player_ships and delete queue
-        await db.transaction(async (ctx) => {
-          const existing = (await ctx.select().from(table.playerShips).where(eq(table.playerShips.userId, item.userId)).all()).find((s) => s.shipTemplateId === item.shipTemplateId);
-          if (existing) {
-            await ctx.update(table.playerShips).set({ quantity: existing.quantity + item.quantity }).where(eq(table.playerShips.id, existing.id)).run();
-          } else {
-            await ctx.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: item.userId, shipTemplateId: item.shipTemplateId, quantity: item.quantity }).run();
-          }
-          await ctx.delete(table.buildQueue).where(eq(table.buildQueue.id, item.id)).run();
-        });
-        processed += 1;
+        try {
+          const { retryAsync } = await import('$lib/server/retry');
+          await retryAsync(async () => {
+            await db.transaction(async (ctx) => {
+              const existing = (await ctx.select().from(table.playerShips).where(eq(table.playerShips.userId, item.userId)).all()).find((s) => s.shipTemplateId === item.shipTemplateId);
+              if (existing) {
+                await ctx.update(table.playerShips).set({ quantity: existing.quantity + item.quantity }).where(eq(table.playerShips.id, existing.id)).run();
+              } else {
+                await ctx.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: item.userId, shipTemplateId: item.shipTemplateId, quantity: item.quantity }).run();
+              }
+              await ctx.delete(table.buildQueue).where(eq(table.buildQueue.id, item.id)).run();
+            });
+          }, 3, 200, 2);
+          processed += 1;
+        } catch (err) {
+          console.error('Failed processing build item after retries', err);
+          recordFailure(err);
+        }
       }
       recordRun(processed);
     } catch (err) {

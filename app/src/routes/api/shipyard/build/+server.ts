@@ -35,14 +35,17 @@ export const POST: RequestHandler = async (event) => {
 
   // perform update + insert in a transaction so a failure rolls back the deduction
   try {
-    await db.transaction(async (ctx) => {
-      const newCredits = (stateRow.credits ?? 0) - totalCost;
-      await ctx.update(table.playerState).set({ credits: newCredits }).where(eq(table.playerState.userId, user.id)).run();
-      await ctx
-        .insert(table.buildQueue)
-        .values({ id, userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta) })
-        .run();
-    });
+    const { retryAsync } = await import('$lib/server/retry');
+    await retryAsync(async () => {
+      await db.transaction(async (ctx) => {
+        const newCredits = (stateRow.credits ?? 0) - totalCost;
+        await ctx.update(table.playerState).set({ credits: newCredits }).where(eq(table.playerState.userId, user.id)).run();
+        await ctx
+          .insert(table.buildQueue)
+          .values({ id, userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta) })
+          .run();
+      });
+    }, 3, 200, 2);
   } catch (err) {
     console.error('Failed to queue build transactionally', err);
     return new Response(JSON.stringify({ error: 'internal_error' }), { status: 500 });
