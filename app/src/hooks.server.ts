@@ -2,6 +2,7 @@ import { sequence } from '@sveltejs/kit/hooks';
 import * as auth from '$lib/server/auth';
 import type { Handle } from '@sveltejs/kit';
 import { paraglideMiddleware } from '$lib/paraglide/server';
+import { startBuildProcessor } from '$lib/server/worker';
 
 const handleParaglide: Handle = ({ event, resolve }) =>
 	paraglideMiddleware(event.request, ({ request, locale }) => {
@@ -35,3 +36,10 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 };
 
 export const handle: Handle = sequence(handleParaglide, handleAuth);
+
+// start background workers once when server boots (dev + prod)
+try {
+	startBuildProcessor(5000);
+} catch (err) {
+	console.error('failed to start build processor', err);
+}

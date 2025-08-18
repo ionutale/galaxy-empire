@@ -33,10 +33,20 @@ export const POST: RequestHandler = async (event) => {
     return new Response(JSON.stringify({ error: 'insufficient_funds' }), { status: 402 });
   }
 
-  const newCredits = (stateRow.credits ?? 0) - totalCost;
-  await db.update(table.playerState).set({ credits: newCredits }).where(eq(table.playerState.userId, user.id)).run();
-
-  await db.insert(table.buildQueue).values({ id, userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta) }).run();
+  // perform update + insert in a transaction so a failure rolls back the deduction
+  try {
+    await db.transaction(async (ctx) => {
+      const newCredits = (stateRow.credits ?? 0) - totalCost;
+      await ctx.update(table.playerState).set({ credits: newCredits }).where(eq(table.playerState.userId, user.id)).run();
+      await ctx
+        .insert(table.buildQueue)
+        .values({ id, userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta) })
+        .run();
+    });
+  } catch (err) {
+    console.error('Failed to queue build transactionally', err);
+    return new Response(JSON.stringify({ error: 'internal_error' }), { status: 500 });
+  }
 
   return new Response(JSON.stringify({ queued: true, id }), { headers: { 'content-type': 'application/json' } });
 };
