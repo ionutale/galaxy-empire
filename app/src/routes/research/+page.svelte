@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   let techs = [] as any[];
   let loading = true;
+  let starting = new Set<string>();
   async function load() {
     loading = true;
     const res = await fetch('/api/demo/research/list');
@@ -11,8 +12,16 @@
   onMount(load);
 
   async function start(tid: string) {
-    await fetch('/api/demo/research/start', { method: 'POST', body: JSON.stringify({ techId: tid }), headers: { 'Content-Type': 'application/json' } });
-    await load();
+    if (starting.has(tid)) return;
+    starting.add(tid);
+    const res = await fetch('/api/demo/research/start', { method: 'POST', body: JSON.stringify({ techId: tid }), headers: { 'Content-Type': 'application/json' } });
+    if (res.ok) {
+      await load();
+      import('$lib/stores/toast').then((m) => m.pushToast(`Research ${tid} started`, 'success'));
+    } else {
+      import('$lib/stores/toast').then((m) => m.pushToast(`Research failed`, 'error'));
+    }
+    starting.delete(tid);
   }
 </script>
 

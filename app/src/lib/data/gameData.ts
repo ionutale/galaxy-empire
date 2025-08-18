@@ -1,7 +1,45 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export const BUILDING_DATA: Record<string, any> = {
+
+export type CostFunc = (level: number) => Record<string, number>;
+export type TimeFunc = (level: number) => number;
+
+export interface BuildingDef {
+  name: string;
+  description?: string;
+  cost?: CostFunc;
+  time?: TimeFunc;
+  production?: (level: number) => number;
+  requires?: Record<string, any>;
+  benefit?: string | ((level: number) => string);
+  [k: string]: any;
+}
+
+export interface ShipTemplate {
+  shipId: string;
+  name: string;
+  role: string;
+  hp?: number;
+  attack?: number;
+  defense?: number;
+  speed?: number;
+  capacity?: number;
+  buildCost?: Record<string, number>;
+  buildTime?: number;
+  [k: string]: any;
+}
+
+export interface ResearchDef {
+  name: string;
+  description?: string;
+  cost?: CostFunc;
+  time?: TimeFunc;
+  effect?: string | ((level: number) => string);
+  [k: string]: any;
+}
+
+export const BUILDING_DATA: Record<string, BuildingDef> = {
   controlCenter: { name: 'Control Center', description: 'The heart of your colony. Upgrading unlocks new buildings and expands build slots.', cost: (level: number) => ({ metal: Math.round(100 * Math.pow(1.8, level)), crystal: Math.round(50 * Math.pow(1.8, level)) }), time: (level: number) => Math.round(60 * Math.pow(1.5, level)), benefit: (level: number) => `Unlocks new building options.` },
   metalMine: { name: 'Metal Mine', description: 'Extracts and refines metal ore from the planet\'s crust.', cost: (level: number) => ({ metal: Math.round(60 * Math.pow(1.5, level)), crystal: Math.round(15 * Math.pow(1.5, level)) }), time: (level: number) => Math.round(45 * Math.pow(1.6, level)), production: (level: number) => Math.round(30 * level * Math.pow(1.1, level)), benefit: (level: number) => `Production/hr: ${Math.round(30 * level * Math.pow(1.1, level))}` },
   crystalSynthesizer: { name: 'Crystal Synthesizer', description: 'Grows valuable crystals used in advanced electronics and research.', cost: (level: number) => ({ metal: Math.round(48 * Math.pow(1.6, level)), crystal: Math.round(24 * Math.pow(1.6, level)) }), time: (level: number) => Math.round(50 * Math.pow(1.6, level)), production: (level: number) => Math.round(20 * level * Math.pow(1.1, level)), benefit: (level: number) => `Production/hr: ${Math.round(20 * level * Math.pow(1.1, level))}` },
@@ -50,14 +88,14 @@ export const CHIP_DATA = {
   cargoChip: { name: 'Cargo Chip', description: 'Increases cargo hold efficiency for fleets.', cost: (level: number) => ({ metal: Math.round(300 * Math.pow(1.5, level)), crystal: Math.round(500 * Math.pow(1.5, level)) }), time: (level: number) => Math.round(350 * Math.pow(1.5, level)), effect: (level: number) => `+${10 * level}% cargo` }
 };
 
-export const SYSTEMS_DATA = {
+export const SYSTEMS_DATA: Record<string, { name: string; description?: string }> = {
   trade: { name: 'Trade System', description: 'Enables resource trading, market orders, and price discovery.' },
   espionage: { name: 'Espionage', description: 'Spy on other players, steal limited intel and sabotage operations.' },
   diplomacy: { name: 'Diplomacy', description: 'Formalize alliances, treaties and war declarations.' },
   automation: { name: 'Automation', description: 'Enable automation scripts: auto-build, auto-research and simple macros.' }
 };
 
-export const SHIP_TEMPLATES: any[] = [
+export const SHIP_TEMPLATES: ShipTemplate[] = [
   { shipId: 'scout', name: 'Scout', role: 'recon', hp: 50, attack: 8, defense: 3, speed: 180, capacity: 10, buildCost: { metal: 50, crystal: 10, fuel: 5, credits: 100 }, buildTime: 10 },
   { shipId: 'fighter', name: 'Fighter', role: 'fighter', hp: 120, attack: 40, defense: 12, speed: 120, capacity: 5, buildCost: { metal: 200, crystal: 50, fuel: 20, credits: 400 }, buildTime: 45 },
   { shipId: 'cruiser', name: 'Cruiser', role: 'cruiser', hp: 800, attack: 220, defense: 80, speed: 60, capacity: 80, buildCost: { metal: 3000, crystal: 1200, fuel: 800, credits: 5000 }, buildTime: 3600 },

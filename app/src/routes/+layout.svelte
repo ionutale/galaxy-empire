@@ -5,6 +5,7 @@
 		import Sidebar from '$lib/components/Sidebar.svelte';
 		import ResourceBar from '$lib/components/ResourceBar.svelte';
 		import ChipsPanel from '$lib/components/ChipsPanel.svelte';
+		import Toast from '$lib/components/Toast.svelte';
 	import favicon from '$lib/assets/favicon.svg';
 
 		const year = new Date().getFullYear();
@@ -97,6 +98,8 @@
 						</div>
 					</div>
 				</aside>
+				<!-- global toast container -->
+				<Toast />
 			</div>
 		</div>
 	</div>

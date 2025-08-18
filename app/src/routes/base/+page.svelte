@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   let state: any = null;
   let error = '';
+  let upgrading = new Set<string>();
 
   onMount(async () => {
     const res = await fetch('/api/player/state');
@@ -26,8 +27,16 @@
   }
 
   async function upgradeBuilding(id: string) {
+    if (upgrading.has(id)) return;
+    upgrading.add(id);
     const res = await fetch('/api/demo/buildings/upgrade', { method: 'POST', body: JSON.stringify({ buildingId: id }), headers: { 'Content-Type': 'application/json' } });
-    if (res.ok) state = (await res.json()).state;
+    if (res.ok) {
+      state = (await res.json()).state;
+      import('$lib/stores/toast').then((m) => m.pushToast(`${id} upgraded`, 'success'));
+    } else {
+      import('$lib/stores/toast').then((m) => m.pushToast(`Upgrade failed`, 'error'));
+    }
+    upgrading.delete(id);
   }
 </script>
 
