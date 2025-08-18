@@ -4,6 +4,38 @@
   let fleetTab: 'dispatch' | 'inflight' = 'dispatch';
   let planetsTab: 'galaxy' | 'system' = 'galaxy';
   let showDeployModal = false;
+  let toast: string | null = null;
+
+  async function postBuild(type = 'scout', count = 1) {
+    try {
+      const res = await fetch('/api/demo/builds', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type, count }) });
+      if (res.ok) {
+        toast = 'Build queued';
+        // notify others (ResourceBar will reload on mount only; use event)
+        window.dispatchEvent(new CustomEvent('demo:changed'));
+      } else {
+        toast = 'Build failed';
+      }
+    } catch {
+      toast = 'Build failed';
+    }
+    setTimeout(() => toast = null, 2500);
+  }
+
+  async function dispatchFleet(destination = '3-17-Nereid') {
+    try {
+      const res = await fetch('/api/demo/fleet/dispatch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ destination, etaSeconds: 30, ships: { scout: 3 } }) });
+      if (res.ok) {
+        toast = 'Fleet dispatched';
+        window.dispatchEvent(new CustomEvent('demo:changed'));
+      } else {
+        toast = 'Dispatch failed';
+      }
+    } catch {
+      toast = 'Dispatch failed';
+    }
+    setTimeout(() => toast = null, 2500);
+  }
 
   function setPage(p: typeof activePage) {
     activePage = p;
@@ -127,7 +159,7 @@
           </div>
           <div class="flex items-center gap-2">
             <input class="flex-1 bg-transparent border border-blue-700 rounded px-2 py-1 text-sm" placeholder="Galaxy-System-Planet" />
-            <button class="px-3 py-1 rounded-md border border-cyan-400 text-cyan-300 hover:bg-cyan-400/10">Send</button>
+            <button class="px-3 py-1 rounded-md border border-cyan-400 text-cyan-300 hover:bg-cyan-400/10" on:click={() => dispatchFleet()}>Send</button>
           </div>
         </div>
       </div>
@@ -173,10 +205,14 @@
         </div>
         <div class="mt-4 flex justify-end gap-2">
           <button class="px-3 py-1 rounded-md border border-slate-500 hover:bg-white/5" on:click={() => showDeployModal = false}>Cancel</button>
-          <button class="px-3 py-1 rounded-md border border-cyan-400 text-cyan-300 hover:bg-cyan-400/10" on:click={() => showDeployModal = false}>Deploy</button>
+          <button class="px-3 py-1 rounded-md border border-cyan-400 text-cyan-300 hover:bg-cyan-400/10" on:click={() => { dispatchFleet(); showDeployModal = false; }}>Deploy</button>
         </div>
       </div>
     </div>
+  {/if}
+
+  {#if toast}
+    <div class="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-black/70 text-white px-4 py-2 rounded">{toast}</div>
   {/if}
 
   <!-- bottom nav -->
