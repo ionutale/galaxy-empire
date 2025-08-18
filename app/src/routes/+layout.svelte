@@ -1,10 +1,12 @@
 <script lang="ts">
 	import '../app.css';
-	import { onMount } from 'svelte';
+		import { onMount } from 'svelte';
+		import Sidebar from '$lib/components/Sidebar.svelte';
 	import favicon from '$lib/assets/favicon.svg';
 
-	const year = new Date().getFullYear();
-	let theme = 'emerald';
+		const year = new Date().getFullYear();
+		let theme = 'emerald';
+		const themes = ['emerald','synthwave','cyberpunk','coffee','forest','aqua','dark','light'] as const;
 
 	function applyTheme(t: string) {
 		theme = t;
@@ -31,7 +33,8 @@
 </svelte:head>
 
 <!-- Responsive drawer (sidebar) layout using daisyUI -->
-<div data-theme="emerald" class="min-h-screen bg-base-100 text-base-content">
+<div class="min-h-screen bg-base-100 text-base-content relative">
+	<div aria-hidden="true" class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,theme(colors.cyan.500/.15),transparent_60%),radial-gradient(ellipse_at_bottom,theme(colors.emerald.500/.1),transparent_60%)]"></div>
 	<div class="drawer drawer-mobile">
 		<input id="app-drawer" type="checkbox" class="drawer-toggle" />
 		<div class="drawer-content flex flex-col">
@@ -48,7 +51,6 @@
 						<a class="btn btn-ghost" href="/fleet">Fleet</a>
 						<a class="btn btn-ghost" href="/shipyard">Shipyard</a>
 						<a class="btn btn-ghost" href="/admin/overview">Admin</a>
-						<a class="btn btn-primary" href="/demo/paraglide">Demos</a>
 					</div>
 				</div>
 			</header>
@@ -66,72 +68,22 @@
 		</div>
 		<div class="drawer-side">
 			<label for="app-drawer" class="drawer-overlay"></label>
-					<aside class="w-64 bg-gradient-to-b from-emerald-600 to-cyan-500 text-white p-4">
+							<aside class="w-64 bg-gradient-to-b from-emerald-600 to-cyan-500 text-white p-4 relative z-10">
 						<div class="mb-4">
 							<a href="/" class="text-2xl font-bold">Galaxy Empire</a>
 							<p class="text-sm opacity-90">Command center</p>
 						</div>
-						<nav class="menu p-2 gap-2">
-							<ul class="space-y-1">
-								<li>
-									<a href="/" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 transition">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6"/></svg>
-										<span>Home</span>
-									</a>
-								</li>
-								<li>
-									<a href="/fleet" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 transition">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/></svg>
-										<span>Fleet</span>
-									</a>
-								</li>
-								<li>
-									<a href="/shipyard" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 transition">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 21V7a2 2 0 00-2-2H6a2 2 0 00-2 2v14"/></svg>
-										<span>Shipyard</span>
-									</a>
-								</li>
-								<li>
-									<a href="/base" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 transition">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.567-3 3.5S10.343 15 12 15s3-1.567 3-3.5S13.657 8 12 8z"/></svg>
-										<span>Base</span>
-									</a>
-								</li>
-								<li>
-									<a href="/admin/overview" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 transition">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m2 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-										<span>Admin</span>
-									</a>
-								</li>
-								<li>
-									<a href="/demo" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 transition">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/></svg>
-										<span>Demos</span>
-									</a>
-								</li>
-								<li>
-									<a href="/register" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 transition">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4"/></svg>
-										<span>Register</span>
-									</a>
-								</li>
-								<li>
-									<a href="/login" class="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 transition">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H3m12 0l-4-4m4 4l-4 4"/></svg>
-										<span>Login</span>
-									</a>
-								</li>
-							</ul>
-						</nav>
-						<div class="mt-6">
-							<div class="card bg-white bg-opacity-10 p-3">
-								<div class="text-sm">Theme</div>
-								<div class="mt-2 flex gap-2">
-									<button class="btn btn-sm btn-outline transition" on:click={() => applyTheme('emerald')} aria-pressed={theme === 'emerald'}>Emerald</button>
-									<button class="btn btn-sm btn-ghost transition" on:click={() => applyTheme('dark')} aria-pressed={theme === 'dark'}>Dark</button>
-								</div>
-							</div>
-						</div>
+										<Sidebar />
+										<div class="mt-6">
+											<div class="card bg-white/10 p-3">
+												<div class="text-sm">Theme</div>
+												<div class="mt-2 flex flex-wrap gap-2">
+													{#each themes as t}
+														<button class="btn btn-xs" class:btn-outline={theme !== t} class:btn-accent={theme === t} on:click={() => applyTheme(t)} aria-pressed={theme === t}>{t}</button>
+													{/each}
+												</div>
+											</div>
+										</div>
 					</aside>
 		</div>
 	</div>

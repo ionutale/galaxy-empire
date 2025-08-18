@@ -23,11 +23,6 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Paraglide
-src/lib/paraglide
-
 # SQLite
 *.db
 
-*storybook.log
-storybook-static

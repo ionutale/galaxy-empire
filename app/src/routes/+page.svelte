@@ -1,43 +1,61 @@
-
 <script lang="ts">
-	const links = [
-		{ href: '/demo/paraglide', label: 'Localization' },
-		{ href: '/demo/lucia', label: 'Auth (Lucia)' },
+	const primaryLinks = [
 		{ href: '/fleet', label: 'Fleet' },
 		{ href: '/shipyard', label: 'Shipyard' },
+		{ href: '/base', label: 'Base' },
+	];
+	const adminLinks = [
 		{ href: '/admin/overview', label: 'Admin' }
 	];
 </script>
 
-<div class="max-w-4xl mx-auto">
-	<div class="hero bg-base-200 rounded-lg shadow-lg p-8">
-		<div class="hero-content">
-			<div>
-				<h1 class="text-4xl font-bold">Galaxy Empire</h1>
-				<p class="py-2 text-muted">A small demo SvelteKit game. Explore demos, play with shipbuilding and missions.</p>
-				<div class="mt-4 flex flex-wrap gap-3">
-					{#each links as l}
-						<a class="btn btn-primary btn-md" href={l.href}>{l.label}</a>
+<section class="relative overflow-hidden rounded-xl bg-gradient-to-b from-base-200 to-base-100">
+	<div class="hero min-h-[320px]">
+		<div class="hero-content flex-col lg:flex-row">
+			<div class="max-w-xl">
+				<h1 class="text-5xl font-bold">Galaxy Empire</h1>
+				<p class="py-4 opacity-80">Build ships, command fleets, and conquer the stars — a SvelteKit mini game powered by Drizzle.</p>
+				<div class="flex flex-wrap gap-3">
+					{#each primaryLinks as l}
+						<a class="btn btn-primary" href={l.href}>{l.label}</a>
 					{/each}
+					<a class="btn btn-outline" href="/register">Get started</a>
+				</div>
+			</div>
+			<div class="mt-6 lg:mt-0">
+				<div class="mockup-window border border-base-300 bg-base-200 w-[320px]">
+					<div class="p-6">
+						<p class="opacity-70">Real-time queue processing with a background worker. Build ships and send missions.</p>
+					</div>
 				</div>
 			</div>
 		</div>
 	</div>
+</section>
 
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-		<div class="card p-4">
-			<h3 class="font-semibold">Quick actions</h3>
-			<p class="text-sm text-muted mt-2">Create an account, start a build, or check admin missions.</p>
-			<div class="mt-3 flex flex-col gap-2">
-				<a class="btn btn-outline" href="/register">Create account</a>
-				<a class="btn btn-outline" href="/shipyard">Start a build</a>
-				<a class="btn btn-outline" href="/admin/missions">Admin: Missions</a>
+<section class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+	<div class="card bg-base-200 shadow">
+		<div class="card-body">
+			<h3 class="card-title">Quick actions</h3>
+			<p class="opacity-80">Create an account, start a build, or check admin missions.</p>
+			<div class="card-actions mt-2">
+				<a class="btn" href="/register">Create account</a>
+				<a class="btn" href="/shipyard">Start a build</a>
+				<a class="btn" href="/admin/missions">Admin: Missions</a>
 			</div>
 		</div>
+	</div>
 
-		<div class="card p-4 col-span-2">
-			<h3 class="font-semibold">News & Tips</h3>
-			<div class="mt-2 text-sm text-muted">This demo ships with Drizzle ORM, Lucia auth demo and Paraglide localization. Use the demo routes to explore features.</div>
+	<div class="card bg-base-200 shadow">
+		<div class="card-body">
+			<h3 class="card-title">Admin</h3>
+			<div class="flex flex-wrap gap-2">
+				{#each adminLinks as l}
+					<a class="badge badge-lg" href={l.href}>{l.label}</a>
+				{/each}
+			</div>
+			<p class="opacity-80">Operations dashboard for processed builds and missions.</p>
 		</div>
 	</div>
-</div>
+</section>
