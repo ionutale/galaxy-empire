@@ -42,8 +42,7 @@
   },
   "research": {
     "propulsion": {
-      "startedAt": 1755545926167,
-      "level": 1
+      "level": 2
     },
     "armorPlating": {
       "startedAt": 1755545927089,
@@ -54,8 +53,7 @@
       "level": 1
     },
     "laserTechnology": {
-      "startedAt": 1755545928854,
-      "level": 1
+      "level": 2
     }
   }
 }

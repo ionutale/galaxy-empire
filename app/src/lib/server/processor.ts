@@ -1,4 +1,5 @@
 import { readJson, writeJson } from '$lib/server/demoStorage';
+import { RESEARCH_DATA } from '$lib/data/gameData';
 
 const BUILDS_FILE = 'builds.json';
 const FLEETS_FILE = 'fleets.json';
@@ -143,5 +144,40 @@ export async function processFleets(tickSeconds = 5) {
 export async function processTick(tickSeconds = 5) {
   const buildsRes = await processBuilds(tickSeconds);
   const fleetsRes = await processFleets(tickSeconds);
-  return { builds: buildsRes.processed, fleets: fleetsRes.processed };
+  const researchRes = await processResearch(tickSeconds);
+  return { builds: buildsRes.processed, fleets: fleetsRes.processed, research: researchRes.processed };
+}
+
+export async function processResearch(tickSeconds = 5) {
+  const player = await readJson<Player>(PLAYER_FILE, null);
+  const processed: Array<{ techId: string; newLevel: number }> = [];
+  let changed = false;
+  if (!player) return { processed };
+
+  const research: Record<string, { startedAt?: number; level?: number }> = (player as any).research || {};
+  const now = Date.now();
+
+  for (const techId of Object.keys(research)) {
+    const entry = research[techId];
+    if (!entry) continue;
+    const startedAt = typeof entry.startedAt === 'number' ? entry.startedAt : null;
+    const currentLevel = typeof entry.level === 'number' ? entry.level : 0;
+    if (startedAt) {
+      const timeFn = (RESEARCH_DATA as any)[techId]?.time as ((lvl: number) => number) | undefined;
+      const duration = typeof timeFn === 'function' ? timeFn(currentLevel) : 5;
+      if ((now - startedAt) / 1000 >= duration) {
+        // finish research: increment level and clear startedAt
+        research[techId] = { level: currentLevel + 1 };
+        processed.push({ techId, newLevel: currentLevel + 1 });
+        changed = true;
+      }
+    }
+  }
+
+  if (changed) {
+    (player as any).research = research;
+    await writeJson(PLAYER_FILE, player);
+  }
+
+  return { processed };
 }
