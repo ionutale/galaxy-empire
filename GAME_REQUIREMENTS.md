@@ -51,8 +51,126 @@ A fast, clear set of product and technical requirements for a mobile strategy/em
 
 ### 2.4 Fleet & Combat
 - Ship archetypes: scouts, fighters, cruisers, battleships, carriers, support/utility.
+	- Expanded archetypes and role examples (additional ship types to include in the template catalog):
+		- Scout / Recon: very fast, low HP, low attack — used for scouting and rapid-response.
+		- Interceptor / Fighter: short-range, high attack-per-cost against light ships.
+		- Corvette / Frigate: small multi-role escorts with moderate speed and durability.
+		- Destroyer: anti-cruiser specialty with good attack and moderate HP.
+		- Cruiser: balanced mid-tier hull with good capacity and systems slots.
+		- Battleship / Dreadnought: heavy capital ship with high HP and attack; slow and expensive.
+		- Carrier: carries fighter squadrons or drone wings; provides force-multiplying abilities.
+		- Bomber / Torpedo Boat: high single-target damage to ships and structures, fragile.
+		- Transport / Cargo: large capacity, low combat value, used for trade and resource movement.
+		- Support / Repair: provides healing/repair and passive buffs to nearby units.
+		- Stealth / Cloak: low detectability, recon-specialist with ambush mechanics.
+		- Mining Vessel: specialized for resource node extraction (used in PvE/resource maps).
 - Fleet composition and counters: rock-paper-scissors balance.
 - Combat resolution: asynchronous; server runs deterministic simulator and returns outcome (replay data optional).
+
+Ship Template Examples
+----------------------
+Below are example ship templates that should be included in the canonical game data and used by the shipyard UI and balance tools. These are sample templates — tuning numbers are illustrative and must be balanced in playtests.
+
+1) Scout
+```
+{
+	"shipId": "scout",
+	"name": "Scout",
+	"role": "recon",
+	"hp": 50,
+	"attack": 8,
+	"defense": 3,
+	"speed": 180,
+	"capacity": 10,
+	"buildCost": { "metal": 50, "crystal": 10, "fuel": 5, "credits": 100 },
+	"buildTime": 10
+}
+```
+
+2) Fighter
+```
+{
+	"shipId": "fighter",
+	"name": "Fighter",
+	"role": "fighter",
+	"hp": 120,
+	"attack": 40,
+	"defense": 12,
+	"speed": 120,
+	"capacity": 5,
+	"buildCost": { "metal": 200, "crystal": 50, "fuel": 20, "credits": 400 },
+	"buildTime": 45
+}
+```
+
+3) Cruiser
+```
+{
+	"shipId": "cruiser",
+	"name": "Cruiser",
+	"role": "cruiser",
+	"hp": 800,
+	"attack": 220,
+	"defense": 80,
+	"speed": 60,
+	"capacity": 80,
+	"buildCost": { "metal": 3000, "crystal": 1200, "fuel": 800, "credits": 5000 },
+	"buildTime": 3600
+}
+```
+
+4) Battleship
+```
+{
+	"shipId": "battleship",
+	"name": "Battleship",
+	"role": "capital",
+	"hp": 5000,
+	"attack": 1800,
+	"defense": 700,
+	"speed": 30,
+	"capacity": 300,
+	"buildCost": { "metal": 25000, "crystal": 12000, "fuel": 6000, "credits": 50000 },
+	"buildTime": 86400
+}
+```
+
+5) Carrier
+```
+{
+	"shipId": "carrier",
+	"name": "Carrier",
+	"role": "carrier",
+	"hp": 2200,
+	"attack": 300,
+	"defense": 400,
+	"speed": 40,
+	"capacity": 1500,
+	"hangarSlots": 8,
+	"buildCost": { "metal": 12000, "crystal": 8000, "fuel": 4000, "credits": 20000 },
+	"buildTime": 43200
+}
+```
+
+6) Transport
+```
+{
+	"shipId": "transport",
+	"name": "Transport",
+	"role": "transport",
+	"hp": 400,
+	"attack": 10,
+	"defense": 30,
+	"speed": 50,
+	"capacity": 2000,
+	"buildCost": { "metal": 5000, "crystal": 2000, "fuel": 1000, "credits": 8000 },
+	"buildTime": 7200
+}
+```
+
+Balance and Unlocks
+-------------------
+Each new ship template must be associated with research/tech prerequisites and shipyard level requirements. Add a balancing task to the backlog (see appended backlog entries) and ensure ship templates are exposed to the shipyard template endpoint and seed data.
 - Combat mechanics: attack/defense power, hit points, shield/armor, special abilities.
 - Movement/travel time between systems; travel times depend on ship speed and distance.
 - Planet/star occupation mechanics for PvE and PvP objectives.
