@@ -4,6 +4,19 @@ import { sessionCookieName } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { readJson } from '$lib/server/demoStorage';
+
+interface Build {
+  id: string;
+  type: 'building' | 'ship';
+  buildingId?: string;
+  shipId?: string;
+  createdAt: string;
+  durationSeconds: number;
+  status: 'queued' | 'in-progress' | 'completed';
+}
+
+const BUILDS_FILE = 'builds.json';
 
 export const GET: RequestHandler = async (event) => {
   const token = event.cookies.get(sessionCookieName);
@@ -15,6 +28,7 @@ export const GET: RequestHandler = async (event) => {
   // starter player state
   const [stateRow] = await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id));
   const ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id)).all();
+  const builds = await readJson<Build[]>(BUILDS_FILE, []);
 
   const state = {
     playerId: user.id,
@@ -22,7 +36,8 @@ export const GET: RequestHandler = async (event) => {
     level: stateRow?.level ?? 1,
     power: stateRow?.power ?? 10,
     resources: { credits: stateRow?.credits ?? 1000, metal: stateRow?.metal ?? 500, crystal: stateRow?.crystal ?? 200, fuel: stateRow?.fuel ?? 100 },
-    ships
+    ships,
+    builds
   };
 
   return new Response(JSON.stringify({ state }), { status: 200, headers: { 'content-type': 'application/json' } });

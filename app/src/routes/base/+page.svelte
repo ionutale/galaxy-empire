@@ -40,6 +40,7 @@
 
   // computed helper used by modal template
   $: nextLevel = selectedBuilding ? ((state?.buildings?.[selectedBuilding] ?? 0) + 1) : 1;
+  $: ongoingBuilds = state?.builds?.filter((b: any) => b.status !== 'completed') ?? [];
 
   onMount(async () => {
     const res = await fetch('/api/player/state');
@@ -131,6 +132,29 @@
         {/if}
       </div>
     </div>
+
+    {#if ongoingBuilds.length > 0}
+      <div class="mb-6">
+        <h3 class="text-2xl font-bold mb-4">Ongoing Upgrades</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {#each ongoingBuilds as build}
+            <div class="card bg-base-200 p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="font-semibold">
+                    {BUILDING_DATA[build.buildingId]?.name ?? build.buildingId}
+                  </p>
+                  <p class="text-sm text-muted">Status: {build.status}</p>
+                </div>
+                <div class="text-sm">
+                  {new Date(build.createdAt).toLocaleTimeString()}
+                </div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
 
     <div>
       <h3 class="text-2xl font-bold mb-4">Base Buildings</h3>

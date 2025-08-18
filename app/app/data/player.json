@@ -17,16 +17,17 @@
   },
   "buildings": {
     "controlCenter": 3,
-    "metalMine": 3,
-    "crystalSynthesizer": 3,
+    "metalMine": 4,
+    "crystalSynthesizer": 4,
     "deuteriumRefinery": 2,
     "shipyard": 1,
     "researchLab": 1,
-    "terraformer": 0,
+    "terraformer": 2,
     "naniteFactory": 0,
     "fusionReactor": 0,
     "missileSilo": 0,
-    "sensorPhalanx": 0
+    "sensorPhalanx": 0,
+    "crystalStorage": 1
   },
   "chips": {
     "attackChip": 0,

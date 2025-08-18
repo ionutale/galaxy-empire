@@ -53,5 +53,60 @@
     "result": {
       "success": true
     }
+  },
+  {
+    "id": "build-1755550452629",
+    "type": "building",
+    "buildingId": "crystalStorage",
+    "createdAt": "2025-08-18T20:54:12.629Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "id": "build-1755550464827",
+    "type": "building",
+    "buildingId": "terraformer",
+    "createdAt": "2025-08-18T20:54:24.827Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "id": "build-1755550471387",
+    "type": "building",
+    "buildingId": "terraformer",
+    "createdAt": "2025-08-18T20:54:31.387Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "id": "build-1755550496327",
+    "type": "building",
+    "buildingId": "metalMine",
+    "createdAt": "2025-08-18T20:54:56.327Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "id": "build-1755550509850",
+    "type": "building",
+    "buildingId": "crystalSynthesizer",
+    "createdAt": "2025-08-18T20:55:09.850Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
   }
 ]
