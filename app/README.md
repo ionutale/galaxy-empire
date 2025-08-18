@@ -25,6 +25,17 @@ npm run dev
 npm run dev -- --open
 ```
 
+## Database (local development)
+
+This project uses a local SQLite database via `better-sqlite3`. Set the `DATABASE_URL` environment variable to a filesystem path for the database file before running dev or build. Example (macOS / zsh):
+
+```bash
+export DATABASE_URL="$PWD/dev.db"
+npm run dev
+```
+
+If the file doesn't exist, the app will create it automatically. The project includes simple Drizzle schema definitions; use `npm run db:push` or `drizzle-kit` commands to apply migrations as needed.
+
 ## Building
 
 To create a production version of your app:
