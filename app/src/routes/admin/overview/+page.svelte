@@ -1,61 +1,128 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  let builds = [] as any[];
-  let missions = [] as any[];
-  let adminKey = '';
-  let error = '';
+import { onMount } from 'svelte';
+let builds = [] as any[];
+let missions = [] as any[];
+let adminKey = '';
+let error = '';
+let loading = false;
+let lastLoaded: Date | null = null;
 
-  async function load() {
-    error = '';
-    const rb = await fetch('/api/admin/processed-builds', { headers: { 'x-admin-key': adminKey } });
-    if (rb.ok) builds = (await rb.json()).items || [];
-    else error = 'auth_failed_builds';
-    const rm = await fetch('/api/admin/processed-missions', { headers: { 'x-admin-key': adminKey } });
-    if (rm.ok) missions = (await rm.json()).items || [];
-    else error = 'auth_failed_missions';
+async function load() {
+  loading = true;
+  error = '';
+  try {
+    const [rb, rm] = await Promise.all([
+      fetch('/api/admin/processed-builds', { headers: { 'x-admin-key': adminKey } }),
+      fetch('/api/admin/processed-missions', { headers: { 'x-admin-key': adminKey } })
+    ]);
+
+    if (rb.ok) {
+      builds = (await rb.json()).items || [];
+    } else {
+      builds = [];
+      error = 'auth_failed_builds';
+    }
+
+    if (rm.ok) {
+      missions = (await rm.json()).items || [];
+    } else {
+      missions = [];
+      error = error || 'auth_failed_missions';
+    }
+
+    lastLoaded = new Date();
+  } catch (e) {
+    error = 'network_error';
+  } finally {
+    loading = false;
   }
+}
 
-  onMount(load);
+onMount(load);
 
-  async function rollbackBuild(id: string) {
+async function rollbackBuild(id: string) {
+  try {
     const res = await fetch('/api/admin/processed-builds/rollback', { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': adminKey }, body: JSON.stringify({ id }) });
     if (res.ok) await load();
     else error = 'rollback_failed_build';
+  } catch (e) {
+    error = 'network_error';
   }
+}
 
-  async function rollbackMission(id: string) {
+async function rollbackMission(id: string) {
+  try {
     const res = await fetch('/api/admin/processed-missions/rollback', { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-key': adminKey }, body: JSON.stringify({ id }) });
     if (res.ok) await load();
     else error = 'rollback_failed_mission';
+  } catch (e) {
+    error = 'network_error';
   }
+}
 </script>
 
-<h2>Admin Overview</h2>
-<label>Admin Key: <input bind:value={adminKey} /></label>
-<button on:click={load}>Load</button>
-<h3>Processed Builds</h3>
-<ul>
-  {#each builds as b}
-    <li>{b.id} — {b.shipTemplateId} x{b.quantity} — processed: {new Date(b.processedAt).toLocaleString()} — rolledBack: {b.rolledBack}
-      {#if !b.rolledBack}
-        <button on:click={() => rollbackBuild(b.id)}>Rollback</button>
+<div class="max-w-5xl mx-auto space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold">Admin Overview</h2>
+      <p class="text-sm text-muted">Inspect processed builds and missions, and rollback if needed.</p>
+    </div>
+    <div class="text-right text-sm text-muted">
+      {#if lastLoaded}
+        <div>Last loaded: {lastLoaded.toLocaleString()}</div>
       {/if}
-    </li>
-  {/each}
-</ul>
+      <div>{loading ? 'Loading…' : ''}</div>
+    </div>
+  </div>
 
-<div class="max-w-4xl mx-auto space-y-4">
   <div class="card p-4">
     <div class="form-control">
       <label class="label"><span class="label-text">Admin Key</span></label>
       <div class="flex gap-2">
-        <input class="input input-bordered flex-1" bind:value={adminKey} />
-        <button class="btn btn-primary" on:click={load}>Load</button>
+        <input class="input input-bordered flex-1" bind:value={adminKey} placeholder="paste admin key" />
+        <button class="btn btn-primary" on:click={load} disabled={loading}>{loading ? 'Loading…' : 'Load'}</button>
       </div>
     </div>
     {#if error}
       <div class="mt-3 alert alert-error">{error}</div>
     {/if}
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="card p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm text-muted">Processed builds</div>
+          <div class="text-2xl font-semibold">{builds.length}</div>
+        </div>
+        <div class="text-right">
+          <button class="btn btn-xs btn-outline" on:click={load} disabled={loading}>Refresh</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm text-muted">Processed missions</div>
+          <div class="text-2xl font-semibold">{missions.length}</div>
+        </div>
+        <div class="text-right">
+          <button class="btn btn-xs btn-outline" on:click={load} disabled={loading}>Refresh</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-4">
+      <div class="text-sm text-muted">Status</div>
+      <div class="mt-2">
+        {#if loading}
+          <span class="badge badge-info">Loading</span>
+        {:else}
+          <span class="badge badge-success">Idle</span>
+        {/if}
+      </div>
+    </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -74,7 +141,7 @@
               </div>
               <div class="flex items-center gap-2">
                 {#if !b.rolledBack}
-                  <button class="btn btn-sm btn-warning" on:click={() => { if (confirm('Rollback build?')) rollbackBuild(b.id); }}>Rollback</button>
+                  <button class="btn btn-sm btn-warning" on:click={() => { if (confirm('Rollback build?')) rollbackBuild(b.id); }} disabled={loading} aria-disabled={loading} title="Rollback build">Rollback</button>
                 {:else}
                   <span class="badge">Rolled back</span>
                 {/if}
@@ -100,7 +167,7 @@
               </div>
               <div class="flex items-center gap-2">
                 {#if !m.rolledBack}
-                  <button class="btn btn-sm btn-warning" on:click={() => { if (confirm('Rollback mission?')) rollbackMission(m.id); }}>Rollback</button>
+                  <button class="btn btn-sm btn-warning" on:click={() => { if (confirm('Rollback mission?')) rollbackMission(m.id); }} disabled={loading} aria-disabled={loading} title="Rollback mission">Rollback</button>
                 {:else}
                   <span class="badge">Rolled back</span>
                 {/if}
@@ -111,15 +178,5 @@
       {/if}
     </section>
   </div>
-</div>
 
-<h3>Processed Missions</h3>
-<ul>
-  {#each missions as m}
-    <li>{m.id} — mission: {m.missionId} — {m.shipTemplateId} x{m.quantity} — outcome: {m.outcome} — lost: {m.quantityLost} — rewards: {m.rewardCredits}C {m.rewardMetal}M {m.rewardCrystal}X — completed: {new Date(m.completedAt).toLocaleString()} — rolledBack: {m.rolledBack}
-      {#if !m.rolledBack}
-        <button on:click={() => rollbackMission(m.id)}>Rollback</button>
-      {/if}
-    </li>
-  {/each}
-</ul>
+</div>

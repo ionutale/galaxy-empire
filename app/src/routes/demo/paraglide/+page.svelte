@@ -1,18 +1,20 @@
 <script lang="ts">
 	import { setLocale } from '$lib/paraglide/runtime';
-	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
 	import { m } from '$lib/paraglide/messages.js';
 </script>
 
-<h1>{m.hello_world({ name: 'SvelteKit User' })}</h1>
-<div>
-	<button onclick={() => setLocale('en')}>en</button>
-	<button onclick={() => setLocale('it')}>it</button>
+<div class="max-w-2xl mx-auto">
+	<div class="card shadow-lg bg-base-200 p-6">
+		<h1 class="text-2xl font-bold mb-2">{m.hello_world({ name: 'Commander' })}</h1>
+		<p class="text-sm text-muted">Switch language to preview localized content.</p>
+
+		<div class="mt-4 flex gap-2">
+			<button class="btn btn-outline" on:click={() => setLocale('en')}>English</button>
+			<button class="btn btn-outline" on:click={() => setLocale('it')}>Italiano</button>
+		</div>
+
+		<div class="mt-4 text-sm">
+			<p>If you use VSCode, install the <a class="link" href="https://marketplace.visualstudio.com/items?itemName=inlang.vs-code-extension" target="_blank">inlang extension</a> for a better i18n experience.</p>
+		</div>
+	</div>
 </div>
-<p>
-	If you use VSCode, install the <a
-		href="https://marketplace.visualstudio.com/items?itemName=inlang.vs-code-extension"
-		target="_blank">Sherlock i18n extension</a
-	> for a better i18n experience.
-</p>

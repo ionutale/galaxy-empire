@@ -5,30 +5,25 @@
 	let { form }: { form: ActionData } = $props();
 </script>
 
-<h1>Login/Register</h1>
-<form method="post" action="?/login" use:enhance>
-	<label>
-		Username
-		<input
-			name="username"
-			class="mt-1 rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-		/>
-	</label>
-	<label>
-		Password
-		<input
-			type="password"
-			name="password"
-			class="mt-1 rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-		/>
-	</label>
-	<button class="rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
-		>Login</button
-	>
-	<button
-		formaction="?/register"
-		class="rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
-		>Register</button
-	>
-</form>
-<p style="color: red">{form?.message ?? ''}</p>
+<div class="max-w-md mx-auto">
+	<div class="card p-6">
+		<h1 class="text-xl font-semibold mb-3">Login / Register</h1>
+		<form method="post" action="?/login" use:enhance class="space-y-3">
+			<div class="form-control">
+				<label class="label"><span class="label-text">Username</span></label>
+				<input name="username" class="input input-bordered" />
+			</div>
+			<div class="form-control">
+				<label class="label"><span class="label-text">Password</span></label>
+				<input type="password" name="password" class="input input-bordered" />
+			</div>
+			<div class="flex gap-2">
+				<button class="btn btn-primary">Login</button>
+				<button formaction="?/register" class="btn btn-secondary">Register</button>
+			</div>
+		</form>
+		{#if form?.message}
+			<div class="mt-3 alert alert-error">{form.message}</div>
+		{/if}
+	</div>
+</div>

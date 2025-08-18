@@ -1,50 +1,43 @@
 
 <script lang="ts">
-	// lightweight home page for the Galaxy Empire demo app
 	const links = [
-		{ href: '/demo/paraglide', label: 'Localization demo' },
-		{ href: '/demo/lucia', label: 'Auth demo (Lucia)' },
+		{ href: '/demo/paraglide', label: 'Localization' },
+		{ href: '/demo/lucia', label: 'Auth (Lucia)' },
 		{ href: '/fleet', label: 'Fleet' },
 		{ href: '/shipyard', label: 'Shipyard' },
-		{ href: '/admin/overview', label: 'Admin / Overview' },
-		{ href: '/register', label: 'Register' },
-		{ href: '/login', label: 'Login' }
+		{ href: '/admin/overview', label: 'Admin' }
 	];
 </script>
 
-<style>
-	main { max-width: 880px; margin: 48px auto; padding: 0 16px; font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial; }
-	h1 { font-size: 2.25rem; margin-bottom: 0.25rem; }
-	p.lead { color: #475569; margin-top: 0; }
-	ul.nav { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 8px; }
-	ul.nav a { display: inline-block; padding: 10px 14px; background: linear-gradient(180deg,#0ea5a9,#0284c7); color: white; border-radius: 8px; text-decoration: none; }
-	ul.nav a.secondary { background: #f3f4f6; color: #0f172a; border: 1px solid #e6e9ee; }
-	footer { margin-top: 36px; color: #6b7280; font-size: 0.9rem; }
-</style>
+<div class="max-w-4xl mx-auto">
+	<div class="hero bg-base-200 rounded-lg shadow-lg p-8">
+		<div class="hero-content">
+			<div>
+				<h1 class="text-4xl font-bold">Galaxy Empire</h1>
+				<p class="py-2 text-muted">A small demo SvelteKit game. Explore demos, play with shipbuilding and missions.</p>
+				<div class="mt-4 flex flex-wrap gap-3">
+					{#each links as l}
+						<a class="btn btn-primary btn-md" href={l.href}>{l.label}</a>
+					{/each}
+				</div>
+			</div>
+		</div>
+	</div>
 
-<main>
-	<h1>Galaxy Empire</h1>
-	<p class="lead">A small demo SvelteKit game. Use the links below to explore demos and admin pages.</p>
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+		<div class="card p-4">
+			<h3 class="font-semibold">Quick actions</h3>
+			<p class="text-sm text-muted mt-2">Create an account, start a build, or check admin missions.</p>
+			<div class="mt-3 flex flex-col gap-2">
+				<a class="btn btn-outline" href="/register">Create account</a>
+				<a class="btn btn-outline" href="/shipyard">Start a build</a>
+				<a class="btn btn-outline" href="/admin/missions">Admin: Missions</a>
+			</div>
+		</div>
 
-	<nav aria-label="Primary">
-		<ul class="nav">
-			{#each links as l}
-				<li><a href={l.href}>{l.label}</a></li>
-			{/each}
-		</ul>
-	</nav>
-
-	<section>
-		<h2>Quick actions</h2>
-		<p>Try creating an account and visiting the shipyard or starting a mission from the missions routes.</p>
-		<ul class="nav">
-			<li><a class="secondary" href="/register">Create account</a></li>
-			<li><a class="secondary" href="/shipyard/build">Start a build</a></li>
-			<li><a class="secondary" href="/admin/missions">Admin: Missions</a></li>
-		</ul>
-	</section>
-
-	<footer>
-		<small>Development mode — for production builds see the README in the project root.</small>
-	</footer>
-</main>
+		<div class="card p-4 col-span-2">
+			<h3 class="font-semibold">News & Tips</h3>
+			<div class="mt-2 text-sm text-muted">This demo ships with Drizzle ORM, Lucia auth demo and Paraglide localization. Use the demo routes to explore features.</div>
+		</div>
+	</div>
+</div>
