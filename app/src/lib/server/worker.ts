@@ -2,8 +2,6 @@ import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { recordRun, recordFailure } from './metrics';
-import * as table from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
 
 let running = false;
 

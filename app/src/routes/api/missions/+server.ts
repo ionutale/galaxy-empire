@@ -12,5 +12,10 @@ export const GET: RequestHandler = async (event) => {
   if (!user) return new Response(JSON.stringify({ error: 'unauthenticated' }), { status: 401 });
 
   const missions = await db.select().from(table.missions).where(eq(table.missions.userId, user.id)).all();
-  return new Response(JSON.stringify({ missions }), { headers: { 'content-type': 'application/json' } });
+  // attach processed records if completed
+  const missionIds = new Set(missions.map((m) => m.id));
+  const allProcessed = await db.select().from(table.processedMissions).where(eq(table.processedMissions.userId, user.id)).all();
+  const processed = allProcessed.filter((p) => missionIds.has(p.missionId));
+
+  return new Response(JSON.stringify({ missions, processed }), { headers: { 'content-type': 'application/json' } });
 };
