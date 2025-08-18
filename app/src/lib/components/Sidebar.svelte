@@ -1,5 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { createEventDispatcher } from 'svelte';
+  const dispatch = createEventDispatcher<{navigate: void}>();
 
   // Simplified core navigation
   const links = [
@@ -47,10 +49,12 @@
       {#key l.href}
         <li>
           <a href={l.href}
-            class="flex items-center gap-3 px-3 py-2 rounded transition hover:bg-white/10"
-            class:bg-white={isActive(l.href, $page.url.pathname)}
+            on:click={() => dispatch('navigate')}
+            class="relative flex items-center gap-3 px-3 py-2 rounded transition hover:bg-base-100"
+            class:bg-base-100={isActive(l.href, $page.url.pathname)}
             aria-current={isActive(l.href, $page.url.pathname) ? 'page' : undefined}
           >
+            <span class="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded bg-primary opacity-0" class:opacity-100={isActive(l.href, $page.url.pathname)}></span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><g>{@html Icon({ name: l.icon })}</g></svg>
             <span>{l.label}</span>
           </a>

@@ -14,8 +14,7 @@
   "ships": {
     "scout": 24,
     "fighter": 12
-  }
-  ,
+  },
   "buildings": {
     "controlCenter": 1,
     "metalMine": 3,
@@ -40,5 +39,23 @@
     "espionage": false,
     "diplomacy": true,
     "automation": false
+  },
+  "research": {
+    "propulsion": {
+      "startedAt": 1755545926167,
+      "level": 1
+    },
+    "armorPlating": {
+      "startedAt": 1755545927089,
+      "level": 1
+    },
+    "plasmaWeapons": {
+      "startedAt": 1755545927991,
+      "level": 1
+    },
+    "laserTechnology": {
+      "startedAt": 1755545928854,
+      "level": 1
+    }
   }
 }

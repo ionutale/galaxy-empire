@@ -11,6 +11,16 @@
 		const year = new Date().getFullYear();
 		let theme = 'emerald';
 		const themes = ['emerald','synthwave','cyberpunk','coffee','forest','aqua','dark','light'] as const;
+	let drawerOpen = false;
+	function closeDrawerOnMobile() {
+		try {
+			if (window.matchMedia('(max-width: 1023px)').matches) {
+				drawerOpen = false;
+				const el = document.getElementById('app-drawer') as HTMLInputElement | null;
+				if (el) el.checked = false;
+			}
+		} catch {}
+	}
 
 	function applyTheme(t: string) {
 		theme = t;
@@ -41,8 +51,8 @@
 	<!-- Responsive drawer (sidebar) layout using daisyUI -->
 	<div class="min-h-screen bg-base-100 text-base-content relative">
 		<div aria-hidden="true" class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,theme(colors.primary/10),transparent_60%),radial-gradient(ellipse_at_bottom,theme(colors.secondary/10),transparent_60%)]"></div>
-		<div class="drawer drawer-mobile">
-			<input id="app-drawer" type="checkbox" class="drawer-toggle" />
+		<div class="drawer lg:drawer-open">
+			<input id="app-drawer" type="checkbox" class="drawer-toggle" bind:checked={drawerOpen} />
 			<div class="drawer-content flex flex-col">
 				<!-- Top bar for mobile with menu toggle -->
 				<header class="w-full bg-base-100/80 backdrop-blur border-b border-base-300">
@@ -80,7 +90,7 @@
 						<a href="/" class="text-2xl font-bold">Galaxy Empire</a>
 						<p class="text-sm opacity-70">Command center</p>
 					</div>
-										<Sidebar />
+										<Sidebar on:navigate={closeDrawerOnMobile} />
 										<div class="mt-4">
 											<ChipsPanel />
 										</div>
