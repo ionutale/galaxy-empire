@@ -38,3 +38,23 @@ export const buildQueue = sqliteTable('build_queue', {
 
 export type ShipTemplate = typeof shipTemplate.$inferSelect;
 export type BuildQueueItem = typeof buildQueue.$inferSelect;
+
+export const playerState = sqliteTable('player_state', {
+	userId: text('user_id').primaryKey().references(() => user.id),
+	level: integer('level').notNull().default(1),
+	power: integer('power').notNull().default(10),
+	credits: integer('credits').notNull().default(1000),
+	metal: integer('metal').notNull().default(500),
+	crystal: integer('crystal').notNull().default(200),
+	fuel: integer('fuel').notNull().default(100)
+});
+
+export const playerShips = sqliteTable('player_ships', {
+	id: text('id').primaryKey(),
+	userId: text('user_id').notNull().references(() => user.id),
+	shipTemplateId: text('ship_template_id').notNull().references(() => shipTemplate.id),
+	quantity: integer('quantity').notNull()
+});
+
+export type PlayerState = typeof playerState.$inferSelect;
+export type PlayerShip = typeof playerShips.$inferSelect;

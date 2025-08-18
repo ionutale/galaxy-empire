@@ -26,6 +26,16 @@ export const POST: RequestHandler = async (event) => {
   const eta = now + template.buildTime * 1000 * quantity; // buildTime in seconds
   const id = crypto.randomUUID();
 
+  // check and deduct credits
+  const [stateRow] = await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id));
+  const totalCost = template.costCredits * quantity;
+  if (!stateRow || (stateRow.credits ?? 0) < totalCost) {
+    return new Response(JSON.stringify({ error: 'insufficient_funds' }), { status: 402 });
+  }
+
+  const newCredits = (stateRow.credits ?? 0) - totalCost;
+  await db.update(table.playerState).set({ credits: newCredits }).where(eq(table.playerState.userId, user.id)).run();
+
   await db.insert(table.buildQueue).values({ id, userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta) }).run();
 
   return new Response(JSON.stringify({ queued: true, id }), { headers: { 'content-type': 'application/json' } });

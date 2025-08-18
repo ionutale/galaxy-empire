@@ -30,6 +30,9 @@ export const POST: RequestHandler = async (event) => {
 
   await db.insert(table.user).values({ id, username, passwordHash }).run();
 
+  // create default player state
+  await db.insert(table.playerState).values({ userId: id }).run();
+
   const token = generateSessionToken();
   const session = await createSession(token, id);
 
