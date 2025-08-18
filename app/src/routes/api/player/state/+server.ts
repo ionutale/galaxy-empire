@@ -29,6 +29,12 @@ export const GET: RequestHandler = async (event) => {
   const [stateRow] = await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id));
   const ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id)).all();
   const builds = await readJson<Build[]>(BUILDS_FILE, []);
+  const buildingsResult = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id)).all();
+
+  const buildings = buildingsResult.reduce((acc, b) => {
+    acc[b.buildingId] = b.level;
+    return acc;
+  }, {} as Record<string, number>);
 
   const state = {
     playerId: user.id,
@@ -37,7 +43,8 @@ export const GET: RequestHandler = async (event) => {
     power: stateRow?.power ?? 10,
     resources: { credits: stateRow?.credits ?? 1000, metal: stateRow?.metal ?? 500, crystal: stateRow?.crystal ?? 200, fuel: stateRow?.fuel ?? 100 },
     ships,
-    builds
+    builds,
+    buildings
   };
 
   return new Response(JSON.stringify({ state }), { status: 200, headers: { 'content-type': 'application/json' } });
