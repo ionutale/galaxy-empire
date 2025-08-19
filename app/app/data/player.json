@@ -16,10 +16,10 @@
     "fighter": 12
   },
   "buildings": {
-    "controlCenter": 4,
-    "metalMine": 6,
-    "crystalSynthesizer": 5,
-    "deuteriumRefinery": 3,
+    "controlCenter": 6,
+    "metalMine": 7,
+    "crystalSynthesizer": 6,
+    "deuteriumRefinery": 4,
     "shipyard": 1,
     "researchLab": 1,
     "terraformer": 2,

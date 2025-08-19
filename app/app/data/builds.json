@@ -163,5 +163,60 @@
     "result": {
       "success": true
     }
+  },
+  {
+    "id": "build-1755626646298",
+    "type": "building",
+    "buildingId": "controlCenter",
+    "createdAt": "2025-08-19T18:04:06.298Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "id": "build-1755626673525",
+    "type": "building",
+    "buildingId": "controlCenter",
+    "createdAt": "2025-08-19T18:04:33.525Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "id": "build-1755626676708",
+    "type": "building",
+    "buildingId": "metalMine",
+    "createdAt": "2025-08-19T18:04:36.708Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "id": "build-1755626679385",
+    "type": "building",
+    "buildingId": "crystalSynthesizer",
+    "createdAt": "2025-08-19T18:04:39.385Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "id": "build-1755626681287",
+    "type": "building",
+    "buildingId": "deuteriumRefinery",
+    "createdAt": "2025-08-19T18:04:41.287Z",
+    "durationSeconds": 10,
+    "status": "complete",
+    "result": {
+      "success": true
+    }
   }
 ]
