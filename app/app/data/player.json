@@ -16,9 +16,9 @@
     "fighter": 12
   },
   "buildings": {
-    "controlCenter": 3,
-    "metalMine": 4,
-    "crystalSynthesizer": 4,
+    "controlCenter": 4,
+    "metalMine": 6,
+    "crystalSynthesizer": 5,
     "deuteriumRefinery": 3,
     "shipyard": 1,
     "researchLab": 1,

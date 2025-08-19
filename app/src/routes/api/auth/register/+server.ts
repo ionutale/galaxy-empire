@@ -33,6 +33,15 @@ export const POST: RequestHandler = async (event) => {
   // create default player state
   await db.insert(table.playerState).values({ userId: id }).run();
 
+  // create default starting buildings: give new players level 1 mines
+  try {
+    await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: id, buildingId: 'metalMine', level: 1 }).run();
+    await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: id, buildingId: 'crystalSynthesizer', level: 1 }).run();
+  } catch (err) {
+    // non-fatal: continue without failing registration if building insert fails
+    console.error('failed to insert default player buildings', err);
+  }
+
   const token = generateSessionToken();
   const session = await createSession(token, id);
 

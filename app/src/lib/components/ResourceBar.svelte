@@ -54,6 +54,7 @@
 
   import { onDestroy } from 'svelte';
   import { BUILDING_DATA } from '$lib/data/gameData';
+  import { SHIP_TEMPLATES } from '$lib/data/gameData';
 
   // compute production per-second from buildings
   // explicit mapping of building id -> resource key for production
@@ -81,29 +82,30 @@
     }
 
     // ships: mining vessels produce metal (assumption: miningRate is per hour)
-    if (s?.ships && Array.isArray(s.ships)) {
-      for (const shp of s.ships) {
-        if (!shp) continue;
-        const qty = shp.quantity ?? 0;
-        const templateId = shp.shipTemplateId ?? shp.shipId ?? shp.id;
-        const template = BUILDING_DATA ? null : null; // no-op to keep type
-        // try to find miningRate in SHIP_TEMPLATES via dynamic import to avoid circular deps
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
-          const { SHIP_TEMPLATES } = require('$lib/data/gameData');
-          const t = SHIP_TEMPLATES.find((x: any) => x.shipId === templateId);
-          if (t && t.miningRate) {
-            const perHour = (t.miningRate as number) * qty;
-            metal += perHour / 3600;
+      if (s?.ships) {
+        // ships may be an array of objects or an object map { shipId: qty }
+        if (Array.isArray(s.ships)) {
+          for (const shp of s.ships) {
+            if (!shp) continue;
+            const qty = shp.quantity ?? 0;
+            const templateId = shp.shipTemplateId ?? shp.shipId ?? shp.id;
+            const t = SHIP_TEMPLATES.find((x: any) => x.shipId === templateId);
+            if (t && (t as any).miningRate) {
+              const perHour = (t as any).miningRate * qty;
+              metal += perHour / 3600;
+            }
           }
-        } catch (e) {
-          // ignore; fallback: if ship id contains 'mining', assume miningRate 50/hr
-          if (String(templateId).toLowerCase().includes('mining')) {
-            metal += (50 * qty) / 3600;
+        } else if (typeof s.ships === 'object') {
+          for (const [templateId, qtyRaw] of Object.entries(s.ships)) {
+            const qty = Number(qtyRaw) || 0;
+            const t = SHIP_TEMPLATES.find((x: any) => x.shipId === templateId || x.shipId === String(templateId));
+            if (t && (t as any).miningRate) {
+              const perHour = (t as any).miningRate * qty;
+              metal += perHour / 3600;
+            }
           }
         }
       }
-    }
 
     return { metal, crystal, fuel, credits };
   }
@@ -114,15 +116,19 @@
 
   function onDemoChanged() { load(); }
 
+  function onPlayerChanged() { load(); }
+
   onMount(() => {
     load();
-    window.addEventListener('demo:changed', onDemoChanged as EventListener);
+  window.addEventListener('demo:changed', onDemoChanged as EventListener);
+  window.addEventListener('player:changed', onPlayerChanged as EventListener);
     // attempt to start demo worker once
     startDemoWorker();
     // poll every 5s for updated demo resources when demo is active
   poll = setInterval(() => { if (usingDemo) load(); }, 5000);
     return () => {
-      window.removeEventListener('demo:changed', onDemoChanged as EventListener);
+  window.removeEventListener('demo:changed', onDemoChanged as EventListener);
+  window.removeEventListener('player:changed', onPlayerChanged as EventListener);
       if (poll) {
         clearInterval(poll);
         poll = null;
@@ -131,7 +137,8 @@
   });
   
   onDestroy(() => {
-    try { window.removeEventListener('demo:changed', onDemoChanged as EventListener); } catch {}
+  try { window.removeEventListener('demo:changed', onDemoChanged as EventListener); } catch {}
+  try { window.removeEventListener('player:changed', onPlayerChanged as EventListener); } catch {}
     if (poll) {
       clearInterval(poll);
       poll = null;

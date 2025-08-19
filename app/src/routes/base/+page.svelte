@@ -66,6 +66,8 @@
       await new Promise((r) => setTimeout(r, 200));
       const r2 = await fetch('/api/player/state');
       state = (await r2.json()).state;
+  // notify other UI parts (like ResourceBar) to reload their state
+  try { window.dispatchEvent(new CustomEvent('player:changed')); } catch (e) {}
     } else {
       error = 'process_failed';
     }
@@ -77,6 +79,8 @@
     const res = await fetch('/api/demo/buildings/upgrade', { method: 'POST', body: JSON.stringify({ buildingId: id }), headers: { 'Content-Type': 'application/json' } });
     if (res.ok) {
       state = (await res.json()).state;
+  // tell other components to reload their player state (ResourceBar)
+  try { window.dispatchEvent(new CustomEvent('player:changed')); } catch (e) {}
       import('$lib/stores/toast').then((m) => m.pushToast(`${id} upgraded`, 'success'));
     } else {
       import('$lib/stores/toast').then((m) => m.pushToast(`Upgrade failed`, 'error'));
