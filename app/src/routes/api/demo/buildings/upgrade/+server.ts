@@ -46,7 +46,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     const builds = await readJson(BUILDS_FILE, [] as any[]);
     const now = new Date().toISOString();
     const duration = 10; // default duration seconds for demo; could use BUILDING_DATA time func
-    const entry = { id: `build-${Date.now()}`, type: 'building', buildingId, createdAt: now, durationSeconds: duration, status: 'queued' };
+  const entry = { id: `build-${Date.now()}`, type: 'building', buildingId, createdAt: now, durationSeconds: duration, status: 'queued', userId: user.id };
     builds.push(entry);
     await writeJson(BUILDS_FILE, builds);
 

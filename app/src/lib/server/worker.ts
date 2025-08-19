@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { recordRun, recordFailure } from './metrics';
 import { resolveMission } from './missionResolver';
 import * as features from './features';
+import { processTick } from './processor';
 
 let running = false;
 
@@ -41,6 +42,12 @@ export function startBuildProcessor(intervalMs = 5000) {
         }
       }
       recordRun(processed);
+      // also process demo builds.json entries and sync them to DB if present
+      try {
+        await processTick();
+      } catch (err) {
+        console.error('error running demo processor tick from worker', err);
+      }
       // process missions completion: resolve in_progress missions when ETA passed
       try {
         const missions = await db.select().from(table.missions).all();

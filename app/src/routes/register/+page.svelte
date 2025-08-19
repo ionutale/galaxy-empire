@@ -13,7 +13,8 @@
       body: JSON.stringify({ username, password })
     });
     if (res.ok) {
-      await goto('/base');
+  try { window.dispatchEvent(new CustomEvent('player:changed')); } catch (e) {}
+  await goto('/base');
     } else {
       const body = await res.json().catch(() => ({}));
       error = body?.error || 'registration_failed';

@@ -218,5 +218,17 @@
     "result": {
       "success": true
     }
+  },
+  {
+    "id": "build-test-1",
+    "type": "building",
+    "buildingId": "metalMine",
+    "createdAt": "2025-08-19T18:00:00.000Z",
+    "durationSeconds": 1,
+    "status": "complete",
+    "userId": "617b335f-6594-4f3b-b46f-31b68c7925f2",
+    "result": {
+      "success": true
+    }
   }
 ]

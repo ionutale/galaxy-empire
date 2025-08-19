@@ -92,15 +92,16 @@ export async function processBuilds(tickSeconds = 5) {
           const buildingId = String((b as any).buildingId);
           player.buildings = player.buildings ?? {};
           player.buildings[buildingId] = (Number(player.buildings[buildingId] ?? 0) + 1);
+          const entryUserId = String((b as any).userId ?? player.playerId ?? 'demo_player');
           if (env.DATABASE_URL) {
             try {
               const { db } = await import('$lib/server/db');
               const table = await import('$lib/server/db/schema');
-              const existing = (await db.select().from(table.playerBuildings).where((table as any).playerBuildings.userId.eq('demo_player')).all()).find((r: any) => r.buildingId === buildingId);
+              const existing = (await db.select().from(table.playerBuildings).where((table as any).playerBuildings.userId.eq(entryUserId)).all()).find((r: any) => r.buildingId === buildingId);
               if (existing) {
                 await db.update(table.playerBuildings).set({ level: existing.level + 1 }).where((table as any).playerBuildings.id.eq(existing.id)).run();
               } else {
-                await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: 'demo_player', buildingId, level: 1 }).run();
+                await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: entryUserId, buildingId, level: 1 }).run();
               }
             } catch (err) {
               console.error('db playerBuildings sync error', err);

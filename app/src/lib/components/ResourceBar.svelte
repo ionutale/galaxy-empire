@@ -125,7 +125,7 @@
     // attempt to start demo worker once
     startDemoWorker();
     // poll every 5s for updated demo resources when demo is active
-  poll = setInterval(() => { if (usingDemo) load(); }, 5000);
+  poll = setInterval(() => { load(); }, 5000);
     return () => {
   window.removeEventListener('demo:changed', onDemoChanged as EventListener);
   window.removeEventListener('player:changed', onPlayerChanged as EventListener);
