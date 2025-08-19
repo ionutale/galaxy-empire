@@ -68,6 +68,11 @@ export async function processBuilds(tickSeconds = 5) {
 
   for (const b of builds) {
     if (b.status === 'queued') {
+      try {
+        console.debug('[processor] evaluating build', { id: b.id, status: b.status, createdAt: b.createdAt, durationSeconds: b.durationSeconds, remainingSeconds: b.remainingSeconds });
+      } catch (e) {
+        // ignore logging errors
+      }
       // If remainingSeconds is explicitly tracked, decrement it using tickSeconds
       if (typeof b.remainingSeconds === 'number') {
         const rem = Math.max(0, (b.remainingSeconds as number) - tickSeconds);
@@ -87,17 +92,22 @@ export async function processBuilds(tickSeconds = 5) {
       }
 
       if (b.status === 'complete') {
-        // apply to player: handle building upgrades and ship builds
-        if ((b as any).type === 'building' && (b as any).buildingId && player) {
+        // determine the user id for this build entry (prefer explicit b.userId)
+        const entryUserId = String((b as any).userId ?? (player && (player.playerId ?? 'demo_player')) ?? 'demo_player');
+
+        // apply to player: handle building upgrades and ship builds (update player.json when available)
+        if ((b as any).type === 'building' && (b as any).buildingId) {
           const buildingId = String((b as any).buildingId);
-          player.buildings = player.buildings ?? {};
-          player.buildings[buildingId] = (Number(player.buildings[buildingId] ?? 0) + 1);
-          const entryUserId = String((b as any).userId ?? player.playerId ?? 'demo_player');
+          if (player) {
+            player.buildings = player.buildings ?? {};
+            player.buildings[buildingId] = (Number(player.buildings[buildingId] ?? 0) + 1);
+          }
           if (env.DATABASE_URL) {
             try {
               const { db } = await import('$lib/server/db');
               const table = await import('$lib/server/db/schema');
-              const existing = (await db.select().from(table.playerBuildings).where((table as any).playerBuildings.userId.eq(entryUserId)).all()).find((r: any) => r.buildingId === buildingId);
+              const rows = await db.select().from(table.playerBuildings).where((table as any).playerBuildings.userId.eq(entryUserId)).all();
+              const existing = rows.find((r: any) => r.buildingId === buildingId);
               if (existing) {
                 await db.update(table.playerBuildings).set({ level: existing.level + 1 }).where((table as any).playerBuildings.id.eq(existing.id)).run();
               } else {
