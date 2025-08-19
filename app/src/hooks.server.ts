@@ -28,8 +28,13 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 export const handle: Handle = sequence(handleAuth);
 
 // start background workers once when server boots (dev + prod)
+// allow disabling in dev by setting DISABLE_BUILD_PROCESSOR=1
 try {
-	startBuildProcessor(5000);
+	if (process.env.DISABLE_BUILD_PROCESSOR !== '1') {
+		startBuildProcessor(5000);
+	} else {
+		console.log('build processor disabled via DISABLE_BUILD_PROCESSOR=1');
+	}
 } catch (err) {
 	console.error('failed to start build processor', err);
 }
