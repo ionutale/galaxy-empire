@@ -26,10 +26,24 @@ export const GET: RequestHandler = async (event) => {
   if (!user) return new Response(JSON.stringify({ error: 'unauthenticated' }), { status: 401 });
 
   // starter player state
-  const [stateRow] = await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id));
-  const ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id)).all();
-  const builds = await readJson<Build[]>(BUILDS_FILE, []);
-  const buildingsResult = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id)).all();
+  let stateRow: any = null;
+  let ships: any[] = [];
+  let builds: Build[] = [];
+  let buildingsResult: any[] = [];
+
+  try {
+    stateRow = (await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id)))[0];
+    ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id)).all();
+    builds = await readJson<Build[]>(BUILDS_FILE, []);
+    buildingsResult = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id)).all();
+  } catch (err) {
+    // If the DB or tables don't exist (common in fresh dev clones), fall back to demo/defaults
+    console.warn('player state DB query failed, falling back to defaults', err?.toString?.() ?? err);
+    builds = await readJson<Build[]>(BUILDS_FILE, []);
+    stateRow = undefined;
+    ships = [];
+    buildingsResult = [];
+  }
 
   const buildings = buildingsResult.reduce((acc, b) => {
     acc[b.buildingId] = b.level;

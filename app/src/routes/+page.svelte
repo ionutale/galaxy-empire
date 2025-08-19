@@ -19,7 +19,7 @@
 					{#if user}
 						<a class="btn btn-primary" href="/base">Enter the Game</a>
 					{:else}
-						<a class="btn btn-primary" href="/login">Login to Begin</a>
+						<a class="btn btn-primary" href="/auth/login">Login to Begin</a>
 					{/if}
 				</div>
 			</div>

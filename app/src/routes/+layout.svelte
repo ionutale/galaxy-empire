@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount, setContext } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import ResourceBar from '$lib/components/ResourceBar.svelte';
@@ -39,6 +40,13 @@
 		localStorage.setItem('ge:theme', t);
 	}
 
+	async function logout() {
+		try {
+			await fetch('/api/auth/logout', { method: 'POST' });
+		} catch {}
+		await goto('/');
+	}
+
 	onMount(() => {
 		try {
 			const saved = localStorage.getItem('ge:theme');
@@ -68,23 +76,6 @@
 				<header class="w-full bg-base-100/80 backdrop-blur border-b border-base-300">
 					<div class="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
 						<div class="flex items-center gap-3">
-							{#if user}
-								<label for="app-drawer" class="btn btn-ghost btn-square">
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										class="h-6 w-6"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke="currentColor"
-										><path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M4 6h16M4 12h16M4 18h16"
-										/></svg
-									>
-								</label>
-							{/if}
 							<a href="/" class="font-bold text-lg">Galaxy Empire</a>
 						</div>
 						<!-- navigation moved to sidebar drawer -->
@@ -94,6 +85,7 @@
 							<div class="hidden md:flex items-center">
 								<ResourceBar />
 							</div>
+							<button class="btn btn-ghost btn-sm" on:click={logout}>Logout</button>
 						{/if}
 					</div>
 				</header>

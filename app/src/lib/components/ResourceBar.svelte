@@ -1,5 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { getContext } from 'svelte';
+  import type { Writable } from 'svelte/store';
+  import type { LayoutData } from '../../routes/$types';
+  const session = getContext<Writable<LayoutData>>('session');
+  $: user = $session?.user;
   let state: any = null;
   let loading = true;
 
@@ -134,6 +139,7 @@
   });
 </script>
 
+{#if user}
 <div class="flex items-center gap-2">
   {#if loading}
     <progress class="progress w-24"></progress>
@@ -167,6 +173,7 @@
     </div>
   {/if}
 </div>
+{/if}
 
 <style>
   :global(.link){ text-decoration: underline; }
