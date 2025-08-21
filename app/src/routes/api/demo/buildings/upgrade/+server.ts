@@ -22,33 +22,59 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     const { buildingId } = await request.json();
     if (!buildingId) return new Response(JSON.stringify({ error: 'missing buildingId' }), { status: 400 });
 
-    const [pState] = await db.select().from(playerState).where(eq(playerState.userId, user.id));
+  const [pState] = await db.select().from(playerState).where(eq(playerState.userId, user.id));
     if (!pState) return new Response(JSON.stringify({ error: 'player not found' }), { status: 404 });
 
     const buildingDef = BUILDING_DATA[buildingId];
     if (!buildingDef) return new Response(JSON.stringify({ error: 'building not found' }), { status: 404 });
 
-    const currentLevel = 0; // Assuming level is managed elsewhere or starts at 0
-    const cost = buildingDef.cost?.(currentLevel + 1);
+  // determine current level from DB buildings (fallback to 0)
+  const existingBuildings = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id)).all();
+  const currentLevel = (existingBuildings.find((b: any) => b.buildingId === buildingId)?.level) ?? 0;
+  const cost = buildingDef.cost?.(currentLevel + 1);
 
-    if (cost) {
-      if (pState.metal < (cost.metal ?? 0) || pState.crystal < (cost.crystal ?? 0)) {
+  if (cost) {
+      // ensure all resource fields are available and sufficient
+      const needCredits = cost.credits ?? 0;
+      const needMetal = cost.metal ?? 0;
+      const needCrystal = cost.crystal ?? 0;
+      const needFuel = cost.fuel ?? 0;
+      if (pState.credits < needCredits || pState.metal < needMetal || pState.crystal < needCrystal || pState.fuel < needFuel) {
         return new Response(JSON.stringify({ error: 'insufficient resources' }), { status: 400 });
       }
 
       await db.update(playerState).set({
-        metal: pState.metal - (cost.metal ?? 0),
-        crystal: pState.crystal - (cost.crystal ?? 0)
+        credits: pState.credits - needCredits,
+        metal: pState.metal - needMetal,
+        crystal: pState.crystal - needCrystal,
+        fuel: pState.fuel - needFuel
       }).where(eq(playerState.userId, user.id));
+
+      // update demo player.json (if present) so UI reflects deducted resources in demo mode
+      try {
+        const demoPlayer = await readJson(PLAYER_FILE, null as any);
+        if (demoPlayer) {
+          demoPlayer.resources = demoPlayer.resources ?? {};
+          demoPlayer.resources.credits = (Number(demoPlayer.resources.credits ?? pState.credits) - needCredits);
+          demoPlayer.resources.metal = (Number(demoPlayer.resources.metal ?? pState.metal) - needMetal);
+          demoPlayer.resources.crystal = (Number(demoPlayer.resources.crystal ?? pState.crystal) - needCrystal);
+          demoPlayer.resources.fuel = (Number(demoPlayer.resources.fuel ?? pState.fuel) - needFuel);
+          await writeJson(PLAYER_FILE, demoPlayer);
+        }
+      } catch (_) {
+        // ignore demo write errors
+      }
     }
 
-    // enqueue building upgrade as a build
+  // enqueue building upgrade as a build
     const builds = await readJson(BUILDS_FILE, [] as any[]);
-    const now = new Date().toISOString();
-    const duration = 10; // default duration seconds for demo; could use BUILDING_DATA time func
-  const entry = { id: `build-${Date.now()}`, type: 'building', buildingId, createdAt: now, durationSeconds: duration, status: 'queued', userId: user.id };
+  const now = new Date().toISOString();
+  const duration = typeof buildingDef.time === 'function' ? buildingDef.time(currentLevel + 1) : 10;
+  const entry = { id: `build-${Date.now()}`, type: 'building', buildingId, createdAt: now, durationSeconds: duration, remainingSeconds: duration, status: 'queued', userId: user.id };
     builds.push(entry);
     await writeJson(BUILDS_FILE, builds);
+
+    
 
     // Build the response state from the DB (so UI reflects the updated resources)
     let state: any = {};

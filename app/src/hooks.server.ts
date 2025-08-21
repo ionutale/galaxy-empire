@@ -2,6 +2,7 @@ import { sequence } from '@sveltejs/kit/hooks';
 import * as auth from '$lib/server/auth';
 import type { Handle } from '@sveltejs/kit';
 import { startBuildProcessor } from '$lib/server/worker';
+import { logger } from '$lib/logger';
 
 const handleAuth: Handle = async ({ event, resolve }) => {
 	const sessionToken = event.cookies.get(auth.sessionCookieName);
@@ -33,8 +34,8 @@ try {
 	if (process.env.DISABLE_BUILD_PROCESSOR !== '1') {
 		startBuildProcessor(5000);
 	} else {
-		console.log('build processor disabled via DISABLE_BUILD_PROCESSOR=1');
+		logger.info('build processor disabled via DISABLE_BUILD_PROCESSOR=1');
 	}
 } catch (err) {
-	console.error('failed to start build processor', err);
+	logger.error({ err }, 'failed to start build processor');
 }

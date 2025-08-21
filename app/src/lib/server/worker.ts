@@ -5,13 +5,14 @@ import { recordRun, recordFailure } from './metrics';
 import { resolveMission } from './missionResolver';
 import * as features from './features';
 import { processTick } from './processor';
+import { logger } from '$lib/logger';
 
 let running = false;
 
 export function startBuildProcessor(intervalMs = 5000) {
   if (running) return;
   running = true;
-  console.log('Starting build processor, interval', intervalMs);
+  logger.info({ intervalMs }, 'Starting build processor');
 
   setInterval(async () => {
     try {
@@ -37,7 +38,7 @@ export function startBuildProcessor(intervalMs = 5000) {
           }, 3, 200, 2);
           processed += 1;
         } catch (err) {
-          console.error('Failed processing build item after retries', err);
+          logger.error({ err }, 'Failed processing build item after retries');
           recordFailure(err);
         }
       }
@@ -46,7 +47,7 @@ export function startBuildProcessor(intervalMs = 5000) {
       try {
         await processTick();
       } catch (err) {
-        console.error('error running demo processor tick from worker', err);
+        logger.error({ err }, 'error running demo processor tick from worker');
       }
       // process missions completion: resolve in_progress missions when ETA passed
       try {
@@ -106,16 +107,16 @@ export function startBuildProcessor(intervalMs = 5000) {
               }
             });
           } catch (err) {
-            console.error('Failed resolving mission', ms.id, err);
+            logger.error({ err, missionId: ms.id }, 'Failed resolving mission');
             recordFailure(err);
           }
         }
       } catch (err) {
-        console.error('Mission processing error', err);
+        logger.error({ err }, 'Mission processing error');
         recordFailure(err);
       }
     } catch (err) {
-      console.error('Build processor error', err);
+      logger.error({ err }, 'Build processor error');
       recordFailure(err);
     }
   }, intervalMs);
