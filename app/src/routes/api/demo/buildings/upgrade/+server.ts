@@ -7,6 +7,7 @@ import { playerState } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { validateSessionToken } from '$lib/server/auth';
 import { sessionCookieName } from '$lib/server/auth';
+import type { BuildEntry, PlayerState as PlayerStateType, PlayerBuilding, User } from '$lib/types';
 
 const PLAYER_FILE = 'player.json';
 const BUILDS_FILE = 'builds.json';
@@ -19,18 +20,18 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     const { user } = await validateSessionToken(token);
     if (!user) return new Response(JSON.stringify({ error: 'unauthenticated' }), { status: 401 });
 
-    const { buildingId } = await request.json();
+  const { buildingId } = await request.json() as { buildingId?: string };
     if (!buildingId) return new Response(JSON.stringify({ error: 'missing buildingId' }), { status: 400 });
 
-  const [pState] = await db.select().from(playerState).where(eq(playerState.userId, user.id));
+  const [pState] = (await db.select().from(playerState).where(eq(playerState.userId, user.id))) as PlayerStateType[];
     if (!pState) return new Response(JSON.stringify({ error: 'player not found' }), { status: 404 });
 
     const buildingDef = BUILDING_DATA[buildingId];
     if (!buildingDef) return new Response(JSON.stringify({ error: 'building not found' }), { status: 404 });
 
   // determine current level from DB buildings (fallback to 0)
-  const existingBuildings = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id)).all();
-  const currentLevel = (existingBuildings.find((b: any) => b.buildingId === buildingId)?.level) ?? 0;
+  const existingBuildings = (await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id)).all()) as PlayerBuilding[];
+  const currentLevel = (existingBuildings.find((b) => b.buildingId === buildingId)?.level) ?? 0;
   const cost = buildingDef.cost?.(currentLevel + 1);
 
   if (cost) {
@@ -67,24 +68,24 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     }
 
   // enqueue building upgrade as a build
-    const builds = await readJson(BUILDS_FILE, [] as any[]);
+  const builds = await readJson(BUILDS_FILE, [] as BuildEntry[]);
   const now = new Date().toISOString();
   const duration = typeof buildingDef.time === 'function' ? buildingDef.time(currentLevel + 1) : 10;
-  const entry = { id: `build-${Date.now()}`, type: 'building', buildingId, createdAt: now, durationSeconds: duration, remainingSeconds: duration, status: 'queued', userId: user.id };
+  const entry: BuildEntry = { id: `build-${Date.now()}`, type: 'building', buildingId, createdAt: now, durationSeconds: duration, remainingSeconds: duration, status: 'queued', userId: user.id };
     builds.push(entry);
     await writeJson(BUILDS_FILE, builds);
 
     
 
     // Build the response state from the DB (so UI reflects the updated resources)
-    let state: any = {};
+    let state: Record<string, any> = {};
     try {
-      const stateRow = (await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id)))[0];
+      const stateRow = (await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id)))[0] as PlayerStateType | undefined;
       const ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id)).all();
-      const buildsList = await readJson(BUILDS_FILE, [] as any[]);
-      const buildingsResult = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id)).all();
+      const buildsList = await readJson(BUILDS_FILE, [] as BuildEntry[]);
+      const buildingsResult = (await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id)).all()) as PlayerBuilding[];
 
-      const buildings = buildingsResult.reduce((acc: any, b: any) => {
+      const buildings = buildingsResult.reduce((acc: Record<string, number>, b) => {
         acc[b.buildingId] = b.level;
         return acc;
       }, {} as Record<string, number>);
