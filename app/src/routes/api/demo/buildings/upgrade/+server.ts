@@ -1,5 +1,7 @@
 import type { RequestHandler } from './$types';
-import { readJson, writeJson } from '$lib/server/demoStorage';
+import { db } from '$lib/server/db';
+import * as table from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
 import { BUILDING_DATA } from '$lib/data/gameData';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
@@ -9,8 +11,7 @@ import { validateSessionToken } from '$lib/server/auth';
 import { sessionCookieName } from '$lib/server/auth';
 import type { BuildEntry, PlayerState as PlayerStateType, PlayerBuilding, User } from '$lib/types';
 
-const PLAYER_FILE = 'player.json';
-const BUILDS_FILE = 'builds.json';
+// No file constants needed; using DB
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
   try {
@@ -68,14 +69,21 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     }
 
     // enqueue building upgrade as a build
-    const builds = await readJson(BUILDS_FILE, [] as BuildEntry[]);
     const now = new Date();
     const duration = typeof buildingDef.time === 'function' ? buildingDef.time(currentLevel + 1) : 10;
     const entryId = `build-${now.getTime()}`;
-    
     const entry: BuildEntry = { id: entryId, type: 'building', buildingId, createdAt: now.toISOString(), durationSeconds: duration, remainingSeconds: duration, status: 'queued', userId: user.id };
-    builds.push(entry);
-    await writeJson(BUILDS_FILE, builds);
+    // Insert into DB buildQueue
+    await db.insert(table.buildQueue).values({
+      id: entryId,
+      userId: user.id,
+      type: 'building',
+      buildingId: buildingId,
+      quantity: 1,
+      startedAt: now,
+      eta: new Date(now.getTime() + duration * 1000),
+      totalDuration: duration
+    });
 
     // Sync to DB
     try {
@@ -98,14 +106,12 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     try {
       const stateRow = (await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id)))[0] as PlayerStateType | undefined;
       const ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id));
-      const buildsList = await readJson(BUILDS_FILE, [] as BuildEntry[]);
-      const buildingsResult = (await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id))) as PlayerBuilding[];
-
-      const buildings = buildingsResult.reduce((acc: Record<string, number>, b) => {
+      const buildsList = await db.select().from(table.buildQueue).where(eq(table.buildQueue.userId, user.id)).execute();
+      const buildingsResult = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id));
+      const buildings = buildingsResult.reduce((acc: Record<string, number>, b: any) => {
         acc[b.buildingId] = b.level;
         return acc;
       }, {} as Record<string, number>);
-
       state = {
         playerId: user.id,
         username: user.username,
@@ -122,8 +128,10 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
         buildings
       };
     } catch (err) {
-      // fallback: return demo player file state if DB read fails
-      state = await readJson(PLAYER_FILE, {} as any);
+      // If DB read fails, return an empty state or handle as appropriate for a production system
+      // For now, re-throwing or logging the error might be better than a silent fallback to a non-existent file.
+      console.error('Failed to build response state from DB:', err);
+      return new Response(JSON.stringify({ error: 'Failed to retrieve player state', details: String(err) }), { status: 500 });
     }
 
     return new Response(JSON.stringify({ state, queued: entry }), { headers: { 'Content-Type': 'application/json' } });

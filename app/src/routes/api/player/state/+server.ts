@@ -4,7 +4,7 @@ import { sessionCookieName } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { readJson } from '$lib/server/demoStorage';
+
 
 interface Build {
   id: string;
@@ -16,7 +16,7 @@ interface Build {
   status: 'queued' | 'in-progress' | 'completed';
 }
 
-const BUILDS_FILE = 'builds.json';
+
 const PLAYER_FILE = 'player.json';
 
 export const GET: RequestHandler = async (event) => {
@@ -36,10 +36,10 @@ export const GET: RequestHandler = async (event) => {
   try {
     stateRow = (await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id)))[0];
     ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id));
-    builds = await readJson(BUILDS_FILE, [] as BuildEntry[]);
+    const builds = await db.select().from(table.buildQueue).where(eq(table.buildQueue.userId, user.id));
     buildingsResult = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id));
     const researchResult = await db.select().from(table.playerResearch).where(eq(table.playerResearch.userId, user.id));
-    
+
     // Convert DB research rows to map
     research = researchResult.reduce((acc, r) => {
       acc[r.techId] = { level: r.level };
@@ -56,11 +56,10 @@ export const GET: RequestHandler = async (event) => {
       }
     }
   } catch (err) {
-    // If the DB or tables don't exist (common in fresh dev clones), fall back to demo/defaults
+    // If DB query fails, fallback to empty defaults
     console.warn('player state DB query failed, falling back to defaults', err?.toString?.() ?? err);
-    builds = await readJson<Build[]>(BUILDS_FILE, []);
-    const demoPlayer = await readJson(PLAYER_FILE, {} as any);
-    research = demoPlayer?.research || {};
+    builds = [];
+    research = {};
     stateRow = undefined;
     ships = [];
     buildingsResult = [];

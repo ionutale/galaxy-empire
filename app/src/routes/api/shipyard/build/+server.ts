@@ -3,12 +3,12 @@ import { sessionCookieName, validateSessionToken } from '$lib/server/auth';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
-import { readJson, writeJson } from '$lib/server/demoStorage';
+
 import { SHIP_TEMPLATES } from '$lib/data/gameData';
 import type { BuildEntry } from '$lib/types';
 
-const BUILDS_FILE = 'builds.json';
-const PLAYER_FILE = 'player.json';
+
+
 
 export const POST: RequestHandler = async (event) => {
   const token = event.cookies.get(sessionCookieName);
@@ -51,23 +51,15 @@ export const POST: RequestHandler = async (event) => {
 
   // Update demo player.json
   try {
-    const demoPlayer = await readJson(PLAYER_FILE, null as any);
-    if (demoPlayer) {
-      demoPlayer.resources = demoPlayer.resources ?? {};
-      demoPlayer.resources.credits = (Number(demoPlayer.resources.credits ?? pState.credits) - costCredits);
-      demoPlayer.resources.metal = (Number(demoPlayer.resources.metal ?? pState.metal) - costMetal);
-      demoPlayer.resources.crystal = (Number(demoPlayer.resources.crystal ?? pState.crystal) - costCrystal);
-      demoPlayer.resources.fuel = (Number(demoPlayer.resources.fuel ?? pState.fuel) - costFuel);
-      await writeJson(PLAYER_FILE, demoPlayer);
-    }
-  } catch (_) {}
+
+  } catch (_) { }
 
   // Add to builds.json queue
-  const builds = await readJson(BUILDS_FILE, [] as BuildEntry[]);
+  // No need to read builds from file; using DB for persistence.
   const now = new Date();
   const duration = (template.buildTime || 10) * quantity;
   const entryId = `build-${now.getTime()}`;
-  
+
   const entry: BuildEntry = {
     id: entryId,
     type: 'ship', // processor uses this or shipType
@@ -81,9 +73,9 @@ export const POST: RequestHandler = async (event) => {
     status: 'queued',
     userId: user.id
   };
-  
-  builds.push(entry);
-  await writeJson(BUILDS_FILE, builds);
+
+  // Entry already persisted to DB
+  // No need to write builds to file; DB insertion already performed.
 
   // Sync to DB
   try {
