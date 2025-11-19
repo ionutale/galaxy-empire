@@ -17,11 +17,11 @@
     if (!req) return ['None'];
     const lines: string[] = [];
     if (req.building) {
-      const name = BUILDING_DATA[req.building]?.name ?? req.building;
+      const name = (BUILDING_DATA as any)[req.building]?.name ?? req.building;
       lines.push(`${name} — level ≥ ${req.level ?? 1}`);
     }
     if (req.research) {
-      const rname = RESEARCH_DATA[req.research]?.name ?? req.research;
+      const rname = (RESEARCH_DATA as any)[req.research]?.name ?? req.research;
       lines.push(`Research: ${rname} — level ≥ ${req.level ?? 1}`);
     }
     if (Object.keys(req).length === 0) return ['None'];
@@ -204,10 +204,12 @@
 {/if}
 
 {#if showModal && selectedBuilding}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60" on:click={closeModal}>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60" role="dialog" on:click={closeModal} on:keydown={(e) => e.key === 'Escape' && closeModal()}>
     <div
       class="bg-base-100 p-6 rounded-lg w-11/12 max-w-2xl shadow-xl"
+      role="document"
       on:click|stopPropagation
+      on:keydown|stopPropagation
     >
       <div class="flex items-start justify-between">
         <div class="flex items-center gap-4">
@@ -266,7 +268,7 @@
                   <p class="font-bold">Time:</p>
                   <p class="mt-1">
                     {BUILDING_DATA[selectedBuilding!].time
-                      ? BUILDING_DATA[selectedBuilding!].time(nextLevel) + 's'
+                      ? (BUILDING_DATA as any)[selectedBuilding!].time(nextLevel) + 's'
                       : '—'}
                   </p>
                 </div>
