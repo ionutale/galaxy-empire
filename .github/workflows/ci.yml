@@ -9,29 +9,33 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18.x]
+    defaults:
+      run:
+        working-directory: ./app
 
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node-version }}
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: app/pnpm-lock.yaml
+
       - name: Install dependencies
-        run: |
-          cd app
-          npm ci
+        run: pnpm install --frozen-lockfile
+
       - name: Lint
-        run: |
-          cd app
-          npm run lint
+        run: pnpm run lint
+
       - name: Unit tests
-        run: |
-          cd app
-          npm run test:unit --silent
+        run: pnpm run test:unit --silent
+
       - name: Build
-        run: |
-          cd app
-          npm run build
+        run: pnpm run build
