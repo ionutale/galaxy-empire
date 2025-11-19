@@ -17,32 +17,10 @@ export function startBuildProcessor(intervalMs = 5000) {
   setInterval(async () => {
     try {
       const now = new Date();
-      const items = await db.select().from(table.buildQueue);
-      const due = items.filter((i) => new Date(i.eta).getTime() <= now.getTime());
-      let processed = 0;
-      for (const item of due) {
-        try {
-          const { retryAsync } = await import('$lib/server/retry');
-          await retryAsync(async () => {
-            await db.transaction(async (ctx) => {
-              const existingRows = await ctx.select().from(table.playerShips).where(eq(table.playerShips.userId, item.userId));
-              const existing = existingRows.find((s) => s.shipTemplateId === item.shipTemplateId);
-              if (existing) {
-                await ctx.update(table.playerShips).set({ quantity: existing.quantity + item.quantity }).where(eq(table.playerShips.id, existing.id));
-              } else {
-                await ctx.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: item.userId, shipTemplateId: item.shipTemplateId, quantity: item.quantity });
-              }
-              await ctx.insert(table.processedBuilds).values({ id: crypto.randomUUID(), userId: item.userId, shipTemplateId: item.shipTemplateId, quantity: item.quantity, processedAt: new Date() });
-              await ctx.delete(table.buildQueue).where(eq(table.buildQueue.id, item.id));
-            });
-          }, 3, 200, 2);
-          processed += 1;
-        } catch (err) {
-          logger.error({ err }, 'Failed processing build item after retries');
-          recordFailure(err);
-        }
-      }
-      recordRun(processed);
+      // Build processing is handled by processTick() -> processBuilds()
+      // The previous loop here was incorrect as it treated all items as ships
+      // and duplicated logic in processor.ts
+
       // also process demo builds.json entries and sync them to DB if present
       try {
         await processTick();

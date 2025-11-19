@@ -46,15 +46,15 @@ export const GET: RequestHandler = async (event) => {
       return acc;
     }, {} as Record<string, { level: number }>);
 
-    // Fallback/Merge with demo player.json if needed (optional, but good for hybrid state)
-    const demoPlayer = await readJson(PLAYER_FILE, {} as any);
-    if (demoPlayer?.research) {
-      for (const [k, v] of Object.entries(demoPlayer.research as Record<string, { level: number }>)) {
-        if (!research[k] || (v.level > research[k].level)) {
-          research[k] = v;
-        }
-      }
-    }
+    // Fallback/Merge with demo player.json removed as we are fully DB-based now
+    // const demoPlayer = await readJson(PLAYER_FILE, {} as any);
+    // if (demoPlayer?.research) {
+    //   for (const [k, v] of Object.entries(demoPlayer.research as Record<string, { level: number }>)) {
+    //     if (!research[k] || (v.level > research[k].level)) {
+    //       research[k] = v;
+    //     }
+    //   }
+    // }
   } catch (err) {
     // If DB query fails, fallback to empty defaults
     console.warn('player state DB query failed, falling back to defaults', err?.toString?.() ?? err);

@@ -70,129 +70,106 @@ function simulateCombat(attacker: { ships?: Record<string, number>, power?: numb
 }
 
 export async function processBuilds(tickSeconds = 5) {
-  const builds = await db.select().from(table.buildQueue).where(eq(table.buildQueue.userId, 'demo_user')).execute();
-  const player = await db.select().from(table.playerState).where(eq(table.playerState.userId, 'demo_user')).then(rows => rows[0] ?? null);
+  const builds = await db.select().from(table.buildQueue).execute();
+  // const player = ... // We don't fetch a single player anymore as we process multiple users
   const now = Date.now();
   const processed: BuildEntry[] = [];
   let changed = false;
 
+  // We will fetch player data on demand inside the loop or refactor to batch fetch if needed.
+  // For now, fetching inside the loop is acceptable for low volume.
+  // Actually, we don't need 'player' object for most logic as we use DB directly.
+  // The only place 'player' was used was for in-memory updates which we removed.
+  const player = null; // Placeholder to minimize diff changes in subsequent lines if any remain
+
   for (const b of builds) {
-    if (b.status === 'queued') {
+    // Check if build is complete based on ETA
+    if (b.eta.getTime() <= now) {
       try {
-        console.debug('[processor] evaluating build', { id: b.id, status: b.status, createdAt: b.createdAt, durationSeconds: b.durationSeconds, remainingSeconds: b.remainingSeconds });
+        console.debug('[processor] build complete', { id: b.id, type: b.type, eta: b.eta });
       } catch (e) {
-        // ignore logging errors
+        // ignore
       }
-      // If remainingSeconds is explicitly tracked, decrement it using tickSeconds
-      if (typeof b.remainingSeconds === 'number') {
-        const rem = Math.max(0, (b.remainingSeconds as number) - tickSeconds);
-        if (rem !== b.remainingSeconds) {
-          (b as Record<string, unknown>)['remainingSeconds'] = rem;
-          changed = true;
+
+      // determine the user id for this build entry (prefer explicit b.userId)
+      // player is the DB row from playerState, so it has userId
+      const entryUserId = b.userId || 'demo_user';
+
+      // apply to player: handle building upgrades and ship builds
+      if (b.type === 'building' && b.buildingId) {
+        const buildingId = b.buildingId;
+        // In-memory update removed as we update DB directly and don't return player state here
+
+        try {
+          const rows = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, entryUserId));
+          const existing = rows.find((r: any) => r.buildingId === buildingId);
+          if (existing) {
+            await db.update(table.playerBuildings).set({ level: existing.level + 1 }).where(eq(table.playerBuildings.id, existing.id));
+          } else {
+            await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: entryUserId, buildingId, level: 1 });
+          }
+          // Remove from buildQueue
+          await db.delete(table.buildQueue).where(eq(table.buildQueue.id, b.id));
+        } catch (err) {
+          console.error('db playerBuildings sync error', err);
         }
-        if (rem <= 0) {
-          b.status = 'complete';
-          b.result = { success: true };
+      } else if (b.type === 'research' && b.techId) {
+        const techId = b.techId;
+        // In-memory update removed
+
+        try {
+          const rows = await db.select().from(table.playerResearch).where(eq(table.playerResearch.userId, entryUserId));
+          const existing = rows.find((r: any) => r.techId === techId);
+          if (existing) {
+            await db.update(table.playerResearch).set({ level: existing.level + 1 }).where(eq(table.playerResearch.id, existing.id));
+          } else {
+            await db.insert(table.playerResearch).values({ id: crypto.randomUUID(), userId: entryUserId, techId, level: 1 });
+          }
+          // Remove from buildQueue
+          await db.delete(table.buildQueue).where(eq(table.buildQueue.id, b.id));
+        } catch (err) {
+          console.error('db playerResearch sync error', err);
         }
       } else {
-        // fallback to createdAt + duration
-        const duration = typeof b.durationSeconds === 'number' ? b.durationSeconds : 5;
-        const created = new Date(b.createdAt).getTime();
-        if ((now - created) / 1000 >= duration) {
-          b.status = 'complete';
-          b.result = { success: true };
-        }
-      }
+        // fallback: if build has a type string treat it as ship type or shipType field
+        // In DB schema, type is 'ship' and shipTemplateId is set
+        const t = b.shipTemplateId;
+        const count = b.quantity;
+        if (t) {
+          // In-memory update removed
 
-      if (b.status === 'complete') {
-        // determine the user id for this build entry (prefer explicit b.userId)
-        const entryUserId = String((b as any).userId ?? (player && (player.playerId ?? 'demo_player')) ?? 'demo_player');
-
-        // apply to player: handle building upgrades and ship builds (update player.json when available)
-        if ((b as any).type === 'building' && (b as any).buildingId) {
-          const buildingId = String((b as any).buildingId);
-          if (player) {
-            player.buildings = player.buildings ?? {};
-            player.buildings[buildingId] = (Number(player.buildings[buildingId] ?? 0) + 1);
-          }
-          // if (env.DATABASE_URL) { // Removed env check as DB is always used now
           try {
-            // const { db } = await import('$lib/server/db'); // Removed import as db is already imported
-            // const table = await import('$lib/server/db/schema'); // Removed import as table is already imported
-            const rows = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, entryUserId));
-            const existing = rows.find((r: any) => r.buildingId === buildingId);
+            const existing = (await db.select().from(table.playerShips).where(eq(table.playerShips.userId, entryUserId))).find((s: any) => s.shipTemplateId === t);
             if (existing) {
-              await db.update(table.playerBuildings).set({ level: existing.level + 1 }).where(eq(table.playerBuildings.id, existing.id));
+              await db.update(table.playerShips).set({ quantity: existing.quantity + count }).where(eq(table.playerShips.id, existing.id));
             } else {
-              await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: entryUserId, buildingId, level: 1 });
+              await db.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: entryUserId, shipTemplateId: t, quantity: count });
             }
+            // record processed build
+            await db.insert(table.processedBuilds).values({ id: crypto.randomUUID(), userId: entryUserId, shipTemplateId: t, quantity: count, processedAt: new Date() });
             // Remove from buildQueue
             await db.delete(table.buildQueue).where(eq(table.buildQueue.id, b.id));
           } catch (err) {
-            console.error('db playerBuildings sync error', err);
-          }
-          // }
-        } else if ((b as any).type === 'research' && (b as any).techId) {
-          const techId = String((b as any).techId);
-          if (player) {
-            player.research = (player.research as Record<string, { level: number }>) ?? {};
-            const current = (player.research as Record<string, { level: number }>)[techId] || { level: 0 };
-            (player.research as Record<string, { level: number }>)[techId] = { level: (current.level || 0) + 1 };
-          }
-
-          // if (env.DATABASE_URL) { // Removed env check as DB is always used now
-          try {
-            // const { db } = await import('$lib/server/db'); // Removed import as db is already imported
-            // const table = await import('$lib/server/db/schema'); // Removed import as table is already imported
-            const rows = await db.select().from(table.playerResearch).where(eq(table.playerResearch.userId, entryUserId));
-            const existing = rows.find((r: any) => r.techId === techId);
-            if (existing) {
-              await db.update(table.playerResearch).set({ level: existing.level + 1 }).where(eq(table.playerResearch.id, existing.id));
-            } else {
-              await db.insert(table.playerResearch).values({ id: crypto.randomUUID(), userId: entryUserId, techId, level: 1 });
-            }
-            // Remove from buildQueue
-            await db.delete(table.buildQueue).where(eq(table.buildQueue.id, b.id));
-          } catch (err) {
-            console.error('db playerResearch sync error', err);
-          }
-          // }
-        } else {
-          // fallback: if build has a type string treat it as ship type or shipType field
-          const t = typeof b.type === 'string' ? b.type : (b as Record<string, unknown>)['shipType'] as string | undefined;
-          const count = typeof (b as Record<string, unknown>)['count'] === 'number' ? (b as Record<string, unknown>)['count'] as number : 1;
-          if (t && player) {
-            player.ships = player.ships ?? {};
-            const prev = Number(player.ships[t] ?? 0);
-            player.ships[t] = prev + count;
-            // also persist ship count to sqlite when available
-            // if (env.DATABASE_URL) { // Removed env check as DB is always used now
-            try {
-              // const { db } = await import('$lib/server/db'); // Removed import as db is already imported
-              // const table = await import('$lib/server/db/schema'); // Removed import as table is already imported
-              const existing = (await db.select().from(table.playerShips).where(eq(table.playerShips.userId, 'demo_user'))).find((s: any) => s.shipTemplateId === t);
-              if (existing) {
-                await db.update(table.playerShips).set({ quantity: existing.quantity + count }).where(eq(table.playerShips.id, existing.id));
-              } else {
-                await db.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: 'demo_user', shipTemplateId: t, quantity: count });
-              }
-              // record processed build
-              await db.insert(table.processedBuilds).values({ id: crypto.randomUUID(), userId: 'demo_user', shipTemplateId: t, quantity: count, processedAt: new Date() });
-              // Remove from buildQueue
-              await db.delete(table.buildQueue).where(eq(table.buildQueue.id, b.id));
-            } catch (err) {
-              // ignore db errors to keep demo running
-              console.error('db sync error', err);
-            }
-            // }
+            // ignore db errors to keep demo running
+            console.error('db sync error', err);
           }
         }
-        (b as any).status = b.status; // Ensure status is carried over if needed by other parts, though DB update handles it
-        processed.push(b as unknown as BuildEntry);
-        changed = true;
       }
+
+      // Add to processed list for return (mapped to BuildEntry interface if needed, or just the DB row)
+      // The BuildEntry interface expects status, result etc. We can synthesize them.
+      processed.push({
+        id: b.id,
+        type: b.type,
+        createdAt: b.startedAt.toISOString(),
+        status: 'complete',
+        durationSeconds: b.totalDuration,
+        result: { success: true }
+      });
+      changed = true;
     }
   }
+
 
   if (changed) {
     // DB persistence already handled; no file writes needed
@@ -328,58 +305,8 @@ export async function processProduction(tickSeconds = 5) {
 }
 
 export async function processResearch(tickSeconds = 5) {
-  // Fetch research from DB
-  const researchRows = await db.select().from(table.playerResearch).where(eq(table.playerResearch.userId, 'demo_user'));
-  const research: Record<string, { level: number }> = {};
-  for (const r of researchRows) {
-    research[r.techId] = { level: r.level };
-  }
-
-  const processed: Array<{ techId: string; newLevel: number }> = [];
-  let changed = false;
-  // if (!player) return { processed }; // Player check removed as we fetch directly
-
-  const now = Date.now();
-
-  for (const techId of Object.keys(research)) {
-    const entry = research[techId];
-    if (!entry) continue;
-    const startedAt = typeof entry.startedAt === 'number' ? entry.startedAt : null;
-    const currentLevel = typeof entry.level === 'number' ? entry.level : 0;
-    // This loop logic seems flawed in original code as it was iterating keys but checking startedAt which didn't exist on the type
-    // Since we are just fixing lints and this function is likely not fully functional without a research queue table:
-    // We will just comment out the problematic check or fix the type access if possible.
-    // The original code was: if (now - (research[techId].startedAt || 0) > 5000)
-    // But our research type is { level: number }.
-    // Let's assume for now we don't process research completion here as it's handled in processBuilds.
-    // Dummy logic to replace missing startedAt, effectively skipping this block for now.
-    if (now - (research[techId]?.level || 0) * 1000 > 5000) {
-      continue;
-    }
-    // The original code had:
-    // const startedAt = typeof entry.startedAt === 'number' ? entry.startedAt : null;
-    // const currentLevel = typeof entry.level === 'number' ? entry.level : 0;
-    // if (startedAt) {
-    //   const timeFn = (RESEARCH_DATA as any)[techId]?.time as ((lvl: number) => number) | undefined;
-    //   const duration = typeof timeFn === 'function' ? timeFn(currentLevel) : 5;
-    //   if ((now - startedAt) / 1000 >= duration) {
-    //     // finish research: increment level and clear startedAt
-    //     research[techId] = { level: currentLevel + 1 };
-    //     processed.push({ techId, newLevel: currentLevel + 1 });
-    //     changed = true;
-    //   }
-    // }
-  }
-
-  if (changed) {
-    // (player as any).research = research; // 'player' is not defined here, and research is already updated in DB via processBuilds
-    // if (changed) await writeJson(PLAYER_FILE, player); // REMOVED
-    // DB updates for research would go here if we were processing active research queues, 
-    // but currently this function seems to be checking for completed research based on time?
-    // The original code was modifying the 'research' object and writing it back.
-    // If we need to persist changes, we should update the DB.
-  }
-
-  return { processed };
+  // Research is now handled via the buildQueue in processBuilds.
+  // This function is kept for compatibility but does no processing.
+  return { processed: [] };
 }
-```
+
