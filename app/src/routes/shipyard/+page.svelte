@@ -1,21 +1,45 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  type Template = { id: string; name: string; role?: string; hp?: number; attack?: number; buildTime?: number; costCredits?: number };
+  import { BUILDING_DATA } from '$lib/data/gameData';
+  
+  type Template = { 
+    id: string; 
+    name: string; 
+    role?: string; 
+    buildTime?: number; 
+    costCredits?: number;
+    costMetal?: number;
+    costCrystal?: number;
+    costFuel?: number;
+  };
+  
   let templates: Template[] = [];
-  type QueueItem = { id?: string; shipTemplateId: string; quantity: number; eta: string | number; startedAt?: string | number };
-  let queue: QueueItem[] = [];
   let error = '';
   let loading = true;
   let qty: Record<string, number> = {};
+  let playerState: any = null;
 
   async function load() {
     loading = true;
-    const t = await fetch('/api/shipyard/templates');
-    templates = (await t.json()).templates || [];
-    for (const tp of templates) qty[tp.id] = qty[tp.id] ?? 1;
-    const q = await fetch('/api/shipyard/queue');
-    if (q.ok) queue = (await q.json()).items || [];
-    loading = false;
+    try {
+      const [tRes, pRes] = await Promise.all([
+        fetch('/api/shipyard/templates'),
+        fetch('/api/player/state')
+      ]);
+      
+      if (tRes.ok) {
+        templates = (await tRes.json()).templates || [];
+        for (const tp of templates) qty[tp.id] = qty[tp.id] ?? 1;
+      }
+      
+      if (pRes.ok) {
+        playerState = (await pRes.json()).state;
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      loading = false;
+    }
   }
 
   onMount(load);
@@ -29,19 +53,28 @@
       body: JSON.stringify({ shipTemplateId: templateId, quantity })
     });
     if (res.ok) {
-      await load();
+      // Trigger global state reload to update sidebar
+      window.dispatchEvent(new CustomEvent('player:changed'));
+      // Reload local state to update resources
+      const pRes = await fetch('/api/player/state');
+      if (pRes.ok) playerState = (await pRes.json()).state;
+      
+      import('$lib/stores/toast').then((m) => m.pushToast(`Construction started`, 'success'));
     } else {
       const b = await res.json().catch(() => ({}));
       error = b?.error || 'build_failed';
     }
   }
 
-  function etaProgress(eta: string | number | Date, startedAt?: string | number | Date) {
-    const end = new Date(eta).getTime();
-    const now = Date.now();
-    const started = startedAt ? new Date(startedAt).getTime() : end - 1000 * 60 * 60; // fallback 1h window
-    const pct = Math.max(0, Math.min(100, ((now - started) / (end - started)) * 100));
-    return Number.isFinite(pct) ? Math.round(pct) : 0;
+  function canAfford(t: Template, q: number) {
+    if (!playerState?.resources) return false;
+    const r = playerState.resources;
+    return (
+      r.credits >= (t.costCredits || 0) * q &&
+      r.metal >= (t.costMetal || 0) * q &&
+      r.crystal >= (t.costCrystal || 0) * q &&
+      r.fuel >= (t.costFuel || 0) * q
+    );
   }
 </script>
 
@@ -55,89 +88,87 @@
 {#if loading}
   <div class="flex justify-center"><progress class="progress w-56"></progress></div>
 {:else}
-  <div class="mb-4">
-    <div class="card bg-base-200 p-3">
-      <h4 class="font-semibold">Buildings</h4>
-      <div class="mt-2 text-sm">
-        {#await fetch('/api/player/state') then res}
-          {#if res.ok}
-            {#await res.json() then body}
-              {#if body.state.buildings}
-                <div class="grid grid-cols-2 gap-2">
-                  {#each Object.entries(body.state.buildings) as [id, lvl]}
-                    <div class="badge badge-outline">{id} L{lvl}</div>
-                  {/each}
-                </div>
-              {/if}
-            {/await}
-          {/if}
-        {/await}
+  {#if playerState?.buildings}
+    <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="stats shadow bg-base-200">
+        <div class="stat">
+          <div class="stat-title">Shipyard Level</div>
+          <div class="stat-value text-primary">{playerState.buildings.shipyard ?? 0}</div>
+          <div class="stat-desc">Determines build speed</div>
+        </div>
+      </div>
+      <div class="stats shadow bg-base-200">
+        <div class="stat">
+          <div class="stat-title">Nanite Factory</div>
+          <div class="stat-value text-secondary">{playerState.buildings.naniteFactory ?? 0}</div>
+          <div class="stat-desc">Reduces build time</div>
+        </div>
       </div>
     </div>
-  </div>
-  <div role="tablist" class="tabs tabs-lifted">
-    <input type="radio" name="shipyard_tabs" role="tab" class="tab" aria-label="Templates" checked />
-    <div role="tabpanel" class="tab-content bg-base-200 border-base-300 rounded-box p-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {#each templates as t}
-          <div class="card bg-base-100 shadow">
-            <div class="card-body">
-              <div class="flex items-start justify-between">
-                <div>
-                  <h3 class="card-title">{t.name}</h3>
-                  <p class="text-sm opacity-70">{t.role} • {t.buildTime}s</p>
-                </div>
-                <div class="text-right">
-                  <span class="badge badge-outline">{t.costCredits} cr</span>
-                </div>
-              </div>
+  {/if}
 
-              <div class="mt-3 flex items-center justify-between">
-                {#key t.id}
-                  {@const inputId = `qty-${t.id}`}
-                  <label class="label" for={inputId}><span class="label-text">Qty</span></label>
-                  <div class="join">
-                    <button class="btn btn-sm join-item" on:click={() => qty[t.id] = Math.max(1, (qty[t.id] ?? 1) - 1)}>-</button>
-                    <input id={inputId} class="input input-sm input-bordered w-16 text-center join-item" bind:value={qty[t.id]} inputmode="numeric" />
-                    <button class="btn btn-sm join-item" on:click={() => qty[t.id] = Math.min(99, (qty[t.id] ?? 1) + 1)}>+</button>
-                  </div>
-                {/key}
-              </div>
-
-              <div class="card-actions justify-end mt-2">
-                <button class="btn btn-primary" on:click={() => build(t.id)}>Queue build</button>
-              </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    {#each templates as t}
+      {@const q = qty[t.id] || 1}
+      {@const affordable = canAfford(t, q)}
+      
+      <div class="card bg-base-100 shadow-lg border border-base-300">
+        <div class="card-body p-5">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="card-title text-lg">{t.name}</h3>
+              <div class="badge badge-ghost badge-sm mt-1">{t.role}</div>
+            </div>
+            <div class="text-right text-xs opacity-70">
+              {t.buildTime}s
             </div>
           </div>
-        {/each}
-      </div>
-    </div>
 
-    <input type="radio" name="shipyard_tabs" role="tab" class="tab" aria-label="Queue" />
-    <div role="tabpanel" class="tab-content bg-base-200 border-base-300 rounded-box p-4">
-      {#if queue.length === 0}
-        <div class="alert">
-          <span>No builds queued.</span>
-        </div>
-      {:else}
-        <div class="space-y-3">
-          {#each queue as item}
-            <div class="card bg-base-100 shadow">
-              <div class="card-body">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <div class="font-medium">{item.shipTemplateId} <span class="text-sm opacity-70">x{item.quantity}</span></div>
-                    <div class="text-sm opacity-70">ETA: {new Date(item.eta).toLocaleString()}</div>
-                  </div>
-                  <div class="w-48">
-                    <progress class="progress progress-primary w-full" value={etaProgress(item.eta, item.startedAt)} max="100"></progress>
-                  </div>
-                </div>
-              </div>
+          <div class="divider my-2"></div>
+
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between">
+              <span class="opacity-70">Credits:</span>
+              <span class={(playerState?.resources?.credits ?? 0) < (t.costCredits || 0) * q ? 'text-error font-bold' : ''}>
+                {(t.costCredits || 0) * q}
+              </span>
             </div>
-          {/each}
+            <div class="flex justify-between">
+              <span class="opacity-70">Metal:</span>
+              <span class={(playerState?.resources?.metal ?? 0) < (t.costMetal || 0) * q ? 'text-error font-bold' : ''}>
+                {(t.costMetal || 0) * q}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="opacity-70">Crystal:</span>
+              <span class={(playerState?.resources?.crystal ?? 0) < (t.costCrystal || 0) * q ? 'text-error font-bold' : ''}>
+                {(t.costCrystal || 0) * q}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="opacity-70">Fuel:</span>
+              <span class={(playerState?.resources?.fuel ?? 0) < (t.costFuel || 0) * q ? 'text-error font-bold' : ''}>
+                {(t.costFuel || 0) * q}
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-4 flex items-center justify-between gap-2">
+            <div class="join">
+              <button class="btn btn-sm join-item" on:click={() => qty[t.id] = Math.max(1, (qty[t.id] ?? 1) - 1)}>-</button>
+              <input class="input input-sm input-bordered w-14 text-center join-item" bind:value={qty[t.id]} inputmode="numeric" />
+              <button class="btn btn-sm join-item" on:click={() => qty[t.id] = Math.min(99, (qty[t.id] ?? 1) + 1)}>+</button>
+            </div>
+            <button 
+              class="btn btn-sm btn-primary flex-1" 
+              disabled={!affordable}
+              on:click={() => build(t.id)}
+            >
+              Build
+            </button>
+          </div>
         </div>
-      {/if}
-    </div>
+      </div>
+    {/each}
   </div>
 {/if}

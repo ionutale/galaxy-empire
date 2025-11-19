@@ -237,7 +237,7 @@
     "buildingId": "metalMine",
     "createdAt": "2025-11-19T19:22:37.028Z",
     "durationSeconds": 115,
-    "remainingSeconds": 115,
+    "remainingSeconds": 110,
     "status": "queued",
     "userId": "4cdf1cef-7cd7-46d9-825c-b650e5a28d5e"
   },
@@ -247,17 +247,7 @@
     "buildingId": "controlCenter",
     "createdAt": "2025-11-19T19:23:29.371Z",
     "durationSeconds": 135,
-    "remainingSeconds": 135,
-    "status": "queued",
-    "userId": "4cdf1cef-7cd7-46d9-825c-b650e5a28d5e"
-  },
-  {
-    "id": "build-1763580214766",
-    "type": "building",
-    "buildingId": "metalMine",
-    "createdAt": "2025-11-19T19:23:34.766Z",
-    "durationSeconds": 115,
-    "remainingSeconds": 115,
+    "remainingSeconds": 130,
     "status": "queued",
     "userId": "4cdf1cef-7cd7-46d9-825c-b650e5a28d5e"
   },
@@ -267,8 +257,23 @@
     "buildingId": "crystalSynthesizer",
     "createdAt": "2025-11-19T19:23:36.438Z",
     "durationSeconds": 128,
-    "remainingSeconds": 128,
+    "remainingSeconds": 123,
     "status": "queued",
     "userId": "4cdf1cef-7cd7-46d9-825c-b650e5a28d5e"
+  },
+  {
+    "id": "build-1763581766769",
+    "type": "ship",
+    "shipType": "drone",
+    "count": 1,
+    "buildingId": "drone",
+    "createdAt": "2025-11-19T19:49:26.769Z",
+    "durationSeconds": 5,
+    "remainingSeconds": 0,
+    "status": "complete",
+    "userId": "4cdf1cef-7cd7-46d9-825c-b650e5a28d5e",
+    "result": {
+      "success": true
+    }
   }
 ]

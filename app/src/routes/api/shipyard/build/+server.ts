@@ -3,7 +3,12 @@ import { sessionCookieName, validateSessionToken } from '$lib/server/auth';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
-import { retryAsync } from '$lib/server/retry';
+import { readJson, writeJson } from '$lib/server/demoStorage';
+import { SHIP_TEMPLATES } from '$lib/data/gameData';
+import type { BuildEntry } from '$lib/types';
+
+const BUILDS_FILE = 'builds.json';
+const PLAYER_FILE = 'player.json';
 
 export const POST: RequestHandler = async (event) => {
   const token = event.cookies.get(sessionCookieName);
@@ -20,46 +25,64 @@ export const POST: RequestHandler = async (event) => {
     return new Response(JSON.stringify({ error: 'invalid_input' }), { status: 400 });
   }
 
-  const [template] = await db.select().from(table.shipTemplate).where(eq(table.shipTemplate.id, shipTemplateId));
+  const template = SHIP_TEMPLATES.find(s => s.shipId === shipTemplateId);
   if (!template) return new Response(JSON.stringify({ error: 'not_found' }), { status: 404 });
 
-  const now = Date.now();
-  const eta = now + template.buildTime * 1000 * quantity; // buildTime in seconds
-  const totalCost = template.costCredits * quantity;
+  const cost = template.buildCost || {};
+  const costCredits = (cost.credits || 0) * quantity;
+  const costMetal = (cost.metal || 0) * quantity;
+  const costCrystal = (cost.crystal || 0) * quantity;
+  const costFuel = (cost.fuel || 0) * quantity;
 
-  // Initial check (optimization)
-  const [initialState] = await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id));
-  if (!initialState || (initialState.credits ?? 0) < totalCost) {
-    return new Response(JSON.stringify({ error: 'insufficient_funds' }), { status: 402 });
+  const [pState] = await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id));
+  if (!pState) return new Response(JSON.stringify({ error: 'player_not_found' }), { status: 404 });
+
+  if (pState.credits < costCredits || pState.metal < costMetal || pState.crystal < costCrystal || pState.fuel < costFuel) {
+    return new Response(JSON.stringify({ error: 'insufficient_resources' }), { status: 400 });
   }
 
-  // perform update + insert in a transaction so a failure rolls back the deduction
-  let queuedId: string | undefined;
+  // Deduct resources
+  await db.update(table.playerState).set({
+    credits: pState.credits - costCredits,
+    metal: pState.metal - costMetal,
+    crystal: pState.crystal - costCrystal,
+    fuel: pState.fuel - costFuel
+  }).where(eq(table.playerState.userId, user.id));
+
+  // Update demo player.json
   try {
-    // generate a fresh id per attempt to avoid unique constraint if a retry occurs
-    queuedId = await retryAsync(async () => {
-      const attemptId = crypto.randomUUID();
-      await db.transaction(async (ctx) => {
-        // Re-fetch state inside transaction to ensure consistency and lock (if supported)
-        const [currentState] = await ctx.select().from(table.playerState).where(eq(table.playerState.userId, user.id));
-
-        if (!currentState || (currentState.credits ?? 0) < totalCost) {
-          throw new Error('insufficient_funds');
-        }
-
-        const newCredits = (currentState.credits ?? 0) - totalCost;
-        await ctx.update(table.playerState).set({ credits: newCredits }).where(eq(table.playerState.userId, user.id));
-        await ctx.insert(table.buildQueue).values({ id: attemptId, userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta) });
-      });
-      return attemptId;
-    }, 3, 200, 2);
-  } catch (err: any) {
-    if (err.message === 'insufficient_funds') {
-      return new Response(JSON.stringify({ error: 'insufficient_funds' }), { status: 402 });
+    const demoPlayer = await readJson(PLAYER_FILE, null as any);
+    if (demoPlayer) {
+      demoPlayer.resources = demoPlayer.resources ?? {};
+      demoPlayer.resources.credits = (Number(demoPlayer.resources.credits ?? pState.credits) - costCredits);
+      demoPlayer.resources.metal = (Number(demoPlayer.resources.metal ?? pState.metal) - costMetal);
+      demoPlayer.resources.crystal = (Number(demoPlayer.resources.crystal ?? pState.crystal) - costCrystal);
+      demoPlayer.resources.fuel = (Number(demoPlayer.resources.fuel ?? pState.fuel) - costFuel);
+      await writeJson(PLAYER_FILE, demoPlayer);
     }
-    console.error('Failed to queue build transactionally', err);
-    return new Response(JSON.stringify({ error: 'internal_error' }), { status: 500 });
-  }
+  } catch (_) {}
 
-  return new Response(JSON.stringify({ queued: true, id: queuedId }), { headers: { 'content-type': 'application/json' } });
+  // Add to builds.json queue
+  const builds = await readJson(BUILDS_FILE, [] as BuildEntry[]);
+  const now = new Date().toISOString();
+  const duration = (template.buildTime || 10) * quantity;
+  
+  const entry: BuildEntry = {
+    id: `build-${Date.now()}`,
+    type: 'ship', // processor uses this or shipType
+    // @ts-ignore - processor handles shipType/count
+    shipType: shipTemplateId,
+    count: quantity,
+    buildingId: shipTemplateId, // Hack: set buildingId so sidebar displays the name using BUILDING_DATA fallback or we fix sidebar
+    createdAt: now,
+    durationSeconds: duration,
+    remainingSeconds: duration,
+    status: 'queued',
+    userId: user.id
+  };
+  
+  builds.push(entry);
+  await writeJson(BUILDS_FILE, builds);
+
+  return new Response(JSON.stringify({ queued: true, id: entry.id }), { headers: { 'content-type': 'application/json' } });
 };

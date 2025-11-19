@@ -10,12 +10,17 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { writable } from 'svelte/store';
 	import type { LayoutData } from './$types';
-	import { BUILDING_DATA } from '$lib/data/gameData';
+	import { BUILDING_DATA, SHIP_TEMPLATES } from '$lib/data/gameData';
 
 	export let data: LayoutData;
 
 	const session = writable(data);
 	setContext('session', session);
+
+	const SHIP_DATA = SHIP_TEMPLATES.reduce((acc, s) => {
+		acc[s.shipId] = s;
+		return acc;
+	}, {} as Record<string, any>);
 
 	$: session.set(data);
 	$: user = $session.user;
@@ -245,7 +250,7 @@
 								<div class="flex justify-between items-start">
 									<div>
 										<div class="font-semibold text-sm">
-											{BUILDING_DATA[build.buildingId]?.name ?? build.buildingId}
+											{BUILDING_DATA[build.buildingId]?.name ?? SHIP_DATA[build.buildingId]?.name ?? build.buildingId}
 										</div>
 										<div class="text-xs opacity-70 capitalize">{build.status}</div>
 									</div>
