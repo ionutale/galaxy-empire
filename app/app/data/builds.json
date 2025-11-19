@@ -260,5 +260,15 @@
     "remainingSeconds": 204,
     "status": "queued",
     "userId": "4cdf1cef-7cd7-46d9-825c-b650e5a28d5e"
+  },
+  {
+    "id": "build-1763579336917",
+    "type": "building",
+    "buildingId": "crystalSynthesizer",
+    "createdAt": "2025-11-19T19:08:56.916Z",
+    "durationSeconds": 128,
+    "remainingSeconds": 128,
+    "status": "queued",
+    "userId": "4cdf1cef-7cd7-46d9-825c-b650e5a28d5e"
   }
 ]

@@ -57,7 +57,13 @@
 
   // computed helper used by modal template
   $: nextLevel = selectedBuilding ? ((state?.buildings?.[selectedBuilding] ?? 0) + 1) : 1;
-  $: ongoingBuilds = state?.builds?.filter((b: any) => b.status === 'in-progress' || b.status === 'queued') ?? [];
+  $: ongoingBuilds = state?.builds?.filter((b: any) => {
+    if (b.status === 'queued') return true;
+    if (b.status !== 'in-progress') return false;
+    const startTime = new Date(b.createdAt).getTime();
+    const endTime = startTime + (b.durationSeconds * 1000);
+    return endTime > now;
+  }) ?? [];
   $: resources = state?.resources ?? { metal: 0, crystal: 0, fuel: 0, credits: 0 };
   $: upgradeCost = selectedBuilding ? BUILDING_DATA[selectedBuilding]?.cost?.(nextLevel) : null;
   $: canAffordUpgrade = selectedBuilding && upgradeCost ? (resources.metal >= (upgradeCost.metal ?? 0) && resources.crystal >= (upgradeCost.crystal ?? 0)) : false;
