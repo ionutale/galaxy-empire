@@ -5,7 +5,6 @@
   let state: any = null;
   let error = '';
   let upgrading = new Set<string>();
-  let now = Date.now();
 
   // UI modal state for building details
   let selectedBuilding: string | null = null;
@@ -29,22 +28,6 @@
     return lines.length ? lines : [JSON.stringify(req)];
   }
 
-  function getRemainingTime(build: any) {
-    const startTime = new Date(build.createdAt).getTime();
-    const endTime = startTime + (build.durationSeconds * 1000);
-    const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
-    
-    if (remaining <= 0) return 'Completed';
-    
-    const hours = Math.floor(remaining / 3600);
-    const minutes = Math.floor((remaining % 3600) / 60);
-    const seconds = remaining % 60;
-    
-    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
-    if (minutes > 0) return `${minutes}m ${seconds}s`;
-    return `${seconds}s`;
-  }
-
   function openBuilding(id: string) {
     selectedBuilding = id;
     showModal = true;
@@ -57,13 +40,6 @@
 
   // computed helper used by modal template
   $: nextLevel = selectedBuilding ? ((state?.buildings?.[selectedBuilding] ?? 0) + 1) : 1;
-  $: ongoingBuilds = state?.builds?.filter((b: any) => {
-    if (b.status === 'queued') return true;
-    if (b.status !== 'in-progress') return false;
-    const startTime = new Date(b.createdAt).getTime();
-    const endTime = startTime + (b.durationSeconds * 1000);
-    return endTime > now;
-  }) ?? [];
   $: resources = state?.resources ?? { metal: 0, crystal: 0, fuel: 0, credits: 0 };
   $: upgradeCost = selectedBuilding ? BUILDING_DATA[selectedBuilding]?.cost?.(nextLevel) : null;
   $: canAffordUpgrade = selectedBuilding && upgradeCost ? (resources.metal >= (upgradeCost.metal ?? 0) && resources.crystal >= (upgradeCost.crystal ?? 0)) : false;
@@ -82,10 +58,6 @@
   $: categories = Object.keys(buildingsByCategory).sort();
 
   onMount(() => {
-    const interval = setInterval(() => {
-      now = Date.now();
-    }, 1000);
-
     (async () => {
       const res = await fetch('/api/player/state');
       if (res.ok) {
@@ -95,8 +67,6 @@
         error = 'unauthenticated';
       }
     })();
-
-    return () => clearInterval(interval);
   });
 
   async function processBuilds() {
@@ -183,29 +153,6 @@
         {/if}
       </div>
     </div>
-
-    {#if ongoingBuilds.length > 0}
-      <div class="mb-6">
-        <h3 class="text-2xl font-bold mb-4">Ongoing Upgrades</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {#each ongoingBuilds as build}
-            <div class="card bg-base-200 p-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="font-semibold">
-                    {BUILDING_DATA[build.buildingId]?.name ?? build.buildingId}
-                  </p>
-                  <p class="text-sm text-muted">Status: {build.status}</p>
-                </div>
-                <div class="text-sm font-mono">
-                  {getRemainingTime(build)}
-                </div>
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
-    {/if}
 
     <div>
       <h3 class="text-2xl font-bold mb-4">Base Buildings</h3>
