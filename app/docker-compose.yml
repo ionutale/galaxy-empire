@@ -1,19 +1,37 @@
 version: '3.8'
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - PORT=3000
-    restart: unless-stopped
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - PORT=3000
+  #     - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/galaxy_empire
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - postgres
     # For local development you can uncomment the volume below to mount source
     # volumes:
     #   - ./:/app
 
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=galaxy_empire
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
 networks:
   default:
     driver: bridge
+
+volumes:
+  postgres_data:
