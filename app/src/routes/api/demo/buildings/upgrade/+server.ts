@@ -3,10 +3,7 @@ import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { BUILDING_DATA } from '$lib/data/gameData';
-import { db } from '$lib/server/db';
-import * as table from '$lib/server/db/schema';
-import { playerState } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+
 import { validateSessionToken } from '$lib/server/auth';
 import { sessionCookieName } from '$lib/server/auth';
 import type { BuildEntry, PlayerState as PlayerStateType, PlayerBuilding, User } from '$lib/types';
@@ -24,7 +21,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     const { buildingId } = await request.json() as { buildingId?: string };
     if (!buildingId) return new Response(JSON.stringify({ error: 'missing buildingId' }), { status: 400 });
 
-    const [pState] = (await db.select().from(playerState).where(eq(playerState.userId, user.id))) as PlayerStateType[];
+    const [pState] = (await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id))) as PlayerStateType[];
     if (!pState) return new Response(JSON.stringify({ error: 'player not found' }), { status: 404 });
 
     const buildingDef = BUILDING_DATA[buildingId];
@@ -45,33 +42,21 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
         return new Response(JSON.stringify({ error: 'insufficient resources' }), { status: 400 });
       }
 
-      await db.update(playerState).set({
+      await db.update(table.playerState).set({
         credits: pState.credits - needCredits,
         metal: pState.metal - needMetal,
         crystal: pState.crystal - needCrystal,
         fuel: pState.fuel - needFuel
-      }).where(eq(playerState.userId, user.id));
+      }).where(eq(table.playerState.userId, user.id));
 
-      // update demo player.json (if present) so UI reflects deducted resources in demo mode
-      try {
-        const demoPlayer = await readJson(PLAYER_FILE, null as any);
-        if (demoPlayer) {
-          demoPlayer.resources = demoPlayer.resources ?? {};
-          demoPlayer.resources.credits = (Number(demoPlayer.resources.credits ?? pState.credits) - needCredits);
-          demoPlayer.resources.metal = (Number(demoPlayer.resources.metal ?? pState.metal) - needMetal);
-          demoPlayer.resources.crystal = (Number(demoPlayer.resources.crystal ?? pState.crystal) - needCrystal);
-          demoPlayer.resources.fuel = (Number(demoPlayer.resources.fuel ?? pState.fuel) - needFuel);
-          await writeJson(PLAYER_FILE, demoPlayer);
-        }
-      } catch (_) {
-        // ignore demo write errors
-      }
+      // update demo player.json removed as we are fully DB-based now
+
     }
 
     // enqueue building upgrade as a build
     const now = new Date();
     const duration = typeof buildingDef.time === 'function' ? buildingDef.time(currentLevel + 1) : 10;
-    const entryId = `build-${now.getTime()}`;
+    const entryId = `build-${crypto.randomUUID()}`;
     const entry: BuildEntry = { id: entryId, type: 'building', buildingId, createdAt: now.toISOString(), durationSeconds: duration, remainingSeconds: duration, status: 'queued', userId: user.id };
     // Insert into DB buildQueue
     await db.insert(table.buildQueue).values({
@@ -85,21 +70,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       totalDuration: duration
     });
 
-    // Sync to DB
-    try {
-      await db.insert(table.buildQueue).values({
-        id: entryId,
-        userId: user.id,
-        type: 'building',
-        buildingId: buildingId,
-        quantity: 1,
-        startedAt: now,
-        eta: new Date(now.getTime() + duration * 1000),
-        totalDuration: duration
-      });
-    } catch (e) {
-      console.error('Failed to sync building upgrade to DB', e);
-    }
+
 
     // Build the response state from the DB (so UI reflects the updated resources)
     let state: Record<string, any> = {};

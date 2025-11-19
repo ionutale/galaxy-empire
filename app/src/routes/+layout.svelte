@@ -64,6 +64,7 @@
 			if (res.ok) {
 				const body = await res.json();
 				state = body.state;
+                console.log('[layout] loaded state', { builds: state.builds, count: state.builds?.length });
 			}
 		} catch {}
 	}
