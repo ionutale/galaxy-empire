@@ -2,8 +2,11 @@
 import { onMount } from 'svelte';
 type BuildItem = { id: string; shipTemplateId: string; quantity: number; processedAt: string | number; rolledBack?: boolean };
 type MissionItem = { id: string; shipTemplateId: string; quantity: number; completedAt: string | number; outcome?: string; rolledBack?: boolean };
+type ActiveBuild = { id: string; type: string; status: string; remainingSeconds?: number; [k: string]: any };
+
 let builds: BuildItem[] = [];
 let missions: MissionItem[] = [];
+let activeBuilds: ActiveBuild[] = [];
 let adminKey = '';
 let error = '';
 let loading = false;
@@ -12,10 +15,13 @@ let lastLoaded: Date | null = null;
 async function load() {
   loading = true;
   error = '';
+  if (adminKey) localStorage.setItem('adminKey', adminKey);
+  
   try {
-    const [rb, rm] = await Promise.all([
+    const [rb, rm, ra] = await Promise.all([
       fetch('/api/admin/processed-builds', { headers: { 'x-admin-key': adminKey } }),
-      fetch('/api/admin/processed-missions', { headers: { 'x-admin-key': adminKey } })
+      fetch('/api/admin/processed-missions', { headers: { 'x-admin-key': adminKey } }),
+      fetch('/api/admin/active-builds', { headers: { 'x-admin-key': adminKey } })
     ]);
 
     if (rb.ok) {
@@ -32,6 +38,12 @@ async function load() {
       error = error || 'auth_failed_missions';
     }
 
+    if (ra.ok) {
+      activeBuilds = (await ra.json()).items || [];
+    } else {
+      activeBuilds = [];
+    }
+
     lastLoaded = new Date();
   } catch (e) {
     error = 'network_error';
@@ -40,7 +52,27 @@ async function load() {
   }
 }
 
-onMount(load);
+onMount(() => {
+  const stored = localStorage.getItem('adminKey');
+  if (stored) {
+    adminKey = stored;
+    load();
+  }
+});
+
+async function forceTick() {
+  try {
+    const res = await fetch('/api/admin/force-tick', { method: 'POST', headers: { 'x-admin-key': adminKey } });
+    if (res.ok) {
+      await load();
+      alert('Tick processed');
+    } else {
+      alert('Tick failed');
+    }
+  } catch (e) {
+    alert('Network error');
+  }
+}
 
 async function rollbackBuild(id: string) {
   try {
@@ -90,15 +122,21 @@ async function rollbackMission(id: string) {
     {/if}
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="card p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm text-muted">Active Queue</div>
+          <div class="text-2xl font-semibold">{activeBuilds.length}</div>
+        </div>
+      </div>
+    </div>
+
     <div class="card p-4">
       <div class="flex items-center justify-between">
         <div>
           <div class="text-sm text-muted">Processed builds</div>
           <div class="text-2xl font-semibold">{builds.length}</div>
-        </div>
-        <div class="text-right">
-          <button class="btn btn-xs btn-outline" on:click={load} disabled={loading}>Refresh</button>
         </div>
       </div>
     </div>
@@ -109,25 +147,37 @@ async function rollbackMission(id: string) {
           <div class="text-sm text-muted">Processed missions</div>
           <div class="text-2xl font-semibold">{missions.length}</div>
         </div>
-        <div class="text-right">
-          <button class="btn btn-xs btn-outline" on:click={load} disabled={loading}>Refresh</button>
-        </div>
       </div>
     </div>
 
     <div class="card p-4">
-      <div class="text-sm text-muted">Status</div>
+      <div class="text-sm text-muted">Actions</div>
       <div class="mt-2">
-        {#if loading}
-          <span class="badge badge-info">Loading</span>
-        {:else}
-          <span class="badge badge-success">Idle</span>
-        {/if}
+        <button class="btn btn-sm btn-warning w-full" on:click={forceTick} disabled={loading}>Force Tick</button>
       </div>
     </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <section class="card p-4 col-span-1 md:col-span-2">
+      <h3 class="font-semibold">Active Queue</h3>
+      <div class="divider"></div>
+      {#if activeBuilds.length === 0}
+        <p class="text-muted">No active builds</p>
+      {:else}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          {#each activeBuilds as b}
+            <div class="p-2 border rounded bg-base-200">
+              <div class="font-medium">{b.type === 'building' ? b.buildingId : (b.shipType || b.techId || b.type)}</div>
+              <div class="text-xs text-muted">ID: {b.id}</div>
+              <div class="text-sm">Status: <span class="badge badge-sm badge-info">{b.status}</span></div>
+              <div class="text-sm">Remaining: {b.remainingSeconds}s</div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </section>
+
     <section class="card p-4">
       <h3 class="font-semibold">Processed Builds</h3>
   <div class="divider"></div>

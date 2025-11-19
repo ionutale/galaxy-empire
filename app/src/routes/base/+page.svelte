@@ -91,7 +91,7 @@
       state = (await res.json()).state;
   // tell other components to reload their player state (ResourceBar)
   try { window.dispatchEvent(new CustomEvent('player:changed')); } catch (e) {}
-      import('$lib/stores/toast').then((m) => m.pushToast(`${id} upgraded`, 'success'));
+      import('$lib/stores/toast').then((m) => m.pushToast(`${BUILDING_DATA[id].name} upgrade queued`, 'success'));
     } else {
       import('$lib/stores/toast').then((m) => m.pushToast(`Upgrade failed`, 'error'));
     }
@@ -129,7 +129,6 @@
       <div class="card col-span-2 bg-base-200 p-4">
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold">Ships</h3>
-          <button class="btn btn-sm btn-secondary" on:click={processBuilds}>Process builds</button>
         </div>
         <div class="divider"></div>
         {#if state.ships && state.ships.length > 0}
