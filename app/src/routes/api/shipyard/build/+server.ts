@@ -64,17 +64,18 @@ export const POST: RequestHandler = async (event) => {
 
   // Add to builds.json queue
   const builds = await readJson(BUILDS_FILE, [] as BuildEntry[]);
-  const now = new Date().toISOString();
+  const now = new Date();
   const duration = (template.buildTime || 10) * quantity;
+  const entryId = `build-${now.getTime()}`;
   
   const entry: BuildEntry = {
-    id: `build-${Date.now()}`,
+    id: entryId,
     type: 'ship', // processor uses this or shipType
     // @ts-ignore - processor handles shipType/count
     shipType: shipTemplateId,
     count: quantity,
     buildingId: shipTemplateId, // Hack: set buildingId so sidebar displays the name using BUILDING_DATA fallback or we fix sidebar
-    createdAt: now,
+    createdAt: now.toISOString(),
     durationSeconds: duration,
     remainingSeconds: duration,
     status: 'queued',
@@ -83,6 +84,22 @@ export const POST: RequestHandler = async (event) => {
   
   builds.push(entry);
   await writeJson(BUILDS_FILE, builds);
+
+  // Sync to DB
+  try {
+    await db.insert(table.buildQueue).values({
+      id: entryId,
+      userId: user.id,
+      type: 'ship',
+      shipTemplateId: shipTemplateId,
+      quantity: quantity,
+      startedAt: now,
+      eta: new Date(now.getTime() + duration * 1000),
+      totalDuration: duration
+    });
+  } catch (e) {
+    console.error('Failed to sync build to DB', e);
+  }
 
   return new Response(JSON.stringify({ queued: true, id: entry.id }), { headers: { 'content-type': 'application/json' } });
 };

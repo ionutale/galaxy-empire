@@ -76,16 +76,17 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
     // Add to queue
     const builds = await readJson(BUILDS_FILE, [] as BuildEntry[]);
-    const now = new Date().toISOString();
+    const now = new Date();
     const duration = techDef.time ? techDef.time(nextLevel) : 30;
+    const entryId = `research-${now.getTime()}`;
     
     const entry: BuildEntry = {
-      id: `research-${Date.now()}`,
+      id: entryId,
       type: 'research',
       // @ts-ignore
       techId: techId,
       buildingId: techId, // Hack for sidebar name display
-      createdAt: now,
+      createdAt: now.toISOString(),
       durationSeconds: duration,
       remainingSeconds: duration,
       status: 'queued',
@@ -94,6 +95,22 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     
     builds.push(entry);
     await writeJson(BUILDS_FILE, builds);
+
+    // Sync to DB
+    try {
+      await db.insert(table.buildQueue).values({
+        id: entryId,
+        userId: user.id,
+        type: 'research',
+        techId: techId,
+        quantity: 1,
+        startedAt: now,
+        eta: new Date(now.getTime() + duration * 1000),
+        totalDuration: duration
+      });
+    } catch (e) {
+      console.error('Failed to sync research to DB', e);
+    }
 
     return new Response(JSON.stringify({ queued: true, id: entry.id }), { headers: { 'Content-Type': 'application/json' } });
 

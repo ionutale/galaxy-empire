@@ -69,13 +69,29 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
     // enqueue building upgrade as a build
     const builds = await readJson(BUILDS_FILE, [] as BuildEntry[]);
-    const now = new Date().toISOString();
+    const now = new Date();
     const duration = typeof buildingDef.time === 'function' ? buildingDef.time(currentLevel + 1) : 10;
-    const entry: BuildEntry = { id: `build-${Date.now()}`, type: 'building', buildingId, createdAt: now, durationSeconds: duration, remainingSeconds: duration, status: 'queued', userId: user.id };
+    const entryId = `build-${now.getTime()}`;
+    
+    const entry: BuildEntry = { id: entryId, type: 'building', buildingId, createdAt: now.toISOString(), durationSeconds: duration, remainingSeconds: duration, status: 'queued', userId: user.id };
     builds.push(entry);
     await writeJson(BUILDS_FILE, builds);
 
-
+    // Sync to DB
+    try {
+      await db.insert(table.buildQueue).values({
+        id: entryId,
+        userId: user.id,
+        type: 'building',
+        buildingId: buildingId,
+        quantity: 1,
+        startedAt: now,
+        eta: new Date(now.getTime() + duration * 1000),
+        totalDuration: duration
+      });
+    } catch (e) {
+      console.error('Failed to sync building upgrade to DB', e);
+    }
 
     // Build the response state from the DB (so UI reflects the updated resources)
     let state: Record<string, any> = {};

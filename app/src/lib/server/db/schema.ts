@@ -30,10 +30,14 @@ export const shipTemplate = pgTable('ship_template', {
 export const buildQueue = pgTable('build_queue', {
 	id: text('id').primaryKey(),
 	userId: text('user_id').notNull().references(() => user.id),
-	shipTemplateId: text('ship_template_id').notNull().references(() => shipTemplate.id),
-	quantity: integer('quantity').notNull(),
+	type: text('type').notNull().default('ship'),
+	shipTemplateId: text('ship_template_id').references(() => shipTemplate.id),
+	buildingId: text('building_id'),
+	techId: text('tech_id'),
+	quantity: integer('quantity').notNull().default(1),
 	startedAt: timestamp('started_at', { mode: 'date' }).notNull(),
-	eta: timestamp('eta', { mode: 'date' }).notNull()
+	eta: timestamp('eta', { mode: 'date' }).notNull(),
+	totalDuration: integer('total_duration').notNull().default(0)
 });
 
 export type ShipTemplate = typeof shipTemplate.$inferSelect;

@@ -109,13 +109,15 @@ export async function processBuilds(tickSeconds = 5) {
             try {
               const { db } = await import('$lib/server/db');
               const table = await import('$lib/server/db/schema');
-              const rows = await db.select().from(table.playerBuildings).where((table as any).playerBuildings.userId.eq(entryUserId)).all();
+              const rows = await db.select().from(table.playerBuildings).where((table as any).playerBuildings.userId.eq(entryUserId));
               const existing = rows.find((r: any) => r.buildingId === buildingId);
               if (existing) {
-                await db.update(table.playerBuildings).set({ level: existing.level + 1 }).where((table as any).playerBuildings.id.eq(existing.id)).run();
+                await db.update(table.playerBuildings).set({ level: existing.level + 1 }).where((table as any).playerBuildings.id.eq(existing.id));
               } else {
-                await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: entryUserId, buildingId, level: 1 }).run();
+                await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: entryUserId, buildingId, level: 1 });
               }
+              // Remove from buildQueue
+              await db.delete(table.buildQueue).where((table as any).buildQueue.id.eq(b.id));
             } catch (err) {
               console.error('db playerBuildings sync error', err);
             }
@@ -123,22 +125,24 @@ export async function processBuilds(tickSeconds = 5) {
         } else if ((b as any).type === 'research' && (b as any).techId) {
           const techId = String((b as any).techId);
           if (player) {
-            player.research = player.research ?? {};
-            const current = player.research[techId] || { level: 0 };
-            player.research[techId] = { level: (current.level || 0) + 1 };
+            player.research = (player.research as Record<string, { level: number }>) ?? {};
+            const current = (player.research as Record<string, { level: number }>)[techId] || { level: 0 };
+            (player.research as Record<string, { level: number }>)[techId] = { level: (current.level || 0) + 1 };
           }
           
           if (env.DATABASE_URL) {
             try {
               const { db } = await import('$lib/server/db');
               const table = await import('$lib/server/db/schema');
-              const rows = await db.select().from(table.playerResearch).where((table as any).playerResearch.userId.eq(entryUserId)).all();
+              const rows = await db.select().from(table.playerResearch).where((table as any).playerResearch.userId.eq(entryUserId));
               const existing = rows.find((r: any) => r.techId === techId);
               if (existing) {
-                await db.update(table.playerResearch).set({ level: existing.level + 1 }).where((table as any).playerResearch.id.eq(existing.id)).run();
+                await db.update(table.playerResearch).set({ level: existing.level + 1 }).where((table as any).playerResearch.id.eq(existing.id));
               } else {
-                await db.insert(table.playerResearch).values({ id: crypto.randomUUID(), userId: entryUserId, techId, level: 1 }).run();
+                await db.insert(table.playerResearch).values({ id: crypto.randomUUID(), userId: entryUserId, techId, level: 1 });
               }
+              // Remove from buildQueue
+              await db.delete(table.buildQueue).where((table as any).buildQueue.id.eq(b.id));
             } catch (err) {
               console.error('db playerResearch sync error', err);
             }
@@ -156,14 +160,16 @@ export async function processBuilds(tickSeconds = 5) {
               try {
                 const { db } = await import('$lib/server/db');
                 const table = await import('$lib/server/db/schema');
-                const existing = (await db.select().from(table.playerShips).where((table as any).playerShips.userId.eq('demo_player')).all()).find((s: any) => s.shipTemplateId === t);
+                const existing = (await db.select().from(table.playerShips).where((table as any).playerShips.userId.eq('demo_player'))).find((s: any) => s.shipTemplateId === t);
                 if (existing) {
-                  await db.update(table.playerShips).set({ quantity: existing.quantity + count }).where((table as any).playerShips.id.eq(existing.id)).run();
+                  await db.update(table.playerShips).set({ quantity: existing.quantity + count }).where((table as any).playerShips.id.eq(existing.id));
                 } else {
-                  await db.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: 'demo_player', shipTemplateId: t, quantity: count }).run();
+                  await db.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: 'demo_player', shipTemplateId: t, quantity: count });
                 }
                 // record processed build
-                await db.insert(table.processedBuilds).values({ id: crypto.randomUUID(), userId: 'demo_player', shipTemplateId: t, quantity: count, processedAt: new Date() }).run();
+                await db.insert(table.processedBuilds).values({ id: crypto.randomUUID(), userId: 'demo_player', shipTemplateId: t, quantity: count, processedAt: new Date() });
+                // Remove from buildQueue
+                await db.delete(table.buildQueue).where((table as any).buildQueue.id.eq(b.id));
               } catch (err) {
                 // ignore db errors to keep demo running
                 console.error('db sync error', err);
@@ -269,11 +275,11 @@ export async function processProduction(tickSeconds = 5) {
     try {
       const { db } = await import('$lib/server/db');
       const table = await import('$lib/server/db/schema');
-      const stateRow = (await db.select().from(table.playerState).all())[0];
+      const stateRow = (await db.select().from(table.playerState))[0];
       if (stateRow) {
-        await db.update(table.playerState).set({ credits: Number(player.resources.credits ?? stateRow.credits), metal: Number(player.resources.metal ?? stateRow.metal), crystal: Number(player.resources.crystal ?? stateRow.crystal), fuel: Number(player.resources.fuel ?? stateRow.fuel) }).where((table as any).playerState.userId.eq('demo_player')).run();
+        await db.update(table.playerState).set({ credits: Number(player.resources.credits ?? stateRow.credits), metal: Number(player.resources.metal ?? stateRow.metal), crystal: Number(player.resources.crystal ?? stateRow.crystal), fuel: Number(player.resources.fuel ?? stateRow.fuel) }).where((table as any).playerState.userId.eq('demo_player'));
       } else {
-        await db.insert(table.playerState).values({ userId: 'demo_player', level: 1, power: 1, credits: Number(player.resources.credits ?? 0), metal: Number(player.resources.metal ?? 0), crystal: Number(player.resources.crystal ?? 0), fuel: Number(player.resources.fuel ?? 0) }).run();
+        await db.insert(table.playerState).values({ userId: 'demo_player', level: 1, power: 1, credits: Number(player.resources.credits ?? 0), metal: Number(player.resources.metal ?? 0), crystal: Number(player.resources.crystal ?? 0), fuel: Number(player.resources.fuel ?? 0) });
       }
     } catch (err) {
       console.error('db production sync error', err);
