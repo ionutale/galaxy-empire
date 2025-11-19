@@ -232,42 +232,12 @@
     }
   },
   {
-    "id": "build-1763578002456",
-    "type": "building",
-    "buildingId": "controlCenter",
-    "createdAt": "2025-11-19T18:46:42.455Z",
-    "durationSeconds": 135,
-    "remainingSeconds": 135,
-    "status": "queued",
-    "userId": "4cdf1cef-7cd7-46d9-825c-b650e5a28d5e"
-  },
-  {
-    "id": "build-1763578019283",
+    "id": "build-1763580157029",
     "type": "building",
     "buildingId": "metalMine",
-    "createdAt": "2025-11-19T18:46:59.283Z",
+    "createdAt": "2025-11-19T19:22:37.028Z",
     "durationSeconds": 115,
     "remainingSeconds": 115,
-    "status": "queued",
-    "userId": "4cdf1cef-7cd7-46d9-825c-b650e5a28d5e"
-  },
-  {
-    "id": "build-1763578026000",
-    "type": "building",
-    "buildingId": "deuteriumRefinery",
-    "createdAt": "2025-11-19T18:47:05.999Z",
-    "durationSeconds": 204,
-    "remainingSeconds": 204,
-    "status": "queued",
-    "userId": "4cdf1cef-7cd7-46d9-825c-b650e5a28d5e"
-  },
-  {
-    "id": "build-1763579336917",
-    "type": "building",
-    "buildingId": "crystalSynthesizer",
-    "createdAt": "2025-11-19T19:08:56.916Z",
-    "durationSeconds": 128,
-    "remainingSeconds": 128,
     "status": "queued",
     "userId": "4cdf1cef-7cd7-46d9-825c-b650e5a28d5e"
   }

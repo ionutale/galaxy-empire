@@ -106,6 +106,26 @@
 		if (minutes > 0) return `${minutes}m ${seconds}s`;
 		return `${seconds}s`;
 	}
+
+	async function cancelBuild(buildId: string) {
+		try {
+			const res = await fetch('/api/demo/builds/cancel', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ buildId })
+			});
+			if (res.ok) {
+				const body = await res.json();
+				if (body.state) {
+					state = body.state;
+				} else {
+					await loadState();
+				}
+			}
+		} catch (e) {
+			console.error('Failed to cancel build', e);
+		}
+	}
 </script>
 
 <svelte:head>
@@ -179,22 +199,7 @@
 							<div class="mt-4">
 								<ChipsPanel />
 							</div>
-							<div class="mt-6">
-								<div class="card bg-base-100 border border-base-300 p-3">
-									<div class="text-sm">Theme</div>
-									<div class="mt-2 flex flex-wrap gap-2">
-										{#each themes as t}
-											<button
-												class="btn btn-xs"
-												class:btn-outline={theme !== t}
-												class:btn-primary={theme === t}
-												on:click={() => applyTheme(t)}
-												aria-pressed={theme === t}>{t}</button
-											>
-										{/each}
-									</div>
-								</div>
-							</div>
+								
 						</aside>
 						<!-- global toast container -->
 						<Toast />
@@ -220,7 +225,10 @@
 										<div class="text-xs opacity-70 capitalize">{build.status}</div>
 									</div>
 									{#if build.status === 'in-progress' || build.status === 'queued'}
-										<div class="badge badge-sm badge-primary">{getRemainingTime(build)}</div>
+										<div class="flex flex-col items-end gap-1">
+											<div class="badge badge-sm badge-primary">{getRemainingTime(build)}</div>
+											<button class="btn btn-xs btn-error btn-outline" on:click={() => cancelBuild(build.id)}>Cancel</button>
+										</div>
 									{:else}
 										<div class="text-xs opacity-50">{new Date(build.createdAt).toLocaleDateString()}</div>
 									{/if}
