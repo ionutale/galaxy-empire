@@ -2,7 +2,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { sessionCookieName, validateSessionToken } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 export const POST: RequestHandler = async (event) => {
   const token = event.cookies.get(sessionCookieName);
@@ -17,22 +17,32 @@ export const POST: RequestHandler = async (event) => {
 
   if (!shipTemplateId || quantity < 1) return new Response(JSON.stringify({ error: 'invalid' }), { status: 400 });
 
-  const ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id)).all();
-  const existing = ships.find((s) => s.shipTemplateId === shipTemplateId);
-  if (!existing || existing.quantity < quantity) return new Response(JSON.stringify({ error: 'insufficient_ships' }), { status: 400 });
+  try {
+    // deduct ships and create mission transactionally
+    await db.transaction(async (ctx) => {
+      const [existing] = await ctx.select().from(table.playerShips).where(and(eq(table.playerShips.userId, user.id), eq(table.playerShips.shipTemplateId, shipTemplateId)));
 
-  // deduct ships and create mission
-  db.transaction((ctx) => {
-    const newQty = existing.quantity - quantity;
-    if (newQty > 0) {
-      ctx.update(table.playerShips).set({ quantity: newQty }).where(eq(table.playerShips.id, existing.id)).run();
-    } else {
-      ctx.delete(table.playerShips).where(eq(table.playerShips.id, existing.id)).run();
+      if (!existing || existing.quantity < quantity) {
+        throw new Error('insufficient_ships');
+      }
+
+      const newQty = existing.quantity - quantity;
+      if (newQty > 0) {
+        await ctx.update(table.playerShips).set({ quantity: newQty }).where(eq(table.playerShips.id, existing.id));
+      } else {
+        await ctx.delete(table.playerShips).where(eq(table.playerShips.id, existing.id));
+      }
+      const now = Date.now();
+      const eta = now + 60 * 1000; // 60s mission for demo
+      await ctx.insert(table.missions).values({ id: crypto.randomUUID(), userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta), status: 'in_progress' });
+    });
+  } catch (err: any) {
+    if (err.message === 'insufficient_ships') {
+      return new Response(JSON.stringify({ error: 'insufficient_ships' }), { status: 400 });
     }
-    const now = Date.now();
-    const eta = now + 60 * 1000; // 60s mission for demo
-    ctx.insert(table.missions).values({ id: crypto.randomUUID(), userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta), status: 'in_progress' }).run();
-  });
+    console.error('Failed to start mission', err);
+    return new Response(JSON.stringify({ error: 'internal_error' }), { status: 500 });
+  }
 
   return new Response(JSON.stringify({ started: true }), { headers: { 'content-type': 'application/json' } });
 };

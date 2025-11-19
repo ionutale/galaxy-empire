@@ -11,6 +11,6 @@ export const GET: RequestHandler = async (event) => {
   const { user } = await validateSessionToken(token);
   if (!user) return new Response(JSON.stringify({ error: 'unauthenticated' }), { status: 401 });
 
-  const items = await db.select().from(table.buildQueue).where(eq(table.buildQueue.userId, user.id)).all();
+  const items = await db.select().from(table.buildQueue).where(eq(table.buildQueue.userId, user.id));
   return new Response(JSON.stringify({ items }), { headers: { 'content-type': 'application/json' } });
 };

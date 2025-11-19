@@ -3,6 +3,7 @@ import { sessionCookieName, validateSessionToken } from '$lib/server/auth';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
+import { retryAsync } from '$lib/server/retry';
 
 export const POST: RequestHandler = async (event) => {
   const token = event.cookies.get(sessionCookieName);
@@ -24,29 +25,38 @@ export const POST: RequestHandler = async (event) => {
 
   const now = Date.now();
   const eta = now + template.buildTime * 1000 * quantity; // buildTime in seconds
-
-  // check and deduct credits
-  const [stateRow] = await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id));
   const totalCost = template.costCredits * quantity;
-  if (!stateRow || (stateRow.credits ?? 0) < totalCost) {
+
+  // Initial check (optimization)
+  const [initialState] = await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id));
+  if (!initialState || (initialState.credits ?? 0) < totalCost) {
     return new Response(JSON.stringify({ error: 'insufficient_funds' }), { status: 402 });
   }
 
   // perform update + insert in a transaction so a failure rolls back the deduction
   let queuedId: string | undefined;
   try {
-    const { retryAsync } = await import('$lib/server/retry');
     // generate a fresh id per attempt to avoid unique constraint if a retry occurs
     queuedId = await retryAsync(async () => {
       const attemptId = crypto.randomUUID();
-      db.transaction((ctx) => {
-        const newCredits = (stateRow.credits ?? 0) - totalCost;
-        ctx.update(table.playerState).set({ credits: newCredits }).where(eq(table.playerState.userId, user.id)).run();
-        ctx.insert(table.buildQueue).values({ id: attemptId, userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta) }).run();
+      await db.transaction(async (ctx) => {
+        // Re-fetch state inside transaction to ensure consistency and lock (if supported)
+        const [currentState] = await ctx.select().from(table.playerState).where(eq(table.playerState.userId, user.id));
+
+        if (!currentState || (currentState.credits ?? 0) < totalCost) {
+          throw new Error('insufficient_funds');
+        }
+
+        const newCredits = (currentState.credits ?? 0) - totalCost;
+        await ctx.update(table.playerState).set({ credits: newCredits }).where(eq(table.playerState.userId, user.id));
+        await ctx.insert(table.buildQueue).values({ id: attemptId, userId: user.id, shipTemplateId, quantity, startedAt: new Date(now), eta: new Date(eta) });
       });
       return attemptId;
     }, 3, 200, 2);
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message === 'insufficient_funds') {
+      return new Response(JSON.stringify({ error: 'insufficient_funds' }), { status: 402 });
+    }
     console.error('Failed to queue build transactionally', err);
     return new Response(JSON.stringify({ error: 'internal_error' }), { status: 500 });
   }

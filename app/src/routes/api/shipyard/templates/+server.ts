@@ -12,7 +12,7 @@ type ShipTemplateRow = {
 };
 
 export const GET: RequestHandler = async () => {
-  let templates = await db.select().from(table.shipTemplate).all();
+  let templates = await db.select().from(table.shipTemplate);
   if (templates.length === 0) {
     for (const s of SHIP_TEMPLATES) {
       const row: ShipTemplateRow = {
@@ -22,9 +22,9 @@ export const GET: RequestHandler = async () => {
         buildTime: s.buildTime || 0,
         costCredits: s.buildCost?.credits || 0
       };
-      await db.insert(table.shipTemplate).values(row).run();
+      await db.insert(table.shipTemplate).values(row);
     }
-    templates = await db.select().from(table.shipTemplate).all();
+    templates = await db.select().from(table.shipTemplate);
   }
   return new Response(JSON.stringify({ templates }), { headers: { 'content-type': 'application/json' } });
 };

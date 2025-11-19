@@ -28,34 +28,33 @@ export const POST: RequestHandler = async (event) => {
   const id = crypto.randomUUID();
   const passwordHash = await hash(password);
 
-  await db.insert(table.user).values({ id, username, passwordHash }).run();
-
-  // create default player state with starting resources
   try {
-    await db.insert(table.playerState).values({
-      userId: id,
-      level: 1,
-      power: 10,
-      credits: 1500,
-      metal: 1000,
-      crystal: 500,
-      fuel: 200
-    }).run();
-  } catch {
-    // fallback: attempt minimal insert
-    await db.insert(table.playerState).values({ userId: id }).run();
-  }
+    await db.transaction(async (ctx) => {
+      await ctx.insert(table.user).values({ id, username, passwordHash });
 
-  // create default starting buildings: give new players some basic structures at level 1
-  try {
-    await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: id, buildingId: 'controlCenter', level: 1 }).run();
-    await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: id, buildingId: 'metalMine', level: 1 }).run();
-    await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: id, buildingId: 'crystalSynthesizer', level: 1 }).run();
-    await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: id, buildingId: 'metalStorage', level: 1 }).run();
-    await db.insert(table.playerBuildings).values({ id: crypto.randomUUID(), userId: id, buildingId: 'crystalStorage', level: 1 }).run();
+      // create default player state with starting resources
+      await ctx.insert(table.playerState).values({
+        userId: id,
+        level: 1,
+        power: 10,
+        credits: 1500,
+        metal: 1000,
+        crystal: 500,
+        fuel: 200
+      });
+
+      // create default starting buildings: give new players some basic structures at level 1
+      await ctx.insert(table.playerBuildings).values([
+        { id: crypto.randomUUID(), userId: id, buildingId: 'controlCenter', level: 1 },
+        { id: crypto.randomUUID(), userId: id, buildingId: 'metalMine', level: 1 },
+        { id: crypto.randomUUID(), userId: id, buildingId: 'crystalSynthesizer', level: 1 },
+        { id: crypto.randomUUID(), userId: id, buildingId: 'metalStorage', level: 1 },
+        { id: crypto.randomUUID(), userId: id, buildingId: 'crystalStorage', level: 1 }
+      ]);
+    });
   } catch (err) {
-    // non-fatal: continue without failing registration if building insert fails
-    console.error('failed to insert default player buildings', err);
+    console.error('Failed to register user transactionally', err);
+    return new Response(JSON.stringify({ error: 'internal_error' }), { status: 500 });
   }
 
   const token = generateSessionToken();
