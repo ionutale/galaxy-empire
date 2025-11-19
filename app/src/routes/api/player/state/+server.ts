@@ -33,9 +33,9 @@ export const GET: RequestHandler = async (event) => {
 
   try {
     stateRow = (await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id)))[0];
-    ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id)).all();
-    builds = await readJson<Build[]>(BUILDS_FILE, []);
-    buildingsResult = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id)).all();
+    ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id));
+    builds = await readJson(BUILDS_FILE, [] as BuildEntry[]);
+    buildingsResult = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id));
   } catch (err) {
     // If the DB or tables don't exist (common in fresh dev clones), fall back to demo/defaults
     console.warn('player state DB query failed, falling back to defaults', err?.toString?.() ?? err);

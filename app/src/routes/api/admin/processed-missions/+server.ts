@@ -10,6 +10,6 @@ function isAdmin(event: Request) {
 
 export const GET: RequestHandler = async ({ request }) => {
   if (!isAdmin(request)) return new Response(null, { status: 403 });
-  const items = await db.select().from(table.processedMissions).all();
+  const items = await db.select().from(table.processedMissions);
   return new Response(JSON.stringify({ items }), { headers: { 'content-type': 'application/json' } });
 };

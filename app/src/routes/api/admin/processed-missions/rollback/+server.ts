@@ -20,25 +20,26 @@ export const POST: RequestHandler = async ({ request }) => {
   if (record.rolledBack) return new Response(JSON.stringify({ error: 'already_rolled_back' }), { status: 400 });
 
   // reverse rewards and restore lost ships
-  db.transaction((ctx) => {
+  // reverse rewards and restore lost ships
+  await db.transaction(async (ctx) => {
     // revert rewards from player_state
-    const state = ctx.select().from(table.playerState).where(eq(table.playerState.userId, record.userId)).all()[0];
+    const state = (await ctx.select().from(table.playerState).where(eq(table.playerState.userId, record.userId)))[0];
     if (state) {
-      ctx.update(table.playerState).set({ credits: Math.max(0, state.credits - record.rewardCredits), metal: Math.max(0, state.metal - record.rewardMetal), crystal: Math.max(0, state.crystal - record.rewardCrystal) }).where(eq(table.playerState.userId, record.userId)).run();
+      await ctx.update(table.playerState).set({ credits: Math.max(0, state.credits - record.rewardCredits), metal: Math.max(0, state.metal - record.rewardMetal), crystal: Math.max(0, state.crystal - record.rewardCrystal) }).where(eq(table.playerState.userId, record.userId));
     }
 
     // restore lost ships back to player_ships
     if (record.quantityLost > 0) {
-      const ships = ctx.select().from(table.playerShips).where(eq(table.playerShips.userId, record.userId)).all();
+      const ships = await ctx.select().from(table.playerShips).where(eq(table.playerShips.userId, record.userId));
       const existing = ships.find((s) => s.shipTemplateId === record.shipTemplateId);
       if (existing) {
-        ctx.update(table.playerShips).set({ quantity: existing.quantity + record.quantityLost }).where(eq(table.playerShips.id, existing.id)).run();
+        await ctx.update(table.playerShips).set({ quantity: existing.quantity + record.quantityLost }).where(eq(table.playerShips.id, existing.id));
       } else {
-        ctx.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: record.userId, shipTemplateId: record.shipTemplateId, quantity: record.quantityLost }).run();
+        await ctx.insert(table.playerShips).values({ id: crypto.randomUUID(), userId: record.userId, shipTemplateId: record.shipTemplateId, quantity: record.quantityLost });
       }
     }
 
-    ctx.update(table.processedMissions).set({ rolledBack: 1, rolledBackAt: new Date() }).where(eq(table.processedMissions.id, id)).run();
+    await ctx.update(table.processedMissions).set({ rolledBack: 1, rolledBackAt: new Date() }).where(eq(table.processedMissions.id, id));
   });
 
   return new Response(JSON.stringify({ rolledBack: true }));
