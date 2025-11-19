@@ -75,28 +75,53 @@
 		if (user) {
 			loadState();
 			const interval = setInterval(() => { now = Date.now(); }, 1000);
+			
+			// Game loop: tick the server every 5 seconds to process builds/fleets
+			const tickInterval = setInterval(async () => {
+				try {
+					const res = await fetch('/api/demo/process/tick', { 
+						method: 'POST', 
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ seconds: 5 }) 
+					});
+					if (res.ok) {
+						const data = await res.json();
+						// if anything was processed, reload state to reflect changes
+						if ((data.builds && data.builds.length > 0) || (data.fleets && data.fleets.length > 0)) {
+							loadState();
+						}
+					}
+				} catch (e) {
+					console.error('Tick error', e);
+				}
+			}, 5000);
+
 			window.addEventListener('player:changed', loadState);
 			return () => {
 				clearInterval(interval);
+				clearInterval(tickInterval);
 				window.removeEventListener('player:changed', loadState);
 			};
 		}
 	});
 
 	$: isPhoneDemo = $page.url.pathname.startsWith('/demo/phone');
-	$: builds = (state?.builds ?? []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+	$: builds = [...(state?.builds ?? [])].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 	$: activeBuilds = builds.filter((b: any) => b.status === 'in-progress' || b.status === 'queued');
 	$: activeBuildsCount = activeBuilds.length;
 
-	function getRemainingTime(build: any) {
+	function getRemainingTime(build: any, currentNow: number) {
 		if (build.status === 'completed') return 'Completed';
-		if (build.status === 'queued') return 'Queued';
 		
-		const startTime = new Date(build.createdAt).getTime();
-		const endTime = startTime + (build.durationSeconds * 1000);
-		const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
-		
-		if (remaining <= 0) return 'Finishing...';
+		let remaining = 0;
+		if (build.status === 'queued') {
+			remaining = build.durationSeconds;
+		} else {
+			const startTime = new Date(build.createdAt).getTime();
+			const endTime = startTime + (build.durationSeconds * 1000);
+			remaining = Math.max(0, Math.floor((endTime - currentNow) / 1000));
+			if (remaining <= 0) return 'Finishing...';
+		}
 		
 		const hours = Math.floor(remaining / 3600);
 		const minutes = Math.floor((remaining % 3600) / 60);
@@ -144,7 +169,7 @@
 				<input id="app-drawer" type="checkbox" class="drawer-toggle" bind:checked={drawerOpen} />
 				<div class="drawer-content flex flex-col">
 					<!-- Top bar for mobile with menu toggle -->
-					<header class="w-full bg-base-100/80 backdrop-blur border-b border-base-300">
+					<header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur border-b border-base-300">
 						<div class="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
 							<div class="flex items-center gap-3">
 								<label for="app-drawer" class="btn btn-square btn-ghost lg:hidden">
@@ -226,7 +251,7 @@
 									</div>
 									{#if build.status === 'in-progress' || build.status === 'queued'}
 										<div class="flex flex-col items-end gap-1">
-											<div class="badge badge-sm badge-primary">{getRemainingTime(build)}</div>
+											<div class="badge badge-sm badge-primary">{getRemainingTime(build, now)}</div>
 											<button class="btn btn-xs btn-error btn-outline" on:click={() => cancelBuild(build.id)}>Cancel</button>
 										</div>
 									{:else}
