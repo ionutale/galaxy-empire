@@ -117,6 +117,29 @@ export async function processBuilds(tickSeconds = 5) {
               console.error('db playerBuildings sync error', err);
             }
           }
+        } else if ((b as any).type === 'research' && (b as any).techId) {
+          const techId = String((b as any).techId);
+          if (player) {
+            player.research = player.research ?? {};
+            const current = player.research[techId] || { level: 0 };
+            player.research[techId] = { level: (current.level || 0) + 1 };
+          }
+          
+          if (env.DATABASE_URL) {
+            try {
+              const { db } = await import('$lib/server/db');
+              const table = await import('$lib/server/db/schema');
+              const rows = await db.select().from(table.playerResearch).where((table as any).playerResearch.userId.eq(entryUserId)).all();
+              const existing = rows.find((r: any) => r.techId === techId);
+              if (existing) {
+                await db.update(table.playerResearch).set({ level: existing.level + 1 }).where((table as any).playerResearch.id.eq(existing.id)).run();
+              } else {
+                await db.insert(table.playerResearch).values({ id: crypto.randomUUID(), userId: entryUserId, techId, level: 1 }).run();
+              }
+            } catch (err) {
+              console.error('db playerResearch sync error', err);
+            }
+          }
         } else {
           // fallback: if build has a type string treat it as ship type or shipType field
           const t = typeof b.type === 'string' ? b.type : (b as Record<string, unknown>)['shipType'] as string | undefined;
