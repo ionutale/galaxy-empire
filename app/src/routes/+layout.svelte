@@ -233,11 +233,11 @@
 								
 						</aside>
 						<!-- global toast container -->
-						<Toast />
-					</div>
+						</div>
 				{/if}
 			</div>
 		</div>
+		<Toast />
 		<div class="drawer-side z-50">
 			<label for="builds-drawer" class="drawer-overlay"></label>
 			<div class="menu p-4 w-80 min-h-full bg-base-200 text-base-content">

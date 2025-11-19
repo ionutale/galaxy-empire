@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 
-export type Toast = { id: number; message: string; type?: 'info'|'success'|'error'; timeout?: number };
+export type Toast = { id: number; message: string; type?: 'info' | 'success' | 'error'; timeout?: number };
 
 const toasts = writable<Toast[]>([]);
 let nextId = 1;
