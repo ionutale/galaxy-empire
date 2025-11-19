@@ -37,15 +37,33 @@ export const GET: RequestHandler = async (event) => {
     stateRow = (await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id)))[0];
     ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id));
     const rawBuilds = await db.select().from(table.buildQueue).where(eq(table.buildQueue.userId, user.id));
+    const processedBuilds = await db.select().from(table.processedBuilds).where(eq(table.processedBuilds.userId, user.id));
+
     // Map DB builds to include 'status' for frontend compatibility
-    builds = rawBuilds.map(b => ({
+    const activeBuilds = rawBuilds.map(b => ({
       ...b,
       status: 'in-progress', // All builds in queue are active
       createdAt: b.startedAt.toISOString(), // Ensure date string format if needed
       durationSeconds: b.totalDuration,
       remainingSeconds: Math.max(0, Math.floor((b.eta.getTime() - Date.now()) / 1000))
-    })) as any[];
-    console.log('[api/player/state] fetched builds for user', user.id, builds);
+    }));
+
+    const completedBuilds = processedBuilds.map(b => ({
+      id: b.id,
+      type: b.type as 'building' | 'ship', // Cast type
+      buildingId: b.buildingId,
+      shipTemplateId: b.shipTemplateId,
+      techId: b.techId,
+      quantity: b.quantity,
+      status: 'completed',
+      createdAt: b.processedAt.toISOString(), // Use processed time as creation time for list sorting
+      durationSeconds: 0,
+      remainingSeconds: 0
+    }));
+
+    builds = [...activeBuilds, ...completedBuilds] as any[];
+
+    console.log('[api/player/state] fetched builds for user', user.id, { active: activeBuilds.length, completed: completedBuilds.length });
     buildingsResult = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id));
     const researchResult = await db.select().from(table.playerResearch).where(eq(table.playerResearch.userId, user.id));
 
