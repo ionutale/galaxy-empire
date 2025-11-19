@@ -49,6 +49,15 @@
   $: metalProductionRate = BUILDING_DATA.metalMine.production?.(metalMineLevel) ?? 0;
   $: crystalProductionRate = BUILDING_DATA.crystalSynthesizer.production?.(crystalSynthesizerLevel) ?? 0;
 
+  $: buildingsByCategory = Object.entries(BUILDING_DATA).reduce((acc, [id, def]) => {
+    const category = def.category || 'Other';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push({ id, ...def });
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  $: categories = Object.keys(buildingsByCategory).sort();
+
   onMount(async () => {
     const res = await fetch('/api/player/state');
     if (res.ok) {
@@ -169,36 +178,37 @@
 
     <div>
       <h3 class="text-2xl font-bold mb-4">Base Buildings</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {#each Object.keys(BUILDING_DATA) as bid}
-          {#if BUILDING_DATA[bid]}
+      {#each categories as category}
+        <h4 class="text-xl font-semibold mb-2 mt-4">{category}</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {#each buildingsByCategory[category] as building}
             <div
               class="card bg-base-200 shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer"
               role="button"
               tabindex="0"
-              on:click={() => openBuilding(bid)}
+              on:click={() => openBuilding(building.id)}
               on:keydown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  openBuilding(bid);
+                  openBuilding(building.id);
                 }
               }}
             >
               <div class="p-4">
                 <div class="flex items-center gap-4">
                   <div class="text-4xl text-primary">
-                    <BuildingIcon id={bid} className="text-4xl" />
+                    <BuildingIcon id={building.id} className="text-4xl" />
                   </div>
                   <div>
-                    <h4 class="font-bold text-lg">{BUILDING_DATA[bid].name}</h4>
-                    <p class="text-sm text-muted">Level {state.buildings?.[bid] ?? 0}</p>
+                    <h4 class="font-bold text-lg">{building.name}</h4>
+                    <p class="text-sm text-muted">Level {state.buildings?.[building.id] ?? 0}</p>
                   </div>
                 </div>
               </div>
             </div>
-          {/if}
-        {/each}
-      </div>
+          {/each}
+        </div>
+      {/each}
     </div>
   </div>
 {/if}
