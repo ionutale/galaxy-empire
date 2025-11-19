@@ -76,7 +76,10 @@ export async function processBuilds(tickSeconds = 5) {
       // If remainingSeconds is explicitly tracked, decrement it using tickSeconds
       if (typeof b.remainingSeconds === 'number') {
         const rem = Math.max(0, (b.remainingSeconds as number) - tickSeconds);
-        (b as Record<string, unknown>)['remainingSeconds'] = rem;
+        if (rem !== b.remainingSeconds) {
+          (b as Record<string, unknown>)['remainingSeconds'] = rem;
+          changed = true;
+        }
         if (rem <= 0) {
           b.status = 'complete';
           b.result = { success: true };
