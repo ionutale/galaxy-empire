@@ -5,6 +5,7 @@
   let state: any = null;
   let error = '';
   let upgrading = new Set<string>();
+  let now = Date.now();
 
   // UI modal state for building details
   let selectedBuilding: string | null = null;
@@ -26,6 +27,22 @@
     }
     if (Object.keys(req).length === 0) return ['None'];
     return lines.length ? lines : [JSON.stringify(req)];
+  }
+
+  function getRemainingTime(build: any) {
+    const startTime = new Date(build.createdAt).getTime();
+    const endTime = startTime + (build.durationSeconds * 1000);
+    const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
+    
+    if (remaining <= 0) return 'Completed';
+    
+    const hours = Math.floor(remaining / 3600);
+    const minutes = Math.floor((remaining % 3600) / 60);
+    const seconds = remaining % 60;
+    
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
   }
 
   function openBuilding(id: string) {
@@ -58,14 +75,22 @@
 
   $: categories = Object.keys(buildingsByCategory).sort();
 
-  onMount(async () => {
-    const res = await fetch('/api/player/state');
-    if (res.ok) {
-      const body = await res.json();
-      state = body.state;
-    } else {
-      error = 'unauthenticated';
-    }
+  onMount(() => {
+    const interval = setInterval(() => {
+      now = Date.now();
+    }, 1000);
+
+    (async () => {
+      const res = await fetch('/api/player/state');
+      if (res.ok) {
+        const body = await res.json();
+        state = body.state;
+      } else {
+        error = 'unauthenticated';
+      }
+    })();
+
+    return () => clearInterval(interval);
   });
 
   async function processBuilds() {
@@ -166,8 +191,8 @@
                   </p>
                   <p class="text-sm text-muted">Status: {build.status}</p>
                 </div>
-                <div class="text-sm">
-                  {new Date(build.createdAt).toLocaleTimeString()}
+                <div class="text-sm font-mono">
+                  {getRemainingTime(build)}
                 </div>
               </div>
             </div>
