@@ -27,3 +27,17 @@ To get started:
 - **Database**: PostgreSQL with Drizzle ORM
 - **Runtime**: Node.js
 - **Package Manager**: pnpm
+
+## ✅ Completed Tasks
+
+- Build artifacts removed from git
+- Structured logging (Pino) implemented
+- TypeScript types tightened (strict mode)
+- ESLint configuration fixed
+- Database migration to PostgreSQL (Better-SQLite3 docs obsolete)
+
+## 🚧 Pending Tasks
+
+- Add CI Workflow
+- Add API Tests
+
