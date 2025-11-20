@@ -26,7 +26,19 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle: Handle = sequence(handleAuth);
+const handleTheme: Handle = async ({ event, resolve }) => {
+	const theme = event.cookies.get('theme');
+
+	if (theme) {
+		return await resolve(event, {
+			transformPageChunk: ({ html }) => html.replace('%sveltekit.theme%', `data-theme="${theme}"`)
+		});
+	}
+
+	return await resolve(event);
+};
+
+export const handle: Handle = sequence(handleAuth, handleTheme);
 
 // start background workers once when server boots (dev + prod)
 // allow disabling in dev by setting DISABLE_BUILD_PROCESSOR=1

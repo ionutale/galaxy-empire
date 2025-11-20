@@ -29,17 +29,8 @@
 	$: user = $session.user;
 
 	const year = new Date().getFullYear();
-	let theme = 'emerald';
-	const themes = [
-		'emerald',
-		'synthwave',
-		'cyberpunk',
-		'coffee',
-		'forest',
-		'aqua',
-		'dark',
-		'light'
-	] as const;
+	let theme = 'light';
+	const themes = ['light', 'dark'] as const;
 	let drawerOpen = false;
 	let buildsDrawerOpen = false;
 	let state: any = null;

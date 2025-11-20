@@ -9,14 +9,31 @@
 	const session = getContext<Writable<LayoutData>>('session');
 	$: user = $session?.user;
 
-	// Simplified core navigation
-	const links = [
-		{ href: '/', label: 'Home', icon: 'home' },
-		{ href: '/base', label: 'Base', icon: 'target' },
-		{ href: '/fleet', label: 'Fleet', icon: 'menu' },
-		{ href: '/shipyard', label: 'Shipyard', icon: 'dock' },
-		{ href: '/research', label: 'Research', icon: 'play' },
-		{ href: '/admin/overview', label: 'Admin', icon: 'user-plus' }
+	// Categorized navigation
+	const categories = [
+		{
+			name: 'Command',
+			items: [
+				{ href: '/', label: 'Home', icon: 'home' },
+				{ href: '/base', label: 'Base', icon: 'target' },
+				{ href: '/research', label: 'Research', icon: 'play' }
+			]
+		},
+		{
+			name: 'Operations',
+			items: [
+				{ href: '/galaxy', label: 'Galaxy Map', icon: 'globe' },
+				{ href: '/fleet', label: 'Fleet', icon: 'menu' },
+				{ href: '/shipyard', label: 'Shipyard', icon: 'dock' },
+				{ href: '/reports', label: 'Reports', icon: 'clipboard' }
+			]
+		},
+		{
+			name: 'Administration',
+			items: [
+				{ href: '/admin', label: 'Admin Dashboard', icon: 'user-plus' }
+			]
+		}
 	];
 
 	async function logout() {
@@ -49,6 +66,10 @@
 				return `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4m-2 8a6 6 0 1112 0H6zM19 8h3m-1.5-1.5v3"/>`;
 			case 'login':
 				return `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H3m12 0l-4-4m4 4l-4 4M21 5v14"/>`;
+			case 'globe':
+				return `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+			case 'clipboard':
+				return `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />`;
 			default:
 				return '';
 		}
@@ -56,38 +77,46 @@
 </script>
 
 <nav class="menu gap-2 p-2">
-	<ul class="space-y-1">
+	<ul class="space-y-4">
 		{#if user}
-			{#each links as l}
-				{#key l.href}
-					<li>
-						<a
-							href={l.href}
-							on:click={() => dispatch('navigate')}
-							class="relative flex items-center gap-3 rounded px-3 py-2 transition hover:bg-base-100"
-							class:bg-base-100={isActive(l.href, $page.url.pathname)}
-							aria-current={isActive(l.href, $page.url.pathname) ? 'page' : undefined}
-						>
-							<span
-								class="absolute top-1/2 left-0 h-5 w-1 -translate-y-1/2 rounded bg-primary opacity-0"
-								class:opacity-100={isActive(l.href, $page.url.pathname)}
-							></span>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								class="h-5 w-5"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"><g>{@html Icon({ name: l.icon })}</g></svg
-							>
-							<span>{l.label}</span>
-						</a>
-					</li>
-				{/key}
+			{#each categories as cat}
+				<li>
+					<h2 class="menu-title px-3 text-xs font-bold uppercase tracking-wider opacity-50">{cat.name}</h2>
+					<ul>
+						{#each cat.items as l}
+							<li>
+								<a
+									href={l.href}
+									on:click={() => dispatch('navigate')}
+									class="relative flex items-center gap-3 rounded px-3 py-2 transition hover:bg-base-100"
+									class:bg-base-100={isActive(l.href, $page.url.pathname)}
+									aria-current={isActive(l.href, $page.url.pathname) ? 'page' : undefined}
+								>
+									<span
+										class="absolute top-1/2 left-0 h-5 w-1 -translate-y-1/2 rounded bg-primary opacity-0"
+										class:opacity-100={isActive(l.href, $page.url.pathname)}
+									></span>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="h-5 w-5"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"><g>{@html Icon({ name: l.icon })}</g></svg
+									>
+									<span>{l.label}</span>
+								</a>
+							</li>
+						{/each}
+					</ul>
+				</li>
 			{/each}
+			
+			<div class="divider my-2"></div>
+			
 			<li>
 				<button
 					on:click={logout}
-					class="relative flex items-center gap-3 rounded px-3 py-2 transition hover:bg-base-100"
+					class="relative flex items-center gap-3 rounded px-3 py-2 transition hover:bg-base-100 text-error"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
