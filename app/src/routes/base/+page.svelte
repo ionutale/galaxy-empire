@@ -214,12 +214,16 @@
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
 		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
 		on:click={closeModal}
 		on:keydown={(e) => e.key === 'Escape' && closeModal()}
 	>
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<div
 			class="w-11/12 max-w-2xl rounded-lg bg-base-100 p-6 shadow-xl"
 			role="document"
+			tabindex="-1"
 			on:click|stopPropagation
 			on:keydown|stopPropagation
 		>

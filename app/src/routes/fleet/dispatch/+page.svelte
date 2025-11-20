@@ -108,9 +108,10 @@
 						<h2 class="card-title">Mission Parameters</h2>
 
 						<div class="form-control w-full">
-							<label class="label"><span class="label-text">Target Coordinates</span></label>
+							<label class="label" for="target-system"><span class="label-text">Target Coordinates</span></label>
 							<div class="flex gap-2">
 								<input
+									id="target-system"
 									type="number"
 									bind:value={targetSystem}
 									min="1"
@@ -118,18 +119,20 @@
 									placeholder="System"
 								/>
 								<input
+									id="target-planet"
 									type="number"
 									bind:value={targetPlanet}
 									min="1"
 									class="input-bordered input w-full"
 									placeholder="Planet"
+									aria-label="Planet"
 								/>
 							</div>
 						</div>
 
 						<div class="form-control w-full">
-							<label class="label"><span class="label-text">Mission Type</span></label>
-							<select bind:value={mission} class="select-bordered select">
+							<label class="label" for="mission-select"><span class="label-text">Mission Type</span></label>
+							<select id="mission-select" bind:value={mission} class="select-bordered select">
 								<option value="transport">Transport</option>
 								<option value="attack">Attack</option>
 								<option value="spy">Espionage</option>
@@ -152,7 +155,7 @@
 
 						<div class="space-y-2">
 							<div class="form-control">
-								<label class="label py-0"
+								<label class="label py-0" for="cargo-metal"
 									><span class="label-text">Metal ({resources.metal})</span></label
 								>
 								<input
@@ -161,15 +164,17 @@
 									max={Math.min(resources.metal, maxCargo)}
 									bind:value={cargo.metal}
 									class="range range-primary range-xs"
+									aria-label="Metal amount range"
 								/>
 								<input
+									id="cargo-metal"
 									type="number"
 									bind:value={cargo.metal}
 									class="input-bordered input input-sm"
 								/>
 							</div>
 							<div class="form-control">
-								<label class="label py-0"
+								<label class="label py-0" for="cargo-crystal"
 									><span class="label-text">Crystal ({resources.crystal})</span></label
 								>
 								<input
@@ -178,15 +183,17 @@
 									max={Math.min(resources.crystal, maxCargo)}
 									bind:value={cargo.crystal}
 									class="range range-secondary range-xs"
+									aria-label="Crystal amount range"
 								/>
 								<input
+									id="cargo-crystal"
 									type="number"
 									bind:value={cargo.crystal}
 									class="input-bordered input input-sm"
 								/>
 							</div>
 							<div class="form-control">
-								<label class="label py-0"
+								<label class="label py-0" for="cargo-fuel"
 									><span class="label-text">Fuel ({resources.fuel})</span></label
 								>
 								<input
@@ -195,8 +202,10 @@
 									max={Math.min(resources.fuel, maxCargo)}
 									bind:value={cargo.fuel}
 									class="range range-accent range-xs"
+									aria-label="Fuel amount range"
 								/>
 								<input
+									id="cargo-fuel"
 									type="number"
 									bind:value={cargo.fuel}
 									class="input-bordered input input-sm"

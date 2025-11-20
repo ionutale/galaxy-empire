@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 
-	export let data;
 	let activeFleets: any[] = [];
 	let loading = true;
 
