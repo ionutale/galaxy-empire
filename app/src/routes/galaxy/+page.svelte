@@ -5,11 +5,23 @@
   let systems: any[] = [];
   let loading = true;
 
+  let userHomeSystem: number | null = null;
+
   onMount(async () => {
-    const res = await fetch('/api/galaxy');
-    if (res.ok) {
-      systems = await res.json();
+    const [galaxyRes, playerRes] = await Promise.all([
+      fetch('/api/galaxy'),
+      fetch('/api/player/state')
+    ]);
+
+    if (galaxyRes.ok) {
+      systems = await galaxyRes.json();
     }
+
+    if (playerRes.ok) {
+      const playerData = await playerRes.json();
+      userHomeSystem = playerData.state.homeSystem;
+    }
+    
     loading = false;
   });
 </script>
@@ -23,7 +35,7 @@
     </div>
   {:else}
     <div class="flex-1 bg-base-300 rounded-lg shadow-inner overflow-hidden">
-      <GalaxyMap {systems} />
+      <GalaxyMap {systems} {userHomeSystem} />
     </div>
   {/if}
 </div>

@@ -133,12 +133,12 @@
 		<div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
 			<div class="glass-panel p-6 rounded-xl">
 				<h3 class="text-xl font-display font-bold text-neon-blue tracking-wide">Commander: {state.username}</h3>
-				<p class="text-slate-400 text-sm mt-1">Colony: <span class="text-white">{state.username} Prime</span></p>
+				<p class="text-slate-400 text-sm mt-1">Colony: <span class="text-white">{state.username} Prime</span> <span class="text-neon-blue font-mono ml-2">[{state.homeSystem ?? 1}:{state.homePlanet ?? 1}]</span></p>
 				<p class="text-slate-400 text-sm mt-1">Level: <span class="text-white">{state.level}</span> · Power: <span class="text-white">{state.power}</span></p>
 				<div class="divider my-4 before:bg-white/10 after:bg-white/10"></div>
 				<h4 class="font-medium text-slate-200 mb-2">Resources</h4>
 				<ul class="mt-2 space-y-2">
-					<li class="badge badge-outline border-yellow-500/50 text-yellow-200 w-full justify-start gap-2 p-3">Credits: <span class="font-bold text-white ml-auto">{resources.credits}</span></li>
+
 					<li class="badge badge-outline border-slate-500/50 text-slate-200 w-full justify-start gap-2 p-3">Metal: <span class="font-bold text-white ml-auto">{resources.metal}</span> <span class="text-xs text-success">(+{metalProductionRate}/hr)</span></li>
 					<li class="badge badge-outline border-cyan-500/50 text-cyan-200 w-full justify-start gap-2 p-3">
 						Crystal: <span class="font-bold text-white ml-auto">{resources.crystal}</span> <span class="text-xs text-success">(+{crystalProductionRate}/hr)</span>
@@ -275,7 +275,9 @@
 									<p class="font-bold text-slate-400 text-xs uppercase tracking-wider">Cost:</p>
 									<div class="mt-1 flex gap-2">
 										{#each Object.entries(BUILDING_DATA[selectedBuilding!].cost?.(nextLevel) ?? {}) as [res, amt]}
-											<div class="badge badge-outline border-white/20 text-slate-200">{res}: <span class="ml-1 font-bold text-white">{amt}</span></div>
+											<div class="badge badge-outline border-white/20 text-slate-200">
+												{res}: <span class="ml-1 font-bold text-white" class:text-error={(resources[res] ?? 0) < amt}>{amt}</span>
+											</div>
 										{/each}
 									</div>
 								</div>
@@ -292,7 +294,7 @@
 							<p class="text-md text-slate-400">No cost data</p>
 						{/if}
 					</div>
-					<div class="flex items-center gap-2">
+					<div class="flex flex-col items-end gap-2">
 						<button
 							class="btn btn-lg bg-neon-blue text-black border-neon-blue hover:bg-neon-blue/80 hover:border-neon-blue font-bold tracking-wide shadow-[0_0_15px_rgba(0,243,255,0.4)]"
 							disabled={!canAffordUpgrade}
@@ -301,6 +303,9 @@
 								closeModal();
 							}}>Upgrade</button
 						>
+						{#if !canAffordUpgrade}
+							<div class="text-error text-xs font-bold">Insufficient resources</div>
+						{/if}
 					</div>
 				</div>
 			</div>

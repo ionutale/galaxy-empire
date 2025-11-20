@@ -117,7 +117,7 @@
 								{#if cost.metal}<span class="badge badge-outline border-slate-500 text-slate-300 text-xs">Metal: {cost.metal}</span>{/if}
 								{#if cost.crystal}<span class="badge badge-outline border-cyan-500/50 text-cyan-200 text-xs">Crystal: {cost.crystal}</span>{/if}
 								{#if cost.deuterium}<span class="badge badge-outline border-emerald-500/50 text-emerald-200 text-xs">Fuel: {cost.deuterium}</span>{/if}
-								{#if cost.credits}<span class="badge badge-outline border-yellow-500/50 text-yellow-200 text-xs">Credits: {cost.credits}</span>{/if}
+
 							</div>
 							<div class="text-xs text-slate-500 mt-2 font-mono text-right">Time: <span class="text-white">{time}s</span></div>
 						</div>

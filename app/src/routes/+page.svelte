@@ -3,8 +3,17 @@
 	import type { Writable } from 'svelte/store';
 	import type { LayoutData } from './$types';
 
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+
 	const session = getContext<Writable<LayoutData>>('session');
 	$: user = $session?.user;
+
+	onMount(() => {
+		if (user) {
+			goto('/base');
+		}
+	});
 </script>
 
 <section class="relative overflow-hidden min-h-[80vh] flex items-center justify-center">

@@ -283,22 +283,25 @@
 			<label for="builds-drawer" class="drawer-overlay"></label>
 			<div class="menu min-h-full w-80 glass-panel p-4 text-slate-200">
 				<h3 class="mb-4 text-lg font-bold">Construction Queue</h3>
-				{#if builds.length === 0}
-					<p class="text-muted text-sm">No construction history.</p>
-				{:else}
-					<div class="space-y-3">
-						{#each builds as build}
-							<div class="card border border-base-300 bg-base-100 p-3 shadow-sm">
-								<div class="flex items-start justify-between">
-									<div>
-										<div class="text-sm font-semibold">
-											{BUILDING_DATA[build.buildingId]?.name ??
-												SHIP_DATA[build.buildingId]?.name ??
-												build.buildingId}
+				
+				<!-- Ongoing -->
+				<div class="mb-6">
+					<h4 class="text-sm font-semibold text-neon-blue mb-2 uppercase tracking-wider">Ongoing</h4>
+					{#if activeBuilds.length === 0}
+						<p class="text-muted text-sm italic">No active construction.</p>
+					{:else}
+						<div class="space-y-3">
+							{#each activeBuilds as build}
+								<div class="card border border-base-300 bg-base-100 p-3 shadow-sm">
+									<div class="flex items-start justify-between">
+										<div>
+											<div class="text-sm font-semibold">
+												{BUILDING_DATA[build.buildingId]?.name ??
+													SHIP_DATA[build.buildingId]?.name ??
+													build.buildingId}
+											</div>
+											<div class="text-xs capitalize opacity-70">{build.status}</div>
 										</div>
-										<div class="text-xs capitalize opacity-70">{build.status}</div>
-									</div>
-									{#if build.status === 'in-progress' || build.status === 'queued'}
 										<div class="flex flex-col items-end gap-1">
 											<div class="badge badge-sm badge-primary">{getRemainingTime(build, now)}</div>
 											<button
@@ -306,16 +309,40 @@
 												on:click={() => cancelBuild(build.id)}>Cancel</button
 											>
 										</div>
-									{:else}
+									</div>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+
+				<!-- History -->
+				<div>
+					<h4 class="text-sm font-semibold text-slate-400 mb-2 uppercase tracking-wider">History</h4>
+					{#if builds.filter(b => b.status === 'completed').length === 0}
+						<p class="text-muted text-sm italic">No history.</p>
+					{:else}
+						<div class="space-y-3">
+							{#each builds.filter(b => b.status === 'completed') as build}
+								<div class="card border border-base-300 bg-base-100 p-3 shadow-sm opacity-75">
+									<div class="flex items-start justify-between">
+										<div>
+											<div class="text-sm font-semibold">
+												{BUILDING_DATA[build.buildingId]?.name ??
+													SHIP_DATA[build.buildingId]?.name ??
+													build.buildingId}
+											</div>
+											<div class="text-xs capitalize opacity-70 text-success">Completed</div>
+										</div>
 										<div class="text-xs opacity-50">
 											{new Date(build.createdAt).toLocaleDateString()}
 										</div>
-									{/if}
+									</div>
 								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
+							{/each}
+						</div>
+					{/if}
+				</div>
 			</div>
 		</div>
 	</div>

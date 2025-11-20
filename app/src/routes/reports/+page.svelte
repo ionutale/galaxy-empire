@@ -8,6 +8,9 @@
     const res = await fetch('/api/reports');
     if (res.ok) {
       reports = await res.json();
+      console.log('Fetched reports:', reports);
+    } else {
+      console.error('Failed to fetch reports');
     }
     loading = false;
   });

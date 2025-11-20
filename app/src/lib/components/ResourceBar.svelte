@@ -186,13 +186,7 @@
 		{:else}
 			<div class="hidden items-center gap-4 md:flex">
 				<div class="flex items-center gap-px overflow-hidden rounded-lg border border-white/10 bg-black/40 backdrop-blur-md shadow-lg">
-					<!-- Credits -->
-					<div class="flex flex-col items-center px-4 py-1 border-r border-white/5 min-w-[100px]">
-						<span class="text-[10px] uppercase tracking-widest opacity-50 font-display text-yellow-400">Credits</span>
-						<span class="font-display text-lg font-bold text-yellow-100">{state.resources?.credits ?? state.credits}</span>
-						<span class="text-[10px] text-yellow-400/70">+{Math.round(prod.credits * 3600)}/h</span>
-					</div>
-					
+
 					<!-- Metal -->
 					<div class="flex flex-col items-center px-4 py-1 border-r border-white/5 min-w-[100px]">
 						<span class="text-[10px] uppercase tracking-widest opacity-50 font-display text-slate-300">Metal</span>

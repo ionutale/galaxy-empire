@@ -3,6 +3,7 @@
   import { fade } from 'svelte/transition';
 
   export let systems: any[] = [];
+  export let userHomeSystem: number | null = null;
   
   let selectedSystem: any = null;
   let transform = { x: 0, y: 0, k: 1 };
@@ -72,10 +73,10 @@
            class="cursor-pointer hover:opacity-80 transition-opacity"
            on:click|stopPropagation={() => selectSystem(sys)}>
           <circle r={4/transform.k + 2} 
-                  fill={selectedSystem?.id === sys.id ? '#fbbf24' : '#00f3ff'} 
-                  class:filter={selectedSystem?.id === sys.id}
-                  class:drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]={selectedSystem?.id === sys.id}
-                  class:drop-shadow-[0_0_5px_rgba(0,243,255,0.6)]={selectedSystem?.id !== sys.id}
+                  fill={selectedSystem?.id === sys.id ? '#fbbf24' : (sys.id === userHomeSystem ? '#fbbf24' : '#00f3ff')} 
+                  class:filter={selectedSystem?.id === sys.id || sys.id === userHomeSystem}
+                  class:drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]={selectedSystem?.id === sys.id || sys.id === userHomeSystem}
+                  class:drop-shadow-[0_0_5px_rgba(0,243,255,0.6)]={selectedSystem?.id !== sys.id && sys.id !== userHomeSystem}
           />
           <text y={-10/transform.k} 
                 text-anchor="middle" 
@@ -126,9 +127,12 @@
       </div>
 
       <div class="mt-4 pt-4 border-t border-white/10">
-        <a href="/fleet/dispatch?targetSystem={selectedSystem.id}" class="btn btn-sm w-full bg-neon-blue/10 border-neon-blue/50 text-neon-blue hover:bg-neon-blue hover:text-black hover:border-neon-blue font-display tracking-wide">
-          Dispatch Fleet
-        </a>
+        <a
+							href="/fleet/dispatch?targetSystem={selectedSystem.id}&planet=1"
+							class="btn btn-sm bg-neon-blue text-black border-neon-blue hover:bg-neon-blue/80 hover:border-neon-blue font-bold"
+						>
+							Dispatch Fleet
+						</a>
       </div>
     </div>
   {/if}

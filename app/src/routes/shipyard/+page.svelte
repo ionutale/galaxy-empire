@@ -133,16 +133,7 @@
 					<div class="divider my-3 before:bg-white/10 after:bg-white/10"></div>
 
 					<div class="space-y-2 text-sm mb-4">
-						<div class="flex justify-between items-center">
-							<span class="text-slate-400 text-xs uppercase tracking-wider">Credits</span>
-							<span
-								class={(playerState?.resources?.credits ?? 0) < (t.costCredits || 0) * q
-									? 'font-bold text-red-400'
-									: 'text-yellow-200'}
-							>
-								{(t.costCredits || 0) * q}
-							</span>
-						</div>
+
 						<div class="flex justify-between items-center">
 							<span class="text-slate-400 text-xs uppercase tracking-wider">Metal</span>
 							<span
