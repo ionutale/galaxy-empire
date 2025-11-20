@@ -1,5 +1,5 @@
 import type { RequestHandler } from '@sveltejs/kit';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import { hash } from '@node-rs/argon2';
@@ -41,6 +41,39 @@ export const POST: RequestHandler = async (event) => {
 				crystal: 500,
 				fuel: 200
 			});
+
+			// Find a starting planet (prefer terrestrial, owned by NPC or unowned)
+			// We assume 'npc_faction' owns all generated planets initially.
+			const starterPlanet = await ctx
+				.select()
+				.from(table.planets)
+				.where(and(eq(table.planets.ownerId, 'npc_faction'), eq(table.planets.type, 'terrestrial')))
+				.limit(1);
+			
+			let planetIdToAssign: string | null = null;
+
+			if (starterPlanet.length > 0) {
+				planetIdToAssign = starterPlanet[0].id;
+			} else {
+				// Fallback to any planet if no terrestrial available
+				const anyPlanet = await ctx
+					.select()
+					.from(table.planets)
+					.where(eq(table.planets.ownerId, 'npc_faction'))
+					.limit(1);
+				if (anyPlanet.length > 0) {
+					planetIdToAssign = anyPlanet[0].id;
+				}
+			}
+
+			if (planetIdToAssign) {
+				await ctx
+					.update(table.planets)
+					.set({ ownerId: id })
+					.where(eq(table.planets.id, planetIdToAssign));
+			} else {
+				console.warn('No starter planet found for user', id);
+			}
 
 			// create default starting buildings: give new players some basic structures at level 1
 			await ctx.insert(table.playerBuildings).values([

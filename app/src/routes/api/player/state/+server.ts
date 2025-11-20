@@ -51,6 +51,36 @@ export const GET: RequestHandler = async (event) => {
 		
 		if (homePlanetResult.length > 0) {
 			homePlanet = homePlanetResult[0];
+		} else {
+			// Fallback: Assign a planet if user has none (lazy migration for existing users)
+			const availablePlanet = await db
+				.select()
+				.from(table.planets)
+				.where(eq(table.planets.ownerId, 'npc_faction'))
+				.limit(1);
+
+			if (availablePlanet.length > 0) {
+				await db
+					.update(table.planets)
+					.set({ ownerId: user.id })
+					.where(eq(table.planets.id, availablePlanet[0].id));
+
+				// Fetch the newly assigned planet details
+				const newHome = await db
+					.select({
+						systemId: table.planets.systemId,
+						orbitIndex: table.planets.orbitIndex,
+						systemName: table.systems.name
+					})
+					.from(table.planets)
+					.innerJoin(table.systems, eq(table.planets.systemId, table.systems.id))
+					.where(eq(table.planets.id, availablePlanet[0].id))
+					.limit(1);
+				
+				if (newHome.length > 0) {
+					homePlanet = newHome[0];
+				}
+			}
 		}
 
 		const rawBuilds = await db
