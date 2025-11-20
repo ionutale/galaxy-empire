@@ -90,18 +90,24 @@
 {:else}
 	{#if playerState?.buildings}
 		<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-			<div class="stats bg-base-200 shadow">
-				<div class="stat">
-					<div class="stat-title">Shipyard Level</div>
-					<div class="stat-value text-primary">{playerState.buildings.shipyard ?? 0}</div>
-					<div class="stat-desc">Determines build speed</div>
+			<div class="glass-panel p-4 rounded-xl flex items-center justify-between">
+				<div>
+					<div class="text-sm text-slate-400 uppercase tracking-wider">Shipyard Level</div>
+					<div class="text-2xl font-bold text-neon-blue font-display">{playerState.buildings.shipyard ?? 0}</div>
+					<div class="text-xs text-slate-500">Determines build speed</div>
+				</div>
+				<div class="text-neon-blue opacity-50">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
 				</div>
 			</div>
-			<div class="stats bg-base-200 shadow">
-				<div class="stat">
-					<div class="stat-title">Nanite Factory</div>
-					<div class="stat-value text-secondary">{playerState.buildings.naniteFactory ?? 0}</div>
-					<div class="stat-desc">Reduces build time</div>
+			<div class="glass-panel p-4 rounded-xl flex items-center justify-between">
+				<div>
+					<div class="text-sm text-slate-400 uppercase tracking-wider">Nanite Factory</div>
+					<div class="text-2xl font-bold text-neon-purple font-display">{playerState.buildings.naniteFactory ?? 0}</div>
+					<div class="text-xs text-slate-500">Reduces build time</div>
+				</div>
+				<div class="text-neon-purple opacity-50">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
 				</div>
 			</div>
 		</div>
@@ -112,81 +118,81 @@
 			{@const q = qty[t.id] || 1}
 			{@const affordable = canAfford(t, q)}
 
-			<div class="card border border-base-300 bg-base-100 shadow-lg">
-				<div class="card-body p-5">
-					<div class="flex items-start justify-between">
+			<div class="glass-panel p-0 rounded-xl overflow-hidden border border-white/10 hover:border-neon-blue/50 transition-colors duration-300 group">
+				<div class="p-5">
+					<div class="flex items-start justify-between mb-4">
 						<div>
-							<h3 class="card-title text-lg">{t.name}</h3>
-							<div class="mt-1 badge badge-ghost badge-sm">{t.role}</div>
+							<h3 class="text-lg font-bold font-display text-white group-hover:text-neon-blue transition-colors">{t.name}</h3>
+							<div class="mt-1 badge badge-sm border-white/20 text-slate-300 bg-white/5">{t.role}</div>
 						</div>
-						<div class="text-right text-xs opacity-70">
-							{t.buildTime}s
+						<div class="text-right text-xs font-mono text-slate-400">
+							<span class="text-white">{t.buildTime}s</span>
 						</div>
 					</div>
 
-					<div class="divider my-2"></div>
+					<div class="divider my-3 before:bg-white/10 after:bg-white/10"></div>
 
-					<div class="space-y-1 text-sm">
-						<div class="flex justify-between">
-							<span class="opacity-70">Credits:</span>
+					<div class="space-y-2 text-sm mb-4">
+						<div class="flex justify-between items-center">
+							<span class="text-slate-400 text-xs uppercase tracking-wider">Credits</span>
 							<span
 								class={(playerState?.resources?.credits ?? 0) < (t.costCredits || 0) * q
-									? 'font-bold text-error'
-									: ''}
+									? 'font-bold text-red-400'
+									: 'text-yellow-200'}
 							>
 								{(t.costCredits || 0) * q}
 							</span>
 						</div>
-						<div class="flex justify-between">
-							<span class="opacity-70">Metal:</span>
+						<div class="flex justify-between items-center">
+							<span class="text-slate-400 text-xs uppercase tracking-wider">Metal</span>
 							<span
 								class={(playerState?.resources?.metal ?? 0) < (t.costMetal || 0) * q
-									? 'font-bold text-error'
-									: ''}
+									? 'font-bold text-red-400'
+									: 'text-slate-200'}
 							>
 								{(t.costMetal || 0) * q}
 							</span>
 						</div>
-						<div class="flex justify-between">
-							<span class="opacity-70">Crystal:</span>
+						<div class="flex justify-between items-center">
+							<span class="text-slate-400 text-xs uppercase tracking-wider">Crystal</span>
 							<span
 								class={(playerState?.resources?.crystal ?? 0) < (t.costCrystal || 0) * q
-									? 'font-bold text-error'
-									: ''}
+									? 'font-bold text-red-400'
+									: 'text-cyan-200'}
 							>
 								{(t.costCrystal || 0) * q}
 							</span>
 						</div>
-						<div class="flex justify-between">
-							<span class="opacity-70">Fuel:</span>
+						<div class="flex justify-between items-center">
+							<span class="text-slate-400 text-xs uppercase tracking-wider">Fuel</span>
 							<span
 								class={(playerState?.resources?.fuel ?? 0) < (t.costFuel || 0) * q
-									? 'font-bold text-error'
-									: ''}
+									? 'font-bold text-red-400'
+									: 'text-emerald-200'}
 							>
 								{(t.costFuel || 0) * q}
 							</span>
 						</div>
 					</div>
 
-					<div class="mt-4 flex items-center justify-between gap-2">
-						<div class="join">
+					<div class="flex items-center justify-between gap-3">
+						<div class="flex items-center bg-black/40 rounded-lg border border-white/10">
 							<button
-								class="btn join-item btn-sm"
+								class="btn btn-ghost btn-xs text-white hover:text-neon-blue px-2"
 								on:click={() => (qty[t.id] = Math.max(1, (qty[t.id] ?? 1) - 1))}>-</button
 							>
 							<input
-								class="input-bordered input input-sm join-item w-14 text-center"
+								class="input input-xs w-12 text-center bg-transparent border-none text-white focus:outline-none p-0"
 								bind:value={qty[t.id]}
 								inputmode="numeric"
 							/>
 							<button
-								class="btn join-item btn-sm"
+								class="btn btn-ghost btn-xs text-white hover:text-neon-blue px-2"
 								on:click={() => (qty[t.id] = Math.min(99, (qty[t.id] ?? 1) + 1))}>+</button
 							>
 						</div>
 						<button
-							class="btn flex-1 btn-sm btn-primary"
+							class="btn btn-sm flex-1 bg-neon-blue text-black border-neon-blue hover:bg-neon-blue/80 hover:border-neon-blue font-bold tracking-wide shadow-[0_0_10px_rgba(0,243,255,0.3)] disabled:bg-white/5 disabled:text-white/20 disabled:border-transparent"
 							disabled={!affordable}
 							on:click={() => build(t.id)}
 						>

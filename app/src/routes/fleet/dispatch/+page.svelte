@@ -129,168 +129,162 @@
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 			<!-- Left Column: Mission & Target -->
 			<div class="space-y-6">
-				<div class="card bg-base-200 shadow-xl">
-					<div class="card-body">
-						<h2 class="card-title">Mission Parameters</h2>
+				<div class="glass-panel p-6 rounded-xl">
+					<h2 class="text-xl font-bold font-display text-neon-blue mb-4 tracking-wide">Mission Parameters</h2>
 
-						<div class="form-control w-full">
-							<label class="label" for="target-system"><span class="label-text">Target Coordinates</span></label>
-							<div class="flex gap-2">
-								<input
-									id="target-system"
-									type="number"
-									bind:value={targetSystem}
-									min="1"
-									class="input-bordered input w-full"
-									placeholder="System"
-								/>
-								<input
-									id="target-planet"
-									type="number"
-									bind:value={targetPlanet}
-									min="1"
-									class="input-bordered input w-full"
-									placeholder="Planet"
-									aria-label="Planet"
-								/>
-							</div>
+					<div class="form-control w-full mb-4">
+						<label class="label" for="target-system"><span class="label-text text-slate-300">Target Coordinates</span></label>
+						<div class="flex gap-2">
+							<input
+								id="target-system"
+								type="number"
+								bind:value={targetSystem}
+								min="1"
+								class="input input-bordered w-full bg-white/5 border-white/10 text-white focus:border-neon-blue focus:outline-none"
+								placeholder="System"
+							/>
+							<input
+								id="target-planet"
+								type="number"
+								bind:value={targetPlanet}
+								min="1"
+								class="input input-bordered w-full bg-white/5 border-white/10 text-white focus:border-neon-blue focus:outline-none"
+								placeholder="Planet"
+								aria-label="Planet"
+							/>
 						</div>
+					</div>
 
-						<div class="form-control w-full">
-							<label class="label" for="mission-select"><span class="label-text">Mission Type</span></label>
-							<select id="mission-select" bind:value={mission} class="select-bordered select">
-								<option value="transport">Transport</option>
-								<option value="attack">Attack</option>
-								<option value="spy">Espionage</option>
-								<option value="colonize">Colonize</option>
-								<option value="recycle">Recycle</option>
-							</select>
-						</div>
+					<div class="form-control w-full">
+						<label class="label" for="mission-select"><span class="label-text text-slate-300">Mission Type</span></label>
+						<select id="mission-select" bind:value={mission} class="select select-bordered bg-white/5 border-white/10 text-white focus:border-neon-blue focus:outline-none">
+							<option value="transport">Transport</option>
+							<option value="attack">Attack</option>
+							<option value="spy">Espionage</option>
+							<option value="colonize">Colonize</option>
+							<option value="recycle">Recycle</option>
+						</select>
 					</div>
 				</div>
 
-				<div class="card bg-base-200 shadow-xl">
-					<div class="card-body">
-						<h2 class="card-title">Cargo Load</h2>
-						<div class="mb-2 stat p-0">
-							<div class="stat-title">Capacity</div>
-							<div class="stat-value text-lg" class:text-error={totalCargoSelected > maxCargo}>
-								{totalCargoSelected} / {maxCargo}
-							</div>
+				<div class="glass-panel p-6 rounded-xl">
+					<h2 class="text-xl font-bold font-display text-neon-blue mb-4 tracking-wide">Cargo Load</h2>
+					<div class="mb-4 p-3 rounded-lg bg-white/5 border border-white/10 flex justify-between items-center">
+						<div class="text-sm text-slate-400 uppercase tracking-wider">Capacity</div>
+						<div class="text-lg font-mono font-bold" class:text-red-400={totalCargoSelected > maxCargo} class:text-white={totalCargoSelected <= maxCargo}>
+							{totalCargoSelected} / {maxCargo}
 						</div>
+					</div>
 
-						<div class="space-y-2">
-							<div class="form-control">
-								<label class="label py-0" for="cargo-metal"
-									><span class="label-text">Metal ({resources.metal})</span></label
-								>
-								<input
-									type="range"
-									min="0"
-									max={Math.min(resources.metal, maxCargo)}
-									bind:value={cargo.metal}
-									class="range range-primary range-xs"
-									aria-label="Metal amount range"
-								/>
-								<input
-									id="cargo-metal"
-									type="number"
-									bind:value={cargo.metal}
-									class="input-bordered input input-sm"
-								/>
-							</div>
-							<div class="form-control">
-								<label class="label py-0" for="cargo-crystal"
-									><span class="label-text">Crystal ({resources.crystal})</span></label
-								>
-								<input
-									type="range"
-									min="0"
-									max={Math.min(resources.crystal, maxCargo)}
-									bind:value={cargo.crystal}
-									class="range range-secondary range-xs"
-									aria-label="Crystal amount range"
-								/>
-								<input
-									id="cargo-crystal"
-									type="number"
-									bind:value={cargo.crystal}
-									class="input-bordered input input-sm"
-								/>
-							</div>
-							<div class="form-control">
-								<label class="label py-0" for="cargo-fuel"
-									><span class="label-text">Fuel ({resources.fuel})</span></label
-								>
-								<input
-									type="range"
-									min="0"
-									max={Math.min(resources.fuel, maxCargo)}
-									bind:value={cargo.fuel}
-									class="range range-accent range-xs"
-									aria-label="Fuel amount range"
-								/>
-								<input
-									id="cargo-fuel"
-									type="number"
-									bind:value={cargo.fuel}
-									class="input-bordered input input-sm"
-								/>
-							</div>
+					<div class="space-y-4">
+						<div class="form-control">
+							<label class="label py-0 mb-1" for="cargo-metal"
+								><span class="label-text text-slate-300">Metal ({resources.metal})</span></label
+							>
+							<input
+								type="range"
+								min="0"
+								max={Math.min(resources.metal, maxCargo)}
+								bind:value={cargo.metal}
+								class="range range-xs mb-2 [--range-shdw:var(--color-neon-blue)]"
+								aria-label="Metal amount range"
+							/>
+							<input
+								id="cargo-metal"
+								type="number"
+								bind:value={cargo.metal}
+								class="input input-sm input-bordered bg-white/5 border-white/10 text-white focus:border-neon-blue"
+							/>
+						</div>
+						<div class="form-control">
+							<label class="label py-0 mb-1" for="cargo-crystal"
+								><span class="label-text text-slate-300">Crystal ({resources.crystal})</span></label
+							>
+							<input
+								type="range"
+								min="0"
+								max={Math.min(resources.crystal, maxCargo)}
+								bind:value={cargo.crystal}
+								class="range range-xs mb-2 [--range-shdw:var(--color-neon-purple)]"
+								aria-label="Crystal amount range"
+							/>
+							<input
+								id="cargo-crystal"
+								type="number"
+								bind:value={cargo.crystal}
+								class="input input-sm input-bordered bg-white/5 border-white/10 text-white focus:border-neon-blue"
+							/>
+						</div>
+						<div class="form-control">
+							<label class="label py-0 mb-1" for="cargo-fuel"
+								><span class="label-text text-slate-300">Fuel ({resources.fuel})</span></label
+							>
+							<input
+								type="range"
+								min="0"
+								max={Math.min(resources.fuel, maxCargo)}
+								bind:value={cargo.fuel}
+								class="range range-xs mb-2 [--range-shdw:theme(colors.emerald.400)]"
+								aria-label="Fuel amount range"
+							/>
+							<input
+								id="cargo-fuel"
+								type="number"
+								bind:value={cargo.fuel}
+								class="input input-sm input-bordered bg-white/5 border-white/10 text-white focus:border-neon-blue"
+							/>
 						</div>
 					</div>
 				</div>
 			</div>
 
 			<!-- Right Column: Fleet Composition -->
-			<div class="card bg-base-200 shadow-xl">
-				<div class="card-body">
-					<h2 class="card-title">Select Ships</h2>
-					<div class="max-h-[600px] space-y-4 overflow-y-auto pr-2">
-						{#each ships as ship}
-							<div class="flex items-center justify-between rounded-lg bg-base-300 p-3">
-								<div>
-									<div class="font-bold">{getShipName(ship.shipTemplateId)}</div>
-									<div class="text-xs opacity-70">Available: {ship.quantity}</div>
-								</div>
-								<div class="flex items-center gap-2">
-									<button
-										class="btn btn-square btn-xs"
-										on:click={() =>
-											(selectedShips[ship.shipTemplateId] = Math.max(
-												0,
-												(selectedShips[ship.shipTemplateId] || 0) - 1
-											))}>-</button
-									>
-									<input
-										type="number"
-										bind:value={selectedShips[ship.shipTemplateId]}
-										class="input-bordered input input-xs w-16 text-center"
-										min="0"
-										max={ship.quantity}
-									/>
-									<button
-										class="btn btn-square btn-xs"
-										on:click={() =>
-											(selectedShips[ship.shipTemplateId] = Math.min(
-												ship.quantity,
-												(selectedShips[ship.shipTemplateId] || 0) + 1
-											))}>+</button
-									>
-									<button
-										class="btn btn-outline btn-xs"
-										on:click={() => (selectedShips[ship.shipTemplateId] = ship.quantity)}
-										>Max</button
-									>
-								</div>
+			<div class="glass-panel p-6 rounded-xl">
+				<h2 class="text-xl font-bold font-display text-neon-blue mb-4 tracking-wide">Select Ships</h2>
+				<div class="max-h-[600px] space-y-3 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
+					{#each ships as ship}
+						<div class="flex items-center justify-between rounded-lg bg-white/5 border border-white/5 p-3 hover:bg-white/10 transition-colors">
+							<div>
+								<div class="font-bold text-slate-200">{getShipName(ship.shipTemplateId)}</div>
+								<div class="text-xs text-slate-400">Available: <span class="text-white">{ship.quantity}</span></div>
 							</div>
-						{/each}
-						{#if ships.length === 0}
-							<div class="py-4 text-center opacity-50">
-								No ships available. Build some in the Shipyard!
+							<div class="flex items-center gap-2">
+								<button
+									class="btn btn-square btn-xs glass-panel hover:bg-white/20 text-white border-white/20"
+									on:click={() =>
+										(selectedShips[ship.shipTemplateId] = Math.max(
+											0,
+											(selectedShips[ship.shipTemplateId] || 0) - 1
+										))}>-</button
+								>
+								<input
+									type="number"
+									bind:value={selectedShips[ship.shipTemplateId]}
+									class="input input-xs w-16 text-center bg-black/50 border-white/10 text-white focus:border-neon-blue"
+									min="0"
+									max={ship.quantity}
+								/>
+								<button
+									class="btn btn-square btn-xs glass-panel hover:bg-white/20 text-white border-white/20"
+									on:click={() =>
+										(selectedShips[ship.shipTemplateId] = Math.min(
+											ship.quantity,
+											(selectedShips[ship.shipTemplateId] || 0) + 1
+										))}>+</button
+								>
+								<button
+									class="btn btn-xs btn-outline border-neon-blue/50 text-neon-blue hover:bg-neon-blue hover:text-black hover:border-neon-blue"
+									on:click={() => (selectedShips[ship.shipTemplateId] = ship.quantity)}
+									>Max</button
+								>
 							</div>
-						{/if}
-					</div>
+						</div>
+					{/each}
+					{#if ships.length === 0}
+						<div class="py-4 text-center opacity-50 text-slate-400">
+							No ships available. Build some in the Shipyard!
+						</div>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -308,7 +302,7 @@
                 <div class="text-error text-sm">Select at least one ship.</div>
             {/if}
 			<button
-				class="btn btn-lg btn-primary"
+				class="btn btn-lg bg-neon-blue text-black border-neon-blue hover:bg-neon-blue/80 hover:border-neon-blue font-bold tracking-wide shadow-[0_0_15px_rgba(0,243,255,0.4)] w-full md:w-auto"
 				on:click={dispatchFleet}
 				disabled={submitting || totalCargoSelected > maxCargo || Object.keys(selectedShips).every(k => !selectedShips[k])}
 			>

@@ -50,7 +50,7 @@
 		return state?.research?.[id]?.level ?? 0;
 	}
 
-	function getCost(id: string, level: number) {
+	function getCost(id: string, level: number): any {
 		const def = RESEARCH_DATA[id as keyof typeof RESEARCH_DATA];
 		return def.cost ? def.cost(level + 1) : {};
 	}
@@ -86,45 +86,45 @@
 				{@const time = getTime(id, level)}
 				{@const affordable = canAfford(cost)}
 				
-				<div class="card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow">
-					<div class="card-body">
+				<div class="glass-panel p-0 rounded-xl overflow-hidden border border-white/10 hover:border-neon-purple/50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] group">
+					<div class="p-5">
 						<div class="flex items-start justify-between">
-							<div class="flex items-center gap-3">
-								<div class="text-primary">
-									<ResearchIcon {id} className="w-10 h-10" />
+							<div class="flex items-center gap-4">
+								<div class="text-neon-purple drop-shadow-[0_0_8px_rgba(168,85,247,0.5)] group-hover:scale-110 transition-transform duration-300">
+									<ResearchIcon {id} className="w-12 h-12" />
 								</div>
 								<div>
-									<h2 class="card-title">{def.name}</h2>
-									<div class="badge badge-outline">Level {level}</div>
+									<h2 class="text-lg font-bold font-display text-white group-hover:text-neon-purple transition-colors">{def.name}</h2>
+									<div class="badge badge-sm border-neon-purple/30 text-neon-purple bg-neon-purple/10 mt-1">Level {level}</div>
 								</div>
 							</div>
 						</div>
 						
-						<p class="text-sm text-muted mt-2 h-10 overflow-hidden">{def.description}</p>
+						<p class="text-sm text-slate-400 mt-3 h-10 overflow-hidden leading-relaxed">{def.description}</p>
 						
-						<div class="divider my-2"></div>
+						<div class="divider my-3 before:bg-white/10 after:bg-white/10"></div>
 						
-						<div class="text-sm">
-							<div class="font-semibold mb-1">Next Level Effect:</div>
-							<div class="text-secondary">
+						<div class="text-sm bg-white/5 rounded-lg p-3 border border-white/5">
+							<div class="font-semibold mb-1 text-slate-300 text-xs uppercase tracking-wide">Next Level Effect</div>
+							<div class="text-neon-blue font-mono text-xs">
 								{typeof def.effect === 'function' ? def.effect(level + 1) : def.effect}
 							</div>
 						</div>
 
 						<div class="mt-4">
-							<div class="font-semibold text-xs uppercase text-muted mb-1">Cost</div>
+							<div class="font-semibold text-xs uppercase text-slate-500 mb-2 tracking-wider">Required Resources</div>
 							<div class="flex flex-wrap gap-2">
-								{#if cost.metal}<span class="badge badge-neutral text-xs">Metal: {cost.metal}</span>{/if}
-								{#if cost.crystal}<span class="badge badge-secondary text-xs">Crystal: {cost.crystal}</span>{/if}
-								{#if cost.deuterium}<span class="badge badge-accent text-xs">Fuel: {cost.deuterium}</span>{/if}
-								{#if cost.credits}<span class="badge badge-ghost text-xs">Credits: {cost.credits}</span>{/if}
+								{#if cost.metal}<span class="badge badge-outline border-slate-500 text-slate-300 text-xs">Metal: {cost.metal}</span>{/if}
+								{#if cost.crystal}<span class="badge badge-outline border-cyan-500/50 text-cyan-200 text-xs">Crystal: {cost.crystal}</span>{/if}
+								{#if cost.deuterium}<span class="badge badge-outline border-emerald-500/50 text-emerald-200 text-xs">Fuel: {cost.deuterium}</span>{/if}
+								{#if cost.credits}<span class="badge badge-outline border-yellow-500/50 text-yellow-200 text-xs">Credits: {cost.credits}</span>{/if}
 							</div>
-							<div class="text-xs text-muted mt-1">Time: {time}s</div>
+							<div class="text-xs text-slate-500 mt-2 font-mono text-right">Time: <span class="text-white">{time}s</span></div>
 						</div>
 
-						<div class="card-actions justify-end mt-4">
+						<div class="mt-4 flex justify-end">
 							<button 
-								class="btn btn-primary btn-sm" 
+								class="btn btn-sm bg-neon-purple text-black border-neon-purple hover:bg-neon-purple/80 hover:border-neon-purple font-bold tracking-wide shadow-[0_0_10px_rgba(168,85,247,0.3)] disabled:bg-white/5 disabled:text-white/20 disabled:border-transparent w-full" 
 								disabled={!affordable || researching.has(id)}
 								on:click={() => startResearch(id)}
 							>

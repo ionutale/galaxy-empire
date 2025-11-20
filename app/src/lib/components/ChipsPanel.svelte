@@ -53,39 +53,41 @@
 	}
 </script>
 
-<div class="card border border-base-300 bg-base-100 p-3">
-	<div class="flex items-center justify-between">
-		<h4 class="font-semibold">Chips</h4>
+<div class="glass-panel p-4 rounded-xl">
+	<div class="flex items-center justify-between mb-4">
+		<h4 class="font-display font-semibold text-lg text-neon-blue tracking-wide">Chips</h4>
 		{#if loading}
-			<progress class="progress-xs progress w-20"></progress>
+			<progress class="progress progress-info w-20 h-1"></progress>
 		{/if}
 	</div>
 	{#if !loading && Object.keys(chips).length === 0}
 		<div class="mt-2 text-sm opacity-80">
-			<div class="rounded-lg border border-white/10 bg-white/5 p-3">
-				No chips yet. Explore <a class="link" href="/research">Research</a> or the
-				<a class="link" href="/shipyard">Shipyard</a>.
+			<div class="rounded-lg border border-white/10 bg-white/5 p-3 text-slate-300">
+				No chips yet. Explore <a class="link text-neon-blue hover:text-neon-purple" href="/research">Research</a> or the
+				<a class="link text-neon-blue hover:text-neon-purple" href="/shipyard">Shipyard</a>.
 			</div>
 		</div>
 	{:else if !loading}
 		<ul class="mt-2 space-y-2 text-sm">
 			{#each Object.entries(chips) as [id, count]}
-				<li class="flex items-center justify-between gap-3 rounded-lg p-2 hover:bg-base-200/60">
+				<li class="flex items-center justify-between gap-3 rounded-lg p-3 border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
 					<div class="flex-1">
-						<div class="leading-tight font-medium">{formatName(id)}</div>
-						<div class="opacity-70">
-							Level <span class="badge badge-outline badge-xs align-middle">{count}</span>
+						<div class="leading-tight font-medium text-slate-200">{formatName(id)}</div>
+						<div class="opacity-70 text-xs mt-1">
+							Level <span class="badge badge-outline badge-xs align-middle border-neon-blue text-neon-blue">{count}</span>
 						</div>
 					</div>
 					<div class="flex items-center gap-2">
 						<button
-							class="btn btn-ghost btn-xs"
+							class="btn btn-ghost btn-xs text-white/50 hover:text-white"
 							on:click={() => upgrade(id)}
 							disabled={busy.has(id)}>Upgrade</button
 						>
 						<button
-							class="btn btn-xs"
-							class:btn-accent={equipped[id]}
+							class="btn btn-xs border-neon-blue/30 bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black hover:border-neon-blue"
+							class:btn-active={equipped[id]}
+							class:bg-neon-blue={equipped[id]}
+							class:text-black={equipped[id]}
 							on:click={() => toggleEquip(id)}
 							disabled={busy.has(id)}>{equipped[id] ? 'Equipped' : 'Equip'}</button
 						>
