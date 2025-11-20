@@ -41,6 +41,8 @@
 </script>
 
 <div class="relative w-full h-[600px] bg-black overflow-hidden border border-gray-800 rounded-lg"
+     role="application"
+     aria-label="Galaxy Map"
      on:wheel={handleWheel}
      on:mousedown={handleMouseDown}
      on:mousemove={handleMouseMove}
