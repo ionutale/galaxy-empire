@@ -94,7 +94,8 @@ export async function processBuilds(tickSeconds = 5) {
 						type: 'building',
 						buildingId: buildingId,
 						quantity: 1,
-						processedAt: new Date()
+						processedAt: new Date(),
+						level: existing ? existing.level + 1 : 1
 					});
 					// Remove from buildQueue
 					await db.delete(table.buildQueue).where(eq(table.buildQueue.id, b.id));
@@ -128,7 +129,8 @@ export async function processBuilds(tickSeconds = 5) {
 						type: 'research',
 						techId: techId,
 						quantity: 1,
-						processedAt: new Date()
+						processedAt: new Date(),
+						level: existing ? existing.level + 1 : 1
 					});
 					// Remove from buildQueue
 					await db.delete(table.buildQueue).where(eq(table.buildQueue.id, b.id));
@@ -236,51 +238,56 @@ export async function processFleets(tickSeconds = 5) {
 				const defenderId = targetPlanet[0]?.ownerId;
 				let combatResult = null;
 
+				// Even if no defenderId (unowned planet), we should generate a report for the attacker
+				// Fetch defender ships (all ships for now)
+				let defenderShips: any[] = [];
 				if (defenderId) {
-					// Fetch defender ships (all ships for now)
-					const defenderShips = await db
+					defenderShips = await db
 						.select()
 						.from(table.playerShips)
 						.where(eq(table.playerShips.userId, defenderId));
-					const defenderComp: Record<string, number> = {};
-					for (const s of defenderShips) {
-						defenderComp[s.shipTemplateId] = s.quantity;
+				}
+
+				const defenderComp: Record<string, number> = {};
+				for (const s of defenderShips) {
+					defenderComp[s.shipTemplateId] = s.quantity;
+				}
+
+				// Simulate combat (defenderId can be null/undefined, engine should handle or we pass dummy)
+				combatResult = simulateCombat(
+					f.userId,
+					f.composition as Record<string, number>,
+					defenderId || 'unknown',
+					defenderComp
+				);
+
+				// Save report
+				await db.insert(table.combatReports).values({
+					id: crypto.randomUUID(),
+					attackerId: f.userId,
+					defenderId: defenderId, // Can be null
+					timestamp: now,
+					outcome: combatResult.outcome,
+					log: combatResult.log,
+					loot: combatResult.loot
+				});
+
+				// Apply losses to Attacker (Fleet)
+				const newComposition = { ...(f.composition as Record<string, number>) };
+				for (const [shipId, lost] of Object.entries(combatResult.attackerLosses)) {
+					if (newComposition[shipId]) {
+						newComposition[shipId] -= lost;
+						if (newComposition[shipId] <= 0) delete newComposition[shipId];
 					}
+				}
+				// Update fleet composition in DB (will be used for return or deletion if empty)
+				// If fleet is empty, it's destroyed?
+				// For now, let's keep it returning even if empty (ghost fleet) or delete it?
+				// Logic below handles return. We should update `f.composition` or the DB update below.
+				// We'll update the DB update below to use the new composition.
 
-					// Simulate combat
-					combatResult = simulateCombat(
-						f.userId,
-						f.composition as Record<string, number>,
-						defenderId,
-						defenderComp
-					);
-
-					// Save report
-					await db.insert(table.combatReports).values({
-						id: crypto.randomUUID(),
-						attackerId: f.userId,
-						defenderId: defenderId,
-						timestamp: now,
-						outcome: combatResult.outcome,
-						log: combatResult.log,
-						loot: combatResult.loot
-					});
-
-					// Apply losses to Attacker (Fleet)
-					const newComposition = { ...(f.composition as Record<string, number>) };
-					for (const [shipId, lost] of Object.entries(combatResult.attackerLosses)) {
-						if (newComposition[shipId]) {
-							newComposition[shipId] -= lost;
-							if (newComposition[shipId] <= 0) delete newComposition[shipId];
-						}
-					}
-					// Update fleet composition in DB (will be used for return or deletion if empty)
-					// If fleet is empty, it's destroyed?
-					// For now, let's keep it returning even if empty (ghost fleet) or delete it?
-					// Logic below handles return. We should update `f.composition` or the DB update below.
-					// We'll update the DB update below to use the new composition.
-
-					// Apply losses to Defender (PlayerShips)
+				// Apply losses to Defender (PlayerShips)
+				if (defenderId) {
 					for (const [shipId, lost] of Object.entries(combatResult.defenderLosses)) {
 						const existing = defenderShips.find((s) => s.shipTemplateId === shipId);
 						if (existing) {

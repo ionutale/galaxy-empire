@@ -103,6 +103,7 @@ export const processedBuilds = pgTable('processed_builds', {
 	techId: text('tech_id'),
 	quantity: integer('quantity').notNull(),
 	processedAt: timestamp('processed_at', { mode: 'date' }).notNull(),
+	level: integer('level'),
 	rolledBack: integer('rolled_back').notNull().default(0),
 	rolledBackAt: timestamp('rolled_back_at', { mode: 'date' })
 });

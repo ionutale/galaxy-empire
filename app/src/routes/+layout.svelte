@@ -299,6 +299,9 @@
 												{BUILDING_DATA[build.buildingId]?.name ??
 													SHIP_DATA[build.buildingId]?.name ??
 													build.buildingId}
+												{#if build.level}
+													<span class="text-neon-blue ml-1">Lvl {build.level}</span>
+												{/if}
 											</div>
 											<div class="text-xs capitalize opacity-70">{build.status}</div>
 										</div>
@@ -331,6 +334,9 @@
 												{BUILDING_DATA[build.buildingId]?.name ??
 													SHIP_DATA[build.buildingId]?.name ??
 													build.buildingId}
+												{#if build.level}
+													<span class="text-neon-blue ml-1">Lvl {build.level}</span>
+												{/if}
 											</div>
 											<div class="text-xs capitalize opacity-70 text-success">Completed</div>
 										</div>
