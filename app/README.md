@@ -1,49 +1,84 @@
-# sv
+# Galaxy Empire
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A browser-based space strategy game built with SvelteKit, Drizzle ORM, and PostgreSQL.
 
-## Creating a project
+## 🚀 Tech Stack
 
-If you're seeing this, you've probably already done this step. Congrats!
+- **Framework**: [SvelteKit](https://kit.svelte.dev/)
+- **Database**: PostgreSQL
+- **ORM**: [Drizzle ORM](https://orm.drizzle.team/)
+- **Styling**: [TailwindCSS](https://tailwindcss.com/) + [DaisyUI](https://daisyui.com/)
+- **Testing**: Vitest & Playwright
+- **Containerization**: Docker
 
-```sh
-# create a new project in the current directory
-npx sv create
+## 🛠️ Setup & Installation
 
-# create a new project in my-app
-npx sv create my-app
-```
+### Prerequisites
 
-## Developing
+- Node.js 22+
+- pnpm
+- Docker & Docker Compose
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Database (local development)
-
-This project uses a local SQLite database via `better-sqlite3`. Set the `DATABASE_URL` environment variable to a filesystem path for the database file before running dev or build. Example (macOS / zsh):
+### 1. Clone and Install
 
 ```bash
-export DATABASE_URL="$PWD/dev.db"
-npm run dev
+git clone <repository-url>
+cd galaxy-empire/app
+pnpm install
 ```
 
-If the file doesn't exist, the app will create it automatically. The project includes simple Drizzle schema definitions; use `npm run db:push` or `drizzle-kit` commands to apply migrations as needed.
+### 2. Start Database
 
-## Building
+Start the PostgreSQL database using Docker Compose:
 
-To create a production version of your app:
-
-```sh
-npm run build
+```bash
+docker compose up -d
 ```
 
-You can preview the production build with `npm run preview`.
+### 3. Configure Environment
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Create a `.env` file in the `app` directory:
+
+```bash
+cp .env.example .env
+```
+
+Update the `DATABASE_URL` in `.env` to point to your local Postgres instance:
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/galaxy_empire
+```
+
+### 4. Database Migration
+
+Push the schema to the database:
+
+```bash
+pnpm db:push
+```
+
+### 5. Run Development Server
+
+```bash
+pnpm dev
+```
+
+The game will be available at `http://localhost:5173`.
+
+## 🎮 Features
+
+- **Resource Management**: Mine Metal, Crystal, and Fuel.
+- **Base Building**: Construct and upgrade facilities like Mines, Shipyards, and Research Labs.
+- **Research**: Unlock new technologies in the Research Lab.
+- **Shipyard**: Build a fleet of ships, from Scouts to Battleships.
+- **Game Loop**: Server-side tick processor handles construction queues, resource production, and fleet movements.
+- **Admin Panel**: Inspect active queues and manage game state at `/admin/overview`.
+
+## 📜 Scripts
+
+- `pnpm dev`: Start development server
+- `pnpm build`: Build for production
+- `pnpm db:push`: Push schema changes to DB
+- `pnpm db:studio`: Open Drizzle Studio to inspect DB
+- `pnpm test:unit`: Run unit tests
+- `pnpm lint`: Run linter
