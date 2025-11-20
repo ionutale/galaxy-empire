@@ -17,17 +17,29 @@
 	const session = writable(data);
 	setContext('session', session);
 
-	const SHIP_DATA = SHIP_TEMPLATES.reduce((acc, s) => {
-		acc[s.shipId] = s;
-		return acc;
-	}, {} as Record<string, any>);
+	const SHIP_DATA = SHIP_TEMPLATES.reduce(
+		(acc, s) => {
+			acc[s.shipId] = s;
+			return acc;
+		},
+		{} as Record<string, any>
+	);
 
 	$: session.set(data);
 	$: user = $session.user;
 
 	const year = new Date().getFullYear();
 	let theme = 'emerald';
-	const themes = ['emerald','synthwave','cyberpunk','coffee','forest','aqua','dark','light'] as const;
+	const themes = [
+		'emerald',
+		'synthwave',
+		'cyberpunk',
+		'coffee',
+		'forest',
+		'aqua',
+		'dark',
+		'light'
+	] as const;
 	let drawerOpen = false;
 	let buildsDrawerOpen = false;
 	let state: any = null;
@@ -46,7 +58,9 @@
 	function applyTheme(t: string) {
 		theme = t;
 		// set data-theme on html element (daisyUI reads this)
-		try { document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+		try {
+			document.documentElement.setAttribute('data-theme', t);
+		} catch (e) {}
 		localStorage.setItem('ge:theme', t);
 	}
 
@@ -64,7 +78,7 @@
 			if (res.ok) {
 				const body = await res.json();
 				state = body.state;
-                console.log('[layout] loaded state', { builds: state.builds, count: state.builds?.length });
+				console.log('[layout] loaded state', { builds: state.builds, count: state.builds?.length });
 			}
 		} catch {}
 	}
@@ -80,20 +94,25 @@
 
 		if (user) {
 			loadState();
-			const interval = setInterval(() => { now = Date.now(); }, 1000);
-			
+			const interval = setInterval(() => {
+				now = Date.now();
+			}, 1000);
+
 			// Game loop: tick the server every 5 seconds to process builds/fleets
 			const tickInterval = setInterval(async () => {
 				try {
-					const res = await fetch('/api/demo/process/tick', { 
-						method: 'POST', 
+					const res = await fetch('/api/demo/process/tick', {
+						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ seconds: 5 }) 
+						body: JSON.stringify({ seconds: 5 })
 					});
 					if (res.ok) {
 						const data = await res.json();
 						// if anything was processed, reload state to reflect changes
-						if ((data.builds && data.builds.length > 0) || (data.fleets && data.fleets.length > 0)) {
+						if (
+							(data.builds && data.builds.length > 0) ||
+							(data.fleets && data.fleets.length > 0)
+						) {
 							loadState();
 						}
 					}
@@ -112,27 +131,29 @@
 	});
 
 	$: isPhoneDemo = $page.url.pathname.startsWith('/demo/phone');
-	$: builds = [...(state?.builds ?? [])].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+	$: builds = [...(state?.builds ?? [])].sort(
+		(a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+	);
 	$: activeBuilds = builds.filter((b: any) => b.status === 'in-progress' || b.status === 'queued');
 	$: activeBuildsCount = activeBuilds.length;
 
 	function getRemainingTime(build: any, currentNow: number) {
 		if (build.status === 'completed') return 'Completed';
-		
+
 		let remaining = 0;
 		if (build.status === 'queued') {
 			remaining = build.durationSeconds;
 		} else {
 			const startTime = new Date(build.createdAt).getTime();
-			const endTime = startTime + (build.durationSeconds * 1000);
+			const endTime = startTime + build.durationSeconds * 1000;
 			remaining = Math.max(0, Math.floor((endTime - currentNow) / 1000));
 			if (remaining <= 0) return 'Finishing...';
 		}
-		
+
 		const hours = Math.floor(remaining / 3600);
 		const minutes = Math.floor((remaining % 3600) / 60);
 		const seconds = remaining % 60;
-		
+
 		if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
 		if (minutes > 0) return `${minutes}m ${seconds}s`;
 		return `${seconds}s`;
@@ -167,37 +188,71 @@
 
 {#if !isPhoneDemo}
 	<!-- Responsive drawer (sidebar) layout using daisyUI -->
-	<div class="min-h-screen bg-base-100 text-base-content relative drawer drawer-end">
-		<input id="builds-drawer" type="checkbox" class="drawer-toggle" bind:checked={buildsDrawerOpen} />
-		<div class="drawer-content flex flex-col h-full">
-			<div aria-hidden="true" class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,theme(colors.primary/10),transparent_60%),radial-gradient(ellipse_at_bottom,theme(colors.secondary/10),transparent_60%)]"></div>
-			<div class="drawer lg:drawer-open h-full">
+	<div class="drawer relative drawer-end min-h-screen bg-base-100 text-base-content">
+		<input
+			id="builds-drawer"
+			type="checkbox"
+			class="drawer-toggle"
+			bind:checked={buildsDrawerOpen}
+		/>
+		<div class="drawer-content flex h-full flex-col">
+			<div
+				aria-hidden="true"
+				class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,theme(colors.primary/10),transparent_60%),radial-gradient(ellipse_at_bottom,theme(colors.secondary/10),transparent_60%)]"
+			></div>
+			<div class="drawer h-full lg:drawer-open">
 				<input id="app-drawer" type="checkbox" class="drawer-toggle" bind:checked={drawerOpen} />
 				<div class="drawer-content flex flex-col">
 					<!-- Top bar for mobile with menu toggle -->
-					<header class="sticky top-0 z-30 w-full bg-base-100/80 backdrop-blur border-b border-base-300">
-						<div class="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
+					<header
+						class="sticky top-0 z-30 w-full border-b border-base-300 bg-base-100/80 backdrop-blur"
+					>
+						<div class="container mx-auto flex items-center justify-between gap-4 px-4 py-3">
 							<div class="flex items-center gap-3">
 								<label for="app-drawer" class="btn btn-square btn-ghost lg:hidden">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										class="inline-block h-6 w-6 stroke-current"
+										><path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M4 6h16M4 12h16M4 18h16"
+										></path></svg
+									>
 								</label>
-								<a href="/" class="font-bold text-lg">Galaxy Empire</a>
+								<a href="/" class="text-lg font-bold">Galaxy Empire</a>
 							</div>
 							<!-- navigation moved to sidebar drawer -->
-							<div class="hidden lg:flex items-center gap-2" aria-hidden="true"></div>
+							<div class="hidden items-center gap-2 lg:flex" aria-hidden="true"></div>
 							<div class="flex-1"></div>
 							{#if user}
-								<label for="builds-drawer" class="btn btn-ghost btn-circle mr-2">
+								<label for="builds-drawer" class="btn mr-2 btn-circle btn-ghost">
 									<div class="indicator">
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke-width="1.5"
+											stroke="currentColor"
+											class="h-6 w-6"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z"
+											/>
 										</svg>
 										{#if activeBuildsCount > 0}
-											<span class="badge badge-xs badge-primary indicator-item">{activeBuildsCount}</span>
+											<span class="indicator-item badge badge-xs badge-primary"
+												>{activeBuildsCount}</span
+											>
 										{/if}
 									</div>
 								</label>
-								<div class="hidden md:flex items-center">
+								<div class="hidden items-center md:flex">
 									<ResourceBar />
 								</div>
 								<button class="btn btn-ghost btn-sm" on:click={logout}>Logout</button>
@@ -205,14 +260,14 @@
 						</div>
 					</header>
 
-					<main class="flex-1 container mx-auto px-4 py-8">
+					<main class="container mx-auto flex-1 px-4 py-8">
 						<slot />
 					</main>
 
-					<footer class="footer footer-center p-6 bg-base-200">
+					<footer class="footer-center footer bg-base-200 p-6">
 						<div>
 							<p>© {year} Galaxy Empire — development build</p>
-							<p class="text-sm text-muted">Built with SvelteKit · DaisyUI · Drizzle</p>
+							<p class="text-muted text-sm">Built with SvelteKit · DaisyUI · Drizzle</p>
 						</div>
 					</footer>
 				</div>
@@ -220,7 +275,7 @@
 					<div class="drawer-side">
 						<label for="app-drawer" class="drawer-overlay"></label>
 						<aside
-							class="w-72 bg-base-200 text-base-content p-4 relative z-10 border-r border-base-300"
+							class="relative z-10 w-72 border-r border-base-300 bg-base-200 p-4 text-base-content"
 						>
 							<div class="mb-4">
 								<a href="/" class="text-2xl font-bold">Galaxy Empire</a>
@@ -230,38 +285,44 @@
 							<div class="mt-4">
 								<ChipsPanel />
 							</div>
-								
 						</aside>
 						<!-- global toast container -->
-						</div>
+					</div>
 				{/if}
 			</div>
 		</div>
 		<Toast />
 		<div class="drawer-side z-50">
 			<label for="builds-drawer" class="drawer-overlay"></label>
-			<div class="menu p-4 w-80 min-h-full bg-base-200 text-base-content">
-				<h3 class="text-lg font-bold mb-4">Construction Queue</h3>
+			<div class="menu min-h-full w-80 bg-base-200 p-4 text-base-content">
+				<h3 class="mb-4 text-lg font-bold">Construction Queue</h3>
 				{#if builds.length === 0}
 					<p class="text-muted text-sm">No construction history.</p>
 				{:else}
 					<div class="space-y-3">
 						{#each builds as build}
-							<div class="card bg-base-100 shadow-sm border border-base-300 p-3">
-								<div class="flex justify-between items-start">
+							<div class="card border border-base-300 bg-base-100 p-3 shadow-sm">
+								<div class="flex items-start justify-between">
 									<div>
-										<div class="font-semibold text-sm">
-											{BUILDING_DATA[build.buildingId]?.name ?? SHIP_DATA[build.buildingId]?.name ?? build.buildingId}
+										<div class="text-sm font-semibold">
+											{BUILDING_DATA[build.buildingId]?.name ??
+												SHIP_DATA[build.buildingId]?.name ??
+												build.buildingId}
 										</div>
-										<div class="text-xs opacity-70 capitalize">{build.status}</div>
+										<div class="text-xs capitalize opacity-70">{build.status}</div>
 									</div>
 									{#if build.status === 'in-progress' || build.status === 'queued'}
 										<div class="flex flex-col items-end gap-1">
 											<div class="badge badge-sm badge-primary">{getRemainingTime(build, now)}</div>
-											<button class="btn btn-xs btn-error btn-outline" on:click={() => cancelBuild(build.id)}>Cancel</button>
+											<button
+												class="btn btn-outline btn-xs btn-error"
+												on:click={() => cancelBuild(build.id)}>Cancel</button
+											>
 										</div>
 									{:else}
-										<div class="text-xs opacity-50">{new Date(build.createdAt).toLocaleDateString()}</div>
+										<div class="text-xs opacity-50">
+											{new Date(build.createdAt).toLocaleDateString()}
+										</div>
 									{/if}
 								</div>
 							</div>

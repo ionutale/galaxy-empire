@@ -15,7 +15,7 @@
 				<p class="py-4 opacity-80">
 					Build your empire, conquer the stars, and become the ruler of the galaxy.
 				</p>
-				<div class="flex flex-wrap gap-3 justify-center">
+				<div class="flex flex-wrap justify-center gap-3">
 					{#if user}
 						<a class="btn btn-primary" href="/base">Enter the Game</a>
 					{:else}

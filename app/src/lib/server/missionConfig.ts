@@ -1,7 +1,7 @@
 export const roleWeights: Record<string, number> = {
-  scout: 1,
-  fighter: 3,
-  cruiser: 6
+	scout: 1,
+	fighter: 3,
+	cruiser: 6
 };
 
 export const baseWinChance = 0.3; // base

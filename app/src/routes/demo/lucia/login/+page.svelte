@@ -5,17 +5,17 @@
 	let { form }: { form: ActionData } = $props();
 </script>
 
-<div class="max-w-md mx-auto">
+<div class="mx-auto max-w-md">
 	<div class="card p-6">
-		<h1 class="text-xl font-semibold mb-3">Login / Register</h1>
+		<h1 class="mb-3 text-xl font-semibold">Login / Register</h1>
 		<form method="post" action="?/login" use:enhance class="space-y-3">
 			<div class="form-control">
 				<label class="label" for="lucia-username"><span class="label-text">Username</span></label>
-				<input id="lucia-username" name="username" class="input input-bordered" />
+				<input id="lucia-username" name="username" class="input-bordered input" />
 			</div>
 			<div class="form-control">
 				<label class="label" for="lucia-password"><span class="label-text">Password</span></label>
-				<input id="lucia-password" type="password" name="password" class="input input-bordered" />
+				<input id="lucia-password" type="password" name="password" class="input-bordered input" />
 			</div>
 			<div class="flex gap-2">
 				<button class="btn btn-primary">Login</button>

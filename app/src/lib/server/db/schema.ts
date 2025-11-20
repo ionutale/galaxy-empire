@@ -29,7 +29,9 @@ export const shipTemplate = pgTable('ship_template', {
 
 export const buildQueue = pgTable('build_queue', {
 	id: text('id').primaryKey(),
-	userId: text('user_id').notNull().references(() => user.id),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
 	type: text('type').notNull().default('ship'),
 	shipTemplateId: text('ship_template_id').references(() => shipTemplate.id),
 	buildingId: text('building_id'),
@@ -44,7 +46,9 @@ export type ShipTemplate = typeof shipTemplate.$inferSelect;
 export type BuildQueueItem = typeof buildQueue.$inferSelect;
 
 export const playerState = pgTable('player_state', {
-	userId: text('user_id').primaryKey().references(() => user.id),
+	userId: text('user_id')
+		.primaryKey()
+		.references(() => user.id),
 	level: integer('level').notNull().default(1),
 	power: integer('power').notNull().default(10),
 	credits: integer('credits').notNull().default(1000),
@@ -55,8 +59,12 @@ export const playerState = pgTable('player_state', {
 
 export const playerShips = pgTable('player_ships', {
 	id: text('id').primaryKey(),
-	userId: text('user_id').notNull().references(() => user.id),
-	shipTemplateId: text('ship_template_id').notNull().references(() => shipTemplate.id),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
+	shipTemplateId: text('ship_template_id')
+		.notNull()
+		.references(() => shipTemplate.id),
 	quantity: integer('quantity').notNull()
 });
 
@@ -65,14 +73,18 @@ export type PlayerShip = typeof playerShips.$inferSelect;
 
 export const playerBuildings = pgTable('player_buildings', {
 	id: text('id').primaryKey(),
-	userId: text('user_id').notNull().references(() => user.id),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
 	buildingId: text('building_id').notNull(),
 	level: integer('level').notNull()
 });
 
 export const playerResearch = pgTable('player_research', {
 	id: text('id').primaryKey(),
-	userId: text('user_id').notNull().references(() => user.id),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
 	techId: text('tech_id').notNull(),
 	level: integer('level').notNull()
 });
@@ -82,7 +94,9 @@ export type PlayerResearch = typeof playerResearch.$inferSelect;
 
 export const processedBuilds = pgTable('processed_builds', {
 	id: text('id').primaryKey(),
-	userId: text('user_id').notNull().references(() => user.id),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
 	type: text('type').notNull().default('ship'),
 	shipTemplateId: text('ship_template_id').references(() => shipTemplate.id),
 	buildingId: text('building_id'),
@@ -95,7 +109,9 @@ export const processedBuilds = pgTable('processed_builds', {
 
 export const fleets = pgTable('fleets', {
 	id: text('id').primaryKey(),
-	userId: text('user_id').notNull().references(() => user.id),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
 	originSystem: integer('origin_system').default(1),
 	originPlanet: integer('origin_planet').default(1),
 	targetSystem: integer('target_system').notNull(),
@@ -113,8 +129,12 @@ export type Fleet = typeof fleets.$inferSelect;
 // Deprecated: missions table (replaced by fleets)
 export const missions = pgTable('missions', {
 	id: text('id').primaryKey(),
-	userId: text('user_id').notNull().references(() => user.id),
-	shipTemplateId: text('ship_template_id').notNull().references(() => shipTemplate.id),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
+	shipTemplateId: text('ship_template_id')
+		.notNull()
+		.references(() => shipTemplate.id),
 	quantity: integer('quantity').notNull(),
 	startedAt: timestamp('started_at', { mode: 'date' }).notNull(),
 	eta: timestamp('eta', { mode: 'date' }).notNull(),
@@ -123,9 +143,15 @@ export const missions = pgTable('missions', {
 
 export const processedMissions = pgTable('processed_missions', {
 	id: text('id').primaryKey(),
-	missionId: text('mission_id').notNull().references(() => missions.id),
-	userId: text('user_id').notNull().references(() => user.id),
-	shipTemplateId: text('ship_template_id').notNull().references(() => shipTemplate.id),
+	missionId: text('mission_id')
+		.notNull()
+		.references(() => missions.id),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
+	shipTemplateId: text('ship_template_id')
+		.notNull()
+		.references(() => shipTemplate.id),
 	quantity: integer('quantity').notNull(),
 	quantityLost: integer('quantity_lost').notNull().default(0),
 	outcome: text('outcome').notNull(),

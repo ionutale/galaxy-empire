@@ -29,7 +29,7 @@ export default {
 	extends: [
 		'eslint:recommended',
 		'plugin:@typescript-eslint/recommended',
-		...svelte.configs.recommended ? [svelte.configs.recommended] : [],
+		...(svelte.configs.recommended ? [svelte.configs.recommended] : []),
 		'prettier'
 	],
 	rules: {

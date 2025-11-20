@@ -11,103 +11,149 @@ import type { BuildEntry, PlayerState as PlayerStateType, PlayerBuilding, User }
 // No file constants needed; using DB
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
-  try {
-    const token = cookies.get(sessionCookieName);
-    if (!token) return new Response(JSON.stringify({ error: 'unauthenticated' }), { status: 401 });
+	try {
+		const token = cookies.get(sessionCookieName);
+		if (!token) return new Response(JSON.stringify({ error: 'unauthenticated' }), { status: 401 });
 
-    const { user } = await validateSessionToken(token);
-    if (!user) return new Response(JSON.stringify({ error: 'unauthenticated' }), { status: 401 });
+		const { user } = await validateSessionToken(token);
+		if (!user) return new Response(JSON.stringify({ error: 'unauthenticated' }), { status: 401 });
 
-    const { buildingId } = await request.json() as { buildingId?: string };
-    if (!buildingId) return new Response(JSON.stringify({ error: 'missing buildingId' }), { status: 400 });
+		const { buildingId } = (await request.json()) as { buildingId?: string };
+		if (!buildingId)
+			return new Response(JSON.stringify({ error: 'missing buildingId' }), { status: 400 });
 
-    const [pState] = (await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id))) as PlayerStateType[];
-    if (!pState) return new Response(JSON.stringify({ error: 'player not found' }), { status: 404 });
+		const [pState] = (await db
+			.select()
+			.from(table.playerState)
+			.where(eq(table.playerState.userId, user.id))) as PlayerStateType[];
+		if (!pState)
+			return new Response(JSON.stringify({ error: 'player not found' }), { status: 404 });
 
-    const buildingDef = BUILDING_DATA[buildingId];
-    if (!buildingDef) return new Response(JSON.stringify({ error: 'building not found' }), { status: 404 });
+		const buildingDef = BUILDING_DATA[buildingId];
+		if (!buildingDef)
+			return new Response(JSON.stringify({ error: 'building not found' }), { status: 404 });
 
-    // determine current level from DB buildings (fallback to 0)
-    const existingBuildings = (await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id))) as PlayerBuilding[];
-    const currentLevel = (existingBuildings.find((b) => b.buildingId === buildingId)?.level) ?? 0;
-    const cost = buildingDef.cost?.(currentLevel + 1);
+		// determine current level from DB buildings (fallback to 0)
+		const existingBuildings = (await db
+			.select()
+			.from(table.playerBuildings)
+			.where(eq(table.playerBuildings.userId, user.id))) as PlayerBuilding[];
+		const currentLevel = existingBuildings.find((b) => b.buildingId === buildingId)?.level ?? 0;
+		const cost = buildingDef.cost?.(currentLevel + 1);
 
-    if (cost) {
-      // ensure all resource fields are available and sufficient
-      const needCredits = cost.credits ?? 0;
-      const needMetal = cost.metal ?? 0;
-      const needCrystal = cost.crystal ?? 0;
-      const needFuel = cost.fuel ?? 0;
-      if (pState.credits < needCredits || pState.metal < needMetal || pState.crystal < needCrystal || pState.fuel < needFuel) {
-        return new Response(JSON.stringify({ error: 'insufficient resources' }), { status: 400 });
-      }
+		if (cost) {
+			// ensure all resource fields are available and sufficient
+			const needCredits = cost.credits ?? 0;
+			const needMetal = cost.metal ?? 0;
+			const needCrystal = cost.crystal ?? 0;
+			const needFuel = cost.fuel ?? 0;
+			if (
+				pState.credits < needCredits ||
+				pState.metal < needMetal ||
+				pState.crystal < needCrystal ||
+				pState.fuel < needFuel
+			) {
+				return new Response(JSON.stringify({ error: 'insufficient resources' }), { status: 400 });
+			}
 
-      await db.update(table.playerState).set({
-        credits: pState.credits - needCredits,
-        metal: pState.metal - needMetal,
-        crystal: pState.crystal - needCrystal,
-        fuel: pState.fuel - needFuel
-      }).where(eq(table.playerState.userId, user.id));
+			await db
+				.update(table.playerState)
+				.set({
+					credits: pState.credits - needCredits,
+					metal: pState.metal - needMetal,
+					crystal: pState.crystal - needCrystal,
+					fuel: pState.fuel - needFuel
+				})
+				.where(eq(table.playerState.userId, user.id));
 
-      // update demo player.json removed as we are fully DB-based now
+			// update demo player.json removed as we are fully DB-based now
+		}
 
-    }
+		// enqueue building upgrade as a build
+		const now = new Date();
+		const duration =
+			typeof buildingDef.time === 'function' ? buildingDef.time(currentLevel + 1) : 10;
+		const entryId = `build-${crypto.randomUUID()}`;
+		const entry: BuildEntry = {
+			id: entryId,
+			type: 'building',
+			buildingId,
+			createdAt: now.toISOString(),
+			durationSeconds: duration,
+			remainingSeconds: duration,
+			status: 'queued',
+			userId: user.id
+		};
+		// Insert into DB buildQueue
+		await db.insert(table.buildQueue).values({
+			id: entryId,
+			userId: user.id,
+			type: 'building',
+			buildingId: buildingId,
+			quantity: 1,
+			startedAt: now,
+			eta: new Date(now.getTime() + duration * 1000),
+			totalDuration: duration
+		});
 
-    // enqueue building upgrade as a build
-    const now = new Date();
-    const duration = typeof buildingDef.time === 'function' ? buildingDef.time(currentLevel + 1) : 10;
-    const entryId = `build-${crypto.randomUUID()}`;
-    const entry: BuildEntry = { id: entryId, type: 'building', buildingId, createdAt: now.toISOString(), durationSeconds: duration, remainingSeconds: duration, status: 'queued', userId: user.id };
-    // Insert into DB buildQueue
-    await db.insert(table.buildQueue).values({
-      id: entryId,
-      userId: user.id,
-      type: 'building',
-      buildingId: buildingId,
-      quantity: 1,
-      startedAt: now,
-      eta: new Date(now.getTime() + duration * 1000),
-      totalDuration: duration
-    });
+		// Build the response state from the DB (so UI reflects the updated resources)
+		let state: Record<string, any> = {};
+		try {
+			const stateRow = (
+				await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id))
+			)[0] as PlayerStateType | undefined;
+			const ships = await db
+				.select()
+				.from(table.playerShips)
+				.where(eq(table.playerShips.userId, user.id));
+			const buildsList = await db
+				.select()
+				.from(table.buildQueue)
+				.where(eq(table.buildQueue.userId, user.id))
+				.execute();
+			const buildingsResult = await db
+				.select()
+				.from(table.playerBuildings)
+				.where(eq(table.playerBuildings.userId, user.id));
+			const buildings = buildingsResult.reduce(
+				(acc: Record<string, number>, b: any) => {
+					acc[b.buildingId] = b.level;
+					return acc;
+				},
+				{} as Record<string, number>
+			);
+			state = {
+				playerId: user.id,
+				username: user.username,
+				level: stateRow?.level ?? 1,
+				power: stateRow?.power ?? 10,
+				resources: {
+					credits: stateRow?.credits ?? 1000,
+					metal: stateRow?.metal ?? 500,
+					crystal: stateRow?.crystal ?? 200,
+					fuel: stateRow?.fuel ?? 100
+				},
+				ships,
+				builds: buildsList,
+				buildings
+			};
+		} catch (err) {
+			// If DB read fails, return an empty state or handle as appropriate for a production system
+			// For now, re-throwing or logging the error might be better than a silent fallback to a non-existent file.
+			console.error('Failed to build response state from DB:', err);
+			return new Response(
+				JSON.stringify({ error: 'Failed to retrieve player state', details: String(err) }),
+				{ status: 500 }
+			);
+		}
 
-
-
-    // Build the response state from the DB (so UI reflects the updated resources)
-    let state: Record<string, any> = {};
-    try {
-      const stateRow = (await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id)))[0] as PlayerStateType | undefined;
-      const ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id));
-      const buildsList = await db.select().from(table.buildQueue).where(eq(table.buildQueue.userId, user.id)).execute();
-      const buildingsResult = await db.select().from(table.playerBuildings).where(eq(table.playerBuildings.userId, user.id));
-      const buildings = buildingsResult.reduce((acc: Record<string, number>, b: any) => {
-        acc[b.buildingId] = b.level;
-        return acc;
-      }, {} as Record<string, number>);
-      state = {
-        playerId: user.id,
-        username: user.username,
-        level: stateRow?.level ?? 1,
-        power: stateRow?.power ?? 10,
-        resources: {
-          credits: stateRow?.credits ?? 1000,
-          metal: stateRow?.metal ?? 500,
-          crystal: stateRow?.crystal ?? 200,
-          fuel: stateRow?.fuel ?? 100
-        },
-        ships,
-        builds: buildsList,
-        buildings
-      };
-    } catch (err) {
-      // If DB read fails, return an empty state or handle as appropriate for a production system
-      // For now, re-throwing or logging the error might be better than a silent fallback to a non-existent file.
-      console.error('Failed to build response state from DB:', err);
-      return new Response(JSON.stringify({ error: 'Failed to retrieve player state', details: String(err) }), { status: 500 });
-    }
-
-    return new Response(JSON.stringify({ state, queued: entry }), { headers: { 'Content-Type': 'application/json' } });
-  } catch (err) {
-    console.error('Error in building upgrade:', err);
-    return new Response(JSON.stringify({ error: 'invalid request', details: String(err) }), { status: 400 });
-  }
+		return new Response(JSON.stringify({ state, queued: entry }), {
+			headers: { 'Content-Type': 'application/json' }
+		});
+	} catch (err) {
+		console.error('Error in building upgrade:', err);
+		return new Response(JSON.stringify({ error: 'invalid request', details: String(err) }), {
+			status: 400
+		});
+	}
 };

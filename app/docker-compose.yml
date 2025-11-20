@@ -13,14 +13,14 @@ services:
   #   restart: unless-stopped
   #   depends_on:
   #     - postgres
-    # For local development you can uncomment the volume below to mount source
-    # volumes:
-    #   - ./:/app
+  # For local development you can uncomment the volume below to mount source
+  # volumes:
+  #   - ./:/app
 
   postgres:
     image: postgres:15-alpine
     ports:
-      - "5432:5432"
+      - '5432:5432'
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -29,7 +29,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
- 
 networks:
   default:
     driver: bridge

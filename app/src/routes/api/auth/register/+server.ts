@@ -3,67 +3,66 @@ import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import { hash } from '@node-rs/argon2';
-import {
-  generateSessionToken,
-  createSession,
-  setSessionTokenCookie
-} from '$lib/server/auth';
+import { generateSessionToken, createSession, setSessionTokenCookie } from '$lib/server/auth';
 
 export const POST: RequestHandler = async (event) => {
-  const { request } = event;
-  const body = await request.json();
-  const username = String(body.username || '').trim();
-  const password = String(body.password || '');
+	const { request } = event;
+	const body = await request.json();
+	const username = String(body.username || '').trim();
+	const password = String(body.password || '');
 
-  if (!username || password.length < 6) {
-    return new Response(JSON.stringify({ error: 'invalid_input' }), { status: 400 });
-  }
+	if (!username || password.length < 6) {
+		return new Response(JSON.stringify({ error: 'invalid_input' }), { status: 400 });
+	}
 
-  // check unique
-  const existing = await db.select({ id: table.user.id }).from(table.user).where(eq(table.user.username, username));
-  if (existing.length > 0) {
-    return new Response(JSON.stringify({ error: 'username_taken' }), { status: 409 });
-  }
+	// check unique
+	const existing = await db
+		.select({ id: table.user.id })
+		.from(table.user)
+		.where(eq(table.user.username, username));
+	if (existing.length > 0) {
+		return new Response(JSON.stringify({ error: 'username_taken' }), { status: 409 });
+	}
 
-  const id = crypto.randomUUID();
-  const passwordHash = await hash(password);
+	const id = crypto.randomUUID();
+	const passwordHash = await hash(password);
 
-  try {
-    await db.transaction(async (ctx) => {
-      await ctx.insert(table.user).values({ id, username, passwordHash });
+	try {
+		await db.transaction(async (ctx) => {
+			await ctx.insert(table.user).values({ id, username, passwordHash });
 
-      // create default player state with starting resources
-      await ctx.insert(table.playerState).values({
-        userId: id,
-        level: 1,
-        power: 10,
-        credits: 1500,
-        metal: 1000,
-        crystal: 500,
-        fuel: 200
-      });
+			// create default player state with starting resources
+			await ctx.insert(table.playerState).values({
+				userId: id,
+				level: 1,
+				power: 10,
+				credits: 1500,
+				metal: 1000,
+				crystal: 500,
+				fuel: 200
+			});
 
-      // create default starting buildings: give new players some basic structures at level 1
-      await ctx.insert(table.playerBuildings).values([
-        { id: crypto.randomUUID(), userId: id, buildingId: 'controlCenter', level: 1 },
-        { id: crypto.randomUUID(), userId: id, buildingId: 'metalMine', level: 1 },
-        { id: crypto.randomUUID(), userId: id, buildingId: 'crystalSynthesizer', level: 1 },
-        { id: crypto.randomUUID(), userId: id, buildingId: 'metalStorage', level: 1 },
-        { id: crypto.randomUUID(), userId: id, buildingId: 'crystalStorage', level: 1 }
-      ]);
-    });
-  } catch (err) {
-    console.error('Failed to register user transactionally', err);
-    return new Response(JSON.stringify({ error: 'internal_error' }), { status: 500 });
-  }
+			// create default starting buildings: give new players some basic structures at level 1
+			await ctx.insert(table.playerBuildings).values([
+				{ id: crypto.randomUUID(), userId: id, buildingId: 'controlCenter', level: 1 },
+				{ id: crypto.randomUUID(), userId: id, buildingId: 'metalMine', level: 1 },
+				{ id: crypto.randomUUID(), userId: id, buildingId: 'crystalSynthesizer', level: 1 },
+				{ id: crypto.randomUUID(), userId: id, buildingId: 'metalStorage', level: 1 },
+				{ id: crypto.randomUUID(), userId: id, buildingId: 'crystalStorage', level: 1 }
+			]);
+		});
+	} catch (err) {
+		console.error('Failed to register user transactionally', err);
+		return new Response(JSON.stringify({ error: 'internal_error' }), { status: 500 });
+	}
 
-  const token = generateSessionToken();
-  const session = await createSession(token, id);
+	const token = generateSessionToken();
+	const session = await createSession(token, id);
 
-  setSessionTokenCookie(event, token, session.expiresAt);
+	setSessionTokenCookie(event, token, session.expiresAt);
 
-  return new Response(JSON.stringify({ user: { id, username } }), {
-    status: 201,
-    headers: { 'content-type': 'application/json' }
-  });
+	return new Response(JSON.stringify({ user: { id, username } }), {
+		status: 201,
+		headers: { 'content-type': 'application/json' }
+	});
 };
