@@ -1,21 +1,35 @@
 // Storybook linting removed
 
 import prettier from 'eslint-config-prettier';
-import { includeIgnoreFile } from '@eslint/compat';
 import js from '@eslint/js';
-import svelte from 'eslint-plugin-svelte';
 import globals from 'globals';
 import { fileURLToPath } from 'node:url';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
-import svelteConfig from './svelte.config.js';
+import sveltePlugin from 'eslint-plugin-svelte';
+import svelteParser from 'svelte-eslint-parser';
 
 const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
 
 export default [
-	includeIgnoreFile(gitignorePath),
-	js.configs.recommended,
 	{
+		ignores: [
+			'build/**',
+			'.svelte-kit/**',
+			'node_modules/**',
+			'eslint.config.js',
+			'svelte.config.js',
+			'verify_api.js',
+			'.storybook/**',
+			'drizzle.config.ts',
+			'playwright.config.ts',
+			'vitest-setup-client.ts',
+			'e2e/**'
+		]
+	},
+	{
+		files: ['**/*.js', '**/*.ts'],
+		...js.configs.recommended,
 		plugins: {
 			'@typescript-eslint': tsPlugin
 		},
@@ -23,25 +37,31 @@ export default [
 			parser: tsParser,
 			globals: { ...globals.browser, ...globals.node },
 			parserOptions: {
-				project: './tsconfig.json',
-				extraFileExtensions: ['.svelte']
+				project: './tsconfig.json'
 			}
 		},
 		rules: {
 			'no-undef': 'off'
 		}
 	},
-	...(svelte.configs.recommended ? [svelte.configs.recommended] : []),
-	prettier,
 	{
-		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
+		files: ['**/*.svelte'],
+		...sveltePlugin.configs.recommended[0],
+		plugins: {
+			'@typescript-eslint': tsPlugin,
+			svelte: sveltePlugin
+		},
 		languageOptions: {
+			parser: svelteParser,
 			parserOptions: {
-				projectService: true,
-				extraFileExtensions: ['.svelte'],
 				parser: tsParser,
-				svelteConfig
-			}
+				extraFileExtensions: ['.svelte']
+			},
+			globals: { ...globals.browser, ...globals.node }
+		},
+		rules: {
+			'no-undef': 'off'
 		}
-	}
+	},
+	prettier
 ];

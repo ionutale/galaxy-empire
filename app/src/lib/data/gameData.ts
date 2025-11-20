@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export type CostFunc = (level: number) => Record<string, number>;
 export type TimeFunc = (level: number) => number;
 
