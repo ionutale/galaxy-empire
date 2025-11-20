@@ -184,34 +184,41 @@
 				<a href="/register" class="btn join-item btn-sm btn-primary">Register</a>
 			</div>
 		{:else}
-			<div class="hidden items-center gap-2 md:flex">
-				<div
-					class="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs backdrop-blur"
-				>
-					<span class="opacity-70">Cr</span><span class="font-semibold"
-						>{state.resources?.credits ?? state.credits}</span
-					>
-					<span class="text-xs text-success">+{Math.round(prod.credits * 3600)}/h</span>
-					<span class="opacity-30">•</span>
-					<span class="opacity-70">Me</span><span class="font-semibold"
-						>{state.resources?.metal ?? state.metal}</span
-					>
-					<span class="text-xs text-success">+{Math.round(prod.metal * 3600)}/h</span>
-					<span class="opacity-30">•</span>
-					<span class="opacity-70">Xt</span><span class="font-semibold"
-						>{state.resources?.crystal ?? state.crystal}</span
-					>
-					<span class="text-xs text-success">+{Math.round(prod.crystal * 3600)}/h</span>
-					<span class="opacity-30">•</span>
-					<span class="opacity-70">Fu</span><span class="font-semibold"
-						>{state.resources?.fuel ?? state.fuel}</span
-					>
-					<span class="text-xs text-success">+{Math.round(prod.fuel * 3600)}/h</span>
+			<div class="hidden items-center gap-4 md:flex">
+				<div class="flex items-center gap-px overflow-hidden rounded-lg border border-white/10 bg-black/40 backdrop-blur-md shadow-lg">
+					<!-- Credits -->
+					<div class="flex flex-col items-center px-4 py-1 border-r border-white/5 min-w-[100px]">
+						<span class="text-[10px] uppercase tracking-widest opacity-50 font-display text-yellow-400">Credits</span>
+						<span class="font-display text-lg font-bold text-yellow-100">{state.resources?.credits ?? state.credits}</span>
+						<span class="text-[10px] text-yellow-400/70">+{Math.round(prod.credits * 3600)}/h</span>
+					</div>
+					
+					<!-- Metal -->
+					<div class="flex flex-col items-center px-4 py-1 border-r border-white/5 min-w-[100px]">
+						<span class="text-[10px] uppercase tracking-widest opacity-50 font-display text-slate-300">Metal</span>
+						<span class="font-display text-lg font-bold text-slate-100">{state.resources?.metal ?? state.metal}</span>
+						<span class="text-[10px] text-slate-400">+{Math.round(prod.metal * 3600)}/h</span>
+					</div>
+
+					<!-- Crystal -->
+					<div class="flex flex-col items-center px-4 py-1 border-r border-white/5 min-w-[100px]">
+						<span class="text-[10px] uppercase tracking-widest opacity-50 font-display text-cyan-300">Crystal</span>
+						<span class="font-display text-lg font-bold text-cyan-100">{state.resources?.crystal ?? state.crystal}</span>
+						<span class="text-[10px] text-cyan-400/70">+{Math.round(prod.crystal * 3600)}/h</span>
+					</div>
+
+					<!-- Fuel -->
+					<div class="flex flex-col items-center px-4 py-1 min-w-[100px]">
+						<span class="text-[10px] uppercase tracking-widest opacity-50 font-display text-emerald-300">Fuel</span>
+						<span class="font-display text-lg font-bold text-emerald-100">{state.resources?.fuel ?? state.fuel}</span>
+						<span class="text-[10px] text-emerald-400/70">+{Math.round(prod.fuel * 3600)}/h</span>
+					</div>
 				</div>
+				
 				{#if usingDemo}
 					<div class="flex items-center gap-1">
-						<button class="btn btn-outline btn-xs" on:click={() => tickDemo(5)}>+5s</button>
-						<button class="btn btn-ghost btn-xs" on:click={() => tickDemo(60)}>+1m</button>
+						<button class="btn btn-outline btn-xs border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black" on:click={() => tickDemo(5)}>+5s</button>
+						<button class="btn btn-ghost btn-xs text-white/50 hover:text-white" on:click={() => tickDemo(60)}>+1m</button>
 					</div>
 				{/if}
 			</div>

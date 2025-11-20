@@ -1,4 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 @plugin 'daisyui';
+
+@theme {
+  --font-orbitron: 'Orbitron', sans-serif;
+  --font-rajdhani: 'Rajdhani', sans-serif;
+  
+  --color-neon-blue: #00f3ff;
+  --color-neon-purple: #bc13fe;
+  --color-deep-space: #0b0d17;
+}
+
+:root {
+  --glass-bg: rgba(13, 17, 23, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 12px;
+}
+
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background-image: url('/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: 'Orbitron', sans-serif;
+}
+
+.glass-panel {
+  @apply bg-black/40 backdrop-blur-md border border-white/10;
+}
+
+.glass-panel-hover {
+  @apply hover:bg-white/5 transition-colors duration-200;
+}
+
+.text-neon-blue {
+  color: var(--color-neon-blue);
+  text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+}
+
+.text-neon-purple {
+  color: var(--color-neon-purple);
+  text-shadow: 0 0 10px rgba(188, 19, 254, 0.5);
+}

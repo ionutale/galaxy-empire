@@ -179,7 +179,7 @@
 
 {#if !isPhoneDemo}
 	<!-- Responsive drawer (sidebar) layout using daisyUI -->
-	<div class="drawer relative drawer-end min-h-screen bg-base-100 text-base-content">
+	<div class="drawer relative drawer-end min-h-screen text-slate-200">
 		<input
 			id="builds-drawer"
 			type="checkbox"
@@ -187,16 +187,12 @@
 			bind:checked={buildsDrawerOpen}
 		/>
 		<div class="drawer-content flex h-full flex-col">
-			<div
-				aria-hidden="true"
-				class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,theme(colors.primary/10),transparent_60%),radial-gradient(ellipse_at_bottom,theme(colors.secondary/10),transparent_60%)]"
-			></div>
 			<div class="drawer h-full lg:drawer-open">
 				<input id="app-drawer" type="checkbox" class="drawer-toggle" bind:checked={drawerOpen} />
 				<div class="drawer-content flex flex-col">
 					<!-- Top bar for mobile with menu toggle -->
 					<header
-						class="sticky top-0 z-30 w-full border-b border-base-300 bg-base-100/80 backdrop-blur"
+						class="sticky top-0 z-30 w-full glass-panel mb-4"
 					>
 						<div class="container mx-auto flex items-center justify-between gap-4 px-4 py-3">
 							<div class="flex items-center gap-3">
@@ -255,7 +251,7 @@
 						<slot />
 					</main>
 
-					<footer class="footer-center footer bg-base-200 p-6">
+					<footer class="footer-center footer glass-panel p-6 mt-8 rounded-t-xl mx-4">
 						<div>
 							<p>© {year} Galaxy Empire — development build</p>
 							<p class="text-muted text-sm">Built with SvelteKit · DaisyUI · Drizzle</p>
@@ -266,7 +262,7 @@
 					<div class="drawer-side">
 						<label for="app-drawer" class="drawer-overlay"></label>
 						<aside
-							class="relative z-10 w-72 border-r border-base-300 bg-base-200 p-4 text-base-content"
+							class="relative z-10 w-72 glass-panel p-4 text-slate-200 m-4 rounded-xl h-[calc(100vh-2rem)]"
 						>
 							<div class="mb-4">
 								<a href="/" class="text-2xl font-bold">Galaxy Empire</a>
@@ -285,7 +281,7 @@
 		<Toast />
 		<div class="drawer-side z-50">
 			<label for="builds-drawer" class="drawer-overlay"></label>
-			<div class="menu min-h-full w-80 bg-base-200 p-4 text-base-content">
+			<div class="menu min-h-full w-80 glass-panel p-4 text-slate-200">
 				<h3 class="mb-4 text-lg font-bold">Construction Queue</h3>
 				{#if builds.length === 0}
 					<p class="text-muted text-sm">No construction history.</p>

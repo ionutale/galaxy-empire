@@ -88,12 +88,14 @@
 								<a
 									href={l.href}
 									on:click={() => dispatch('navigate')}
-									class="relative flex items-center gap-3 rounded px-3 py-2 transition hover:bg-base-100"
-									class:bg-base-100={isActive(l.href, $page.url.pathname)}
+									class="relative flex items-center gap-3 rounded px-3 py-2 transition-all duration-200 hover:bg-white/10 hover:text-neon-blue hover:shadow-[0_0_10px_rgba(0,243,255,0.2)]"
+									class:bg-neon-blue-20={isActive(l.href, $page.url.pathname)}
+									class:text-neon-blue={isActive(l.href, $page.url.pathname)}
+									class:shadow-neon={isActive(l.href, $page.url.pathname)}
 									aria-current={isActive(l.href, $page.url.pathname) ? 'page' : undefined}
 								>
 									<span
-										class="absolute top-1/2 left-0 h-5 w-1 -translate-y-1/2 rounded bg-primary opacity-0"
+										class="absolute top-1/2 left-0 h-5 w-1 -translate-y-1/2 rounded bg-neon-blue shadow-[0_0_8px_var(--color-neon-blue)] opacity-0 transition-opacity duration-200"
 										class:opacity-100={isActive(l.href, $page.url.pathname)}
 									></span>
 									<svg
@@ -116,7 +118,7 @@
 			<li>
 				<button
 					on:click={logout}
-					class="relative flex items-center gap-3 rounded px-3 py-2 transition hover:bg-base-100 text-error"
+					class="relative flex items-center gap-3 rounded px-3 py-2 transition-all duration-200 hover:bg-red-500/10 hover:text-red-400 hover:shadow-[0_0_10px_rgba(248,113,113,0.2)] text-red-400/80"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -156,5 +158,11 @@
 	}
 	a[aria-current='page'] {
 		font-weight: 600;
+	}
+	.bg-neon-blue-20 {
+		background-color: rgba(0, 243, 255, 0.1);
+	}
+	.shadow-neon {
+		box-shadow: 0 0 15px rgba(0, 243, 255, 0.15);
 	}
 </style>
