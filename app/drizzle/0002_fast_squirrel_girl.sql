@@ -1,0 +1,19 @@
+-- CREATE TABLE "planets" (
+-- 	"id" text PRIMARY KEY NOT NULL,
+-- 	"system_id" integer NOT NULL,
+-- 	"orbit_index" integer NOT NULL,
+-- 	"name" text NOT NULL,
+-- 	"type" text NOT NULL,
+-- 	"owner_id" text,
+-- 	"resources" jsonb
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "systems" (
+-- 	"id" integer PRIMARY KEY NOT NULL,
+-- 	"x" integer NOT NULL,
+-- 	"y" integer NOT NULL,
+-- 	"name" text NOT NULL
+-- );
+-- --> statement-breakpoint
+-- ALTER TABLE "planets" ADD CONSTRAINT "planets_system_id_systems_id_fk" FOREIGN KEY ("system_id") REFERENCES "public"."systems"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "planets" ADD CONSTRAINT "planets_owner_id_user_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;

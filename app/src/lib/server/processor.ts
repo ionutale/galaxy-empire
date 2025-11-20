@@ -2,7 +2,8 @@
 import { RESEARCH_DATA, BUILDING_DATA, SHIP_TEMPLATES } from '$lib/data/gameData';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
+import { simulateCombat } from '$lib/server/combat/engine';
 
 // const BUILDS_FILE removed; builds are stored in DB
 // Builds are stored in DB; no file constant needed
@@ -38,59 +39,6 @@ export type Player = {
 	[k: string]: unknown;
 } | null;
 
-// Simple deterministic RNG using a seed string
-function mulberry32(a: number) {
-	return function () {
-		a |= 0;
-		a = (a + 0x6d2b79f5) | 0;
-		let t = Math.imul(a ^ (a >>> 15), 1 | a);
-		t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-	};
-}
-
-function seedFrom(...parts: Array<string | number | undefined>) {
-	const s = parts.map((p) => String(p ?? '')).join('|');
-	// simple hash
-	let h = 2166136261 >>> 0;
-	for (let i = 0; i < s.length; i++) {
-		h ^= s.charCodeAt(i);
-		h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
-	}
-	return h >>> 0;
-}
-
-function simulateCombat(
-	attacker: { ships?: Record<string, number>; power?: number },
-	defender: { power?: number },
-	seedParts: unknown[]
-) {
-	// compute attacker/defender power if not provided
-	const atkPower =
-		attacker.power ?? Object.values(attacker.ships ?? {}).reduce((s, n) => s + Number(n) * 10, 0);
-	const defPower = defender.power ?? defender.power ?? 1000;
-	const seed = seedFrom(...seedParts.map((p) => String(p ?? '')));
-	const rand = mulberry32(seed);
-
-	// chance to win proportional to power
-	const atkRoll = rand() * atkPower;
-	const defRoll = rand() * defPower;
-	const attackerWins = atkRoll >= defRoll;
-
-	// losses proportional to relative power with randomness
-	const atkLossPct = Math.min(0.95, (defPower / Math.max(1, atkPower)) * (0.2 + rand() * 0.5));
-	const defLossPct = Math.min(0.95, (atkPower / Math.max(1, defPower)) * (0.2 + rand() * 0.5));
-
-	const attackerLosses = Math.round((atkLossPct * atkPower) / 10);
-	const defenderLosses = Math.round((defLossPct * defPower) / 10);
-
-	return {
-		attackerWins,
-		attackerLosses,
-		defenderLosses,
-		seed
-	};
-}
 
 export async function processBuilds(tickSeconds = 5) {
 	const builds = await db.select().from(table.buildQueue).execute();
@@ -278,7 +226,123 @@ export async function processFleets(tickSeconds = 5) {
 				// For simplicity in this phase: Transport just returns home immediately
 				// In future: Add to target planet resources
 			} else if (f.mission === 'attack') {
-				// Combat logic would go here
+				// Combat logic
+				const targetPlanet = await db
+					.select()
+					.from(table.planets)
+					.where(and(eq(table.planets.systemId, f.targetSystem), eq(table.planets.orbitIndex, f.targetPlanet)))
+					.limit(1);
+
+				const defenderId = targetPlanet[0]?.ownerId;
+				let combatResult = null;
+
+				if (defenderId) {
+					// Fetch defender ships (all ships for now)
+					const defenderShips = await db
+						.select()
+						.from(table.playerShips)
+						.where(eq(table.playerShips.userId, defenderId));
+					const defenderComp: Record<string, number> = {};
+					for (const s of defenderShips) {
+						defenderComp[s.shipTemplateId] = s.quantity;
+					}
+
+					// Simulate combat
+					combatResult = simulateCombat(
+						f.userId,
+						f.composition as Record<string, number>,
+						defenderId,
+						defenderComp
+					);
+
+					// Save report
+					await db.insert(table.combatReports).values({
+						id: crypto.randomUUID(),
+						attackerId: f.userId,
+						defenderId: defenderId,
+						timestamp: now,
+						outcome: combatResult.outcome,
+						log: combatResult.log,
+						loot: combatResult.loot
+					});
+
+					// Apply losses to Attacker (Fleet)
+					const newComposition = { ...(f.composition as Record<string, number>) };
+					for (const [shipId, lost] of Object.entries(combatResult.attackerLosses)) {
+						if (newComposition[shipId]) {
+							newComposition[shipId] -= lost;
+							if (newComposition[shipId] <= 0) delete newComposition[shipId];
+						}
+					}
+					// Update fleet composition in DB (will be used for return or deletion if empty)
+					// If fleet is empty, it's destroyed?
+					// For now, let's keep it returning even if empty (ghost fleet) or delete it?
+					// Logic below handles return. We should update `f.composition` or the DB update below.
+					// We'll update the DB update below to use the new composition.
+
+					// Apply losses to Defender (PlayerShips)
+					for (const [shipId, lost] of Object.entries(combatResult.defenderLosses)) {
+						const existing = defenderShips.find((s) => s.shipTemplateId === shipId);
+						if (existing) {
+							const newQty = existing.quantity - lost;
+							if (newQty <= 0) {
+								await db.delete(table.playerShips).where(eq(table.playerShips.id, existing.id));
+							} else {
+								await db
+									.update(table.playerShips)
+									.set({ quantity: newQty })
+									.where(eq(table.playerShips.id, existing.id));
+							}
+						}
+					}
+
+					// Handle Loot (Steal from defender)
+					if (combatResult.outcome === 'attacker_win' && combatResult.loot) {
+						// Deduct from defender
+						const defState = (
+							await db.select().from(table.playerState).where(eq(table.playerState.userId, defenderId))
+						)[0];
+						if (defState) {
+							await db
+								.update(table.playerState)
+								.set({
+									metal: Math.max(0, defState.metal - (combatResult.loot.metal || 0)),
+									crystal: Math.max(0, defState.crystal - (combatResult.loot.crystal || 0)),
+									fuel: Math.max(0, defState.fuel - (combatResult.loot.fuel || 0))
+								})
+								.where(eq(table.playerState.userId, defenderId));
+						}
+						// Add to fleet cargo (handled in return update below)
+					}
+				}
+
+				// Update fleet for return
+				const returnDuration = f.arrivalTime.getTime() - Number(f.id.split('-').pop()!) || 10000;
+				const returnTime = new Date(now.getTime() + 60000); // Mock return time
+
+				// Calculate new composition and cargo
+				const finalComposition = combatResult ?
+					Object.entries(f.composition as Record<string, number>).reduce((acc, [k, v]) => {
+						const lost = combatResult?.attackerLosses[k] || 0;
+						if (v - lost > 0) acc[k] = v - lost;
+						return acc;
+					}, {} as Record<string, number>)
+					: f.composition;
+
+				const finalCargo = combatResult?.loot || {};
+
+				await db
+					.update(table.fleets)
+					.set({
+						status: 'returning',
+						returnTime: returnTime,
+						composition: finalComposition,
+						cargo: finalCargo
+					})
+					.where(eq(table.fleets.id, f.id));
+
+				processed.push({ ...f, status: 'arrived', combatResult });
+				continue; // Skip the default return logic below
 			}
 
 			// Return fleet

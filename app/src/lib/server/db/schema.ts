@@ -185,4 +185,16 @@ export const planets = pgTable('planets', {
 });
 
 export type System = typeof systems.$inferSelect;
-export type Planet = typeof planets.$inferSelect;
+export const combatReports = pgTable('combat_reports', {
+	id: text('id').primaryKey(),
+	attackerId: text('attacker_id')
+		.notNull()
+		.references(() => user.id),
+	defenderId: text('defender_id').references(() => user.id), // Nullable for PvE or abandoned planets
+	timestamp: timestamp('timestamp', { mode: 'date' }).notNull(),
+	outcome: text('outcome').notNull(), // 'attacker_win', 'defender_win', 'draw'
+	log: jsonb('log').notNull().$type<any[]>(), // Detailed combat log
+	loot: jsonb('loot').$type<{ metal: number; crystal: number; fuel: number }>()
+});
+
+export type CombatReport = typeof combatReports.$inferSelect;
