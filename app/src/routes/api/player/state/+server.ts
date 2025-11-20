@@ -30,12 +30,28 @@ export const GET: RequestHandler = async (event) => {
 	let buildingsResult: any[] = [];
 	let research: Record<string, { level: number }> = {};
 	let buildings: Record<string, number> = {};
+	let homePlanet: { systemId: number; orbitIndex: number; systemName: string } | null = null;
 
 	try {
 		stateRow = (
 			await db.select().from(table.playerState).where(eq(table.playerState.userId, user.id))
 		)[0];
 		ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id));
+
+		const homePlanetResult = await db
+			.select({
+				systemId: table.planets.systemId,
+				orbitIndex: table.planets.orbitIndex,
+				systemName: table.systems.name
+			})
+			.from(table.planets)
+			.innerJoin(table.systems, eq(table.planets.systemId, table.systems.id))
+			.where(eq(table.planets.ownerId, user.id))
+			.limit(1);
+		
+		if (homePlanetResult.length > 0) {
+			homePlanet = homePlanetResult[0];
+		}
 
 		const rawBuilds = await db
 			.select()
@@ -145,6 +161,9 @@ export const GET: RequestHandler = async (event) => {
 		username: user.username,
 		level: stateRow?.level ?? 1,
 		power: stateRow?.power ?? 10,
+		homeSystem: homePlanet?.systemId ?? 1,
+		homePlanet: homePlanet?.orbitIndex ?? 1,
+		systemName: homePlanet?.systemName ?? 'Unknown System',
 		resources: {
 			credits: stateRow?.credits ?? 1000,
 			metal: stateRow?.metal ?? 500,
