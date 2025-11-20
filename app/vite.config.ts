@@ -11,6 +11,7 @@ export default defineConfig({
 	test: {
 		expect: { requireAssertions: true },
 		include: ['src/**/*.{test,spec}.{js,ts}'],
-		exclude: ['src/lib/server/**', 'src/**/*.svelte.{test,spec}.{js,ts}']
+		exclude: ['src/lib/server/**', 'src/**/*.svelte.{test,spec}.{js,ts}'],
+		setupFiles: ['./vitest-setup-server.ts']
 	}
 });
