@@ -321,6 +321,7 @@ export async function processFleets(tickSeconds = 5) {
 				const returnTime = new Date(now.getTime() + 60000); // Mock return time
 
 				// Calculate new composition and cargo
+				// Calculate new composition and cargo
 				const finalComposition = combatResult ?
 					Object.entries(f.composition as Record<string, number>).reduce((acc, [k, v]) => {
 						const lost = combatResult?.attackerLosses[k] || 0;
@@ -329,7 +330,25 @@ export async function processFleets(tickSeconds = 5) {
 					}, {} as Record<string, number>)
 					: f.composition;
 
-				const finalCargo = combatResult?.loot || {};
+				// Calculate max cargo capacity of surviving fleet
+				let maxCapacity = 0;
+				for (const [shipId, count] of Object.entries(finalComposition)) {
+					const template = SHIP_TEMPLATES.find(t => t.shipId === shipId);
+					if (template) maxCapacity += (template.capacity || 0) * count;
+				}
+
+				// Cap loot based on capacity
+				const loot = combatResult?.loot || { metal: 0, crystal: 0, fuel: 0 };
+				let totalLoot = (loot.metal || 0) + (loot.crystal || 0) + (loot.fuel || 0);
+
+				if (totalLoot > maxCapacity) {
+					const ratio = maxCapacity / totalLoot;
+					loot.metal = Math.floor((loot.metal || 0) * ratio);
+					loot.crystal = Math.floor((loot.crystal || 0) * ratio);
+					loot.fuel = Math.floor((loot.fuel || 0) * ratio);
+				}
+
+				const finalCargo = loot;
 
 				await db
 					.update(table.fleets)
@@ -440,102 +459,79 @@ export async function processTick(tickSeconds = 5) {
 }
 
 export async function processProduction(tickSeconds = 5) {
-	// Fetch player state from DB instead of file
-	const playerRow = await db
-		.select()
-		.from(table.playerState)
-		.where(eq(table.playerState.userId, 'demo_user'))
-		.then((rows) => rows[0] ?? null);
+	// Fetch all player states
+	const allPlayers = await db.select().from(table.playerState);
 
-	if (!playerRow) return { produced: {} };
+	// Fetch all buildings and ships (could be optimized to batch fetch but fine for now)
+	const allBuildings = await db.select().from(table.playerBuildings);
+	const allShips = await db.select().from(table.playerShips);
 
-	// Fetch buildings and ships from DB
-	const buildingsRows = await db
-		.select()
-		.from(table.playerBuildings)
-		.where(eq(table.playerBuildings.userId, 'demo_user'));
-	const buildings: Record<string, number> = {};
-	for (const b of buildingsRows) {
-		buildings[b.buildingId] = b.level;
-	}
+	const producedTotal: Record<string, any> = {};
 
-	const shipsRows = await db
-		.select()
-		.from(table.playerShips)
-		.where(eq(table.playerShips.userId, 'demo_user'));
-	const ships: Record<string, number> = {};
-	for (const s of shipsRows) {
-		ships[s.shipTemplateId] = s.quantity;
-	}
+	for (const playerRow of allPlayers) {
+		const userId = playerRow.userId;
 
-	const player: Player = {
-		playerId: playerRow.userId,
-		resources: {
-			credits: playerRow.credits,
-			metal: playerRow.metal,
-			crystal: playerRow.crystal,
-			fuel: playerRow.fuel
-		},
-		buildings,
-		ships
-	};
+		// Filter for this user
+		const userBuildings = allBuildings.filter(b => b.userId === userId);
+		const userShips = allShips.filter(s => s.userId === userId);
 
-	const produced: Record<string, number> = {};
+		const buildings: Record<string, number> = {};
+		for (const b of userBuildings) {
+			buildings[b.buildingId] = b.level;
+		}
 
-	// building-based production per second approximated from BUILDING_DATA.production (which is per level/hr in defs)
-	// Here we use simple per-tick additive formula: production(level) / 3600 * tickSeconds
-	for (const [bid, def] of Object.entries(BUILDING_DATA)) {
-		if (typeof def.production === 'function') {
-			const lvl = Number(buildings[bid] ?? 0);
-			if (lvl > 0) {
-				const perHour = def.production(lvl);
+		const ships: Record<string, number> = {};
+		for (const s of userShips) {
+			ships[s.shipTemplateId] = s.quantity;
+		}
+
+		const produced: Record<string, number> = {};
+
+		// building-based production
+		for (const [bid, def] of Object.entries(BUILDING_DATA)) {
+			if (typeof def.production === 'function') {
+				const lvl = Number(buildings[bid] ?? 0);
+				if (lvl > 0) {
+					const perHour = def.production(lvl);
+					const perTick = Math.floor((perHour / 3600) * tickSeconds);
+					if (bid === 'metalMine') produced.metal = (produced.metal ?? 0) + perTick;
+					if (bid === 'crystalSynthesizer') produced.crystal = (produced.crystal ?? 0) + perTick;
+					if (bid === 'deuteriumRefinery') produced.fuel = (produced.fuel ?? 0) + perTick;
+				}
+			}
+		}
+
+		// ship-based mining
+		const miningTemplate = SHIP_TEMPLATES.find((s) => s.shipId === 'miningVessel');
+		if (miningTemplate && typeof miningTemplate.miningRate === 'number') {
+			const count = Number(ships['miningVessel'] ?? 0);
+			if (count > 0) {
+				const perHour = miningTemplate.miningRate * count;
 				const perTick = Math.floor((perHour / 3600) * tickSeconds);
-				// naive mapping: metalMine -> metal, crystalSynthesizer -> crystal, deuteriumRefinery -> fuel
-				if (bid === 'metalMine') {
-					produced.metal = (produced.metal ?? 0) + perTick;
-				}
-				if (bid === 'crystalSynthesizer') {
-					produced.crystal = (produced.crystal ?? 0) + perTick;
-				}
-				if (bid === 'deuteriumRefinery') {
-					produced.fuel = (produced.fuel ?? 0) + perTick;
-				}
+				produced.metal = (produced.metal ?? 0) + perTick;
+			}
+		}
+
+		// Update DB if production occurred
+		if (Object.keys(produced).length > 0) {
+			try {
+				await db
+					.update(table.playerState)
+					.set({
+						metal: playerRow.metal + (produced.metal || 0),
+						crystal: playerRow.crystal + (produced.crystal || 0),
+						fuel: playerRow.fuel + (produced.fuel || 0)
+					})
+					.where(eq(table.playerState.userId, userId));
+
+				producedTotal[userId] = produced;
+			} catch (err) {
+				console.error(`db production sync error for ${userId}`, err);
 			}
 		}
 	}
 
-	// ship-based mining: miningVessel miningRate * count * tickSeconds (assume miningRate is per hour)
-	const miningTemplate = SHIP_TEMPLATES.find((s) => s.shipId === 'miningVessel');
-	if (miningTemplate && typeof miningTemplate.miningRate === 'number') {
-		const count = Number(ships['miningVessel'] ?? 0);
-		if (count > 0) {
-			const perHour = miningTemplate.miningRate * count;
-			const perTick = Math.floor((perHour / 3600) * tickSeconds);
-			produced.metal = (produced.metal ?? 0) + perTick;
-		}
-	}
-
-	if (!player.resources) player.resources = {};
-	if (player && player.resources) {
-		for (const [k, v] of Object.entries(produced)) {
-			player.resources[k] = Number(player.resources[k] ?? 0) + v;
-		}
-		// Update DB with new resource values
-		try {
-			await db
-				.update(table.playerState)
-				.set({
-					metal: Number(player.resources.metal ?? playerRow.metal),
-					crystal: Number(player.resources.crystal ?? playerRow.crystal),
-					fuel: Number(player.resources.fuel ?? playerRow.fuel)
-				})
-				.where(eq(table.playerState.userId, 'demo_user'));
-		} catch (err) {
-			console.error('db production sync error', err);
-		}
-	}
-
-	return { produced };
+	return { produced: producedTotal };
 }
 
 export async function processResearch(tickSeconds = 5) {

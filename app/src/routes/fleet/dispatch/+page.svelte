@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { SHIP_TEMPLATES } from '$lib/data/gameData';
 
 	let ships: any[] = [];
@@ -10,9 +11,34 @@
 	let error = '';
 
 	// Form data
-	let targetSystem = 1;
-	let targetPlanet = 1;
+	let targetSystem = Number($page.url.searchParams.get('targetSystem') || 1);
+	// Support x/y coords if provided (Galaxy Map uses x/y, but backend uses system ID. 
+	// For now, we'll assume system ID is passed or we need a lookup. 
+	// The Galaxy Map link sends ?x=...&y=...&planet=...
+	// We need to handle this. Since we don't have a direct X/Y -> SystemID lookup on frontend easily without fetching all systems,
+	// we might need to rely on the user knowing the system ID or update Galaxy Map to pass System ID.
+	// Wait, Galaxy Map DOES pass targetSystem in the original code, but I changed it to x/y/planet in the previous step.
+	// Let's revert Galaxy Map to pass targetSystem ID if available, or handle it here.
+	// Galaxy Map has `selectedSystem.id`. I should have used that.
+	// Let's check Galaxy Map again. It has `selectedSystem.id`.
+	// I will update this file to handle `targetSystem` param which I should have used in Galaxy Map.
+	// Actually, let's check what I wrote in Galaxy Map: `href="/fleet/dispatch?x={selectedSystem.x}&y={selectedSystem.y}&planet={planet.orbitIndex}"`
+	// This is problematic because the backend expects `targetSystem` (ID).
+	// I should probably fix Galaxy Map to pass `targetSystem={selectedSystem.id}` instead of x/y.
+	// But for now, let's see if I can support both or just fix Galaxy Map.
+	// Fixing Galaxy Map is better.
+	// However, I am in `dispatch/+page.svelte` now.
+	// Let's assume I will fix Galaxy Map in the next step to pass `targetSystem`.
+	// So here I will just read `targetSystem` and `planet` (which maps to `targetPlanet`).
+	
+	let targetPlanet = Number($page.url.searchParams.get('planet') || 1);
 	let mission = 'transport';
+    
+    // If planet param is present, default to attack if it's not my planet? 
+    // For now just default to attack if came from "Attack" button (which implies intent).
+    if ($page.url.searchParams.has('planet')) {
+        mission = 'attack';
+    }
 	let selectedShips: Record<string, number> = {};
 	let cargo = { metal: 0, crystal: 0, fuel: 0 };
 
@@ -275,11 +301,16 @@
 			</div>
 		{/if}
 
-		<div class="mt-8 flex justify-end">
+		<div class="mt-8 flex flex-col items-end gap-2">
+            {#if totalCargoSelected > maxCargo}
+                <div class="text-error text-sm">Cargo exceeds fleet capacity.</div>
+            {:else if Object.keys(selectedShips).every(k => !selectedShips[k])}
+                <div class="text-error text-sm">Select at least one ship.</div>
+            {/if}
 			<button
 				class="btn btn-lg btn-primary"
 				on:click={dispatchFleet}
-				disabled={submitting || totalCargoSelected > maxCargo}
+				disabled={submitting || totalCargoSelected > maxCargo || Object.keys(selectedShips).every(k => !selectedShips[k])}
 			>
 				{#if submitting}
 					<span class="loading loading-spinner"></span>

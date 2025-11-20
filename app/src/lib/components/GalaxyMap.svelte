@@ -96,20 +96,26 @@
       <h4 class="font-semibold text-sm mb-2">Planets</h4>
       <div class="space-y-2 max-h-60 overflow-y-auto">
         {#each selectedSystem.planets as planet}
-          <div class="bg-base-300 p-2 rounded text-sm flex items-center gap-2">
-            <div class="w-3 h-3 rounded-full" 
-                 class:bg-blue-400={planet.type==='ocean'}
-                 class:bg-green-500={planet.type==='terrestrial'}
-                 class:bg-red-500={planet.type==='lava'}
-                 class:bg-cyan-200={planet.type==='ice'}
-                 class:bg-orange-300={planet.type==='gas_giant'}
-                 class:bg-yellow-200={planet.type==='desert'}
-                 class:bg-gray-400={planet.type==='barren'}>
+          <div class="bg-base-300 p-2 rounded text-sm flex items-center gap-2 justify-between group">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full" 
+                   class:bg-blue-400={planet.type==='ocean'}
+                   class:bg-green-500={planet.type==='terrestrial'}
+                   class:bg-red-500={planet.type==='lava'}
+                   class:bg-cyan-200={planet.type==='ice'}
+                   class:bg-orange-300={planet.type==='gas_giant'}
+                   class:bg-yellow-200={planet.type==='desert'}
+                   class:bg-gray-400={planet.type==='barren'}>
+              </div>
+              <div>
+                <div class="font-medium">{planet.name}</div>
+                <div class="text-xs opacity-70 capitalize">{planet.type}</div>
+              </div>
             </div>
-            <div class="flex-1">
-              <div class="font-medium">{planet.name}</div>
-              <div class="text-xs opacity-70 capitalize">{planet.type}</div>
-            </div>
+            <a href="/fleet/dispatch?targetSystem={selectedSystem.id}&planet={planet.orbitIndex}" 
+               class="btn btn-xs btn-error opacity-0 group-hover:opacity-100 transition-opacity">
+              Attack
+            </a>
           </div>
         {/each}
       </div>

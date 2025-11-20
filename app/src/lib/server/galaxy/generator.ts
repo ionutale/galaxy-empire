@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, isNull } from 'drizzle-orm';
 
 const SYSTEM_NAMES = [
   'Sol', 'Alpha Centauri', 'Sirius', 'Vega', 'Betelgeuse', 'Rigel', 'Procyon', 'Altair', 'Antares', 'Spica',
@@ -18,6 +18,8 @@ function randomInt(min: number, max: number) {
 function randomChoice<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
+
+const NPC_ID = 'npc_faction';
 
 export async function generateGalaxy(width = 100, height = 100, systemCount = 50) {
   // Check if galaxy already exists
@@ -65,8 +67,73 @@ export async function generateGalaxy(width = 100, height = 100, systemCount = 50
     }
   }
 
+  // Create NPC user if not exists
+  const npcUser = await db.select().from(table.user).where(eq(table.user.id, NPC_ID)).limit(1);
+  if (npcUser.length === 0) {
+    await db.insert(table.user).values({
+      id: NPC_ID,
+      username: 'Alien Faction',
+      passwordHash: 'npc_secret' // Not used
+    });
+    // Initialize NPC state
+    await db.insert(table.playerState).values({
+      userId: NPC_ID,
+      credits: 1000000,
+      metal: 1000000,
+      crystal: 1000000,
+      fuel: 1000000
+    });
+  }
+
   await db.insert(table.systems).values(systems);
   await db.insert(table.planets).values(planets);
+
+  // Generate random mines for planets (assign to NPC)
+  // We need to update planets to be owned by NPC first? Or just assume unowned planets are wild?
+  // The prompt says "planets have random level of mines".
+  // Let's assign all generated planets to NPC_ID so they can be attacked and looted properly.
+  // Update the planets array before insert.
+
+  // Wait, I already inserted planets. Let's update the planets array construction above instead.
+  // But I can't easily edit the loop above in this chunk without replacing the whole file.
+  // I will do a separate update after insert or modify the loop if I can target it.
+  // Actually, I can just modify the planets push in the loop if I target it.
+  // But I am targeting the end of the file here.
+
+  // Let's just update the planets table to set ownerId = NPC_ID for all new planets.
+  // And then insert buildings.
+
+  await db.update(table.planets).set({ ownerId: NPC_ID }).where(isNull(table.planets.ownerId));
+
+  const buildings: typeof table.playerBuildings.$inferInsert[] = [];
+
+  // Fetch all planets to assign buildings (in case we run this on existing galaxy, though we return early if existing)
+  // Since we just inserted, we can use the `planets` array if we had IDs, but we generated IDs.
+  // Let's just iterate the `planets` array we created.
+
+  for (const p of planets) {
+    // Random mines
+    if (Math.random() > 0.3) { // 70% chance of mines
+      const metalLevel = randomInt(1, 10);
+      const crystalLevel = randomInt(0, 8);
+      const fuelLevel = randomInt(0, 5);
+
+      if (metalLevel > 0) {
+        buildings.push({ id: crypto.randomUUID(), userId: NPC_ID, buildingId: 'metalMine', level: metalLevel });
+      }
+      if (crystalLevel > 0) {
+        buildings.push({ id: crypto.randomUUID(), userId: NPC_ID, buildingId: 'crystalSynthesizer', level: crystalLevel });
+      }
+      if (fuelLevel > 0) {
+        buildings.push({ id: crypto.randomUUID(), userId: NPC_ID, buildingId: 'deuteriumRefinery', level: fuelLevel });
+      }
+    }
+  }
+
+  if (buildings.length > 0) {
+    // Chunk inserts to avoid limits if necessary, but 50 systems * 8 planets * 3 buildings ~ 1200 rows is fine.
+    await db.insert(table.playerBuildings).values(buildings);
+  }
 
   console.log('Galaxy generation complete.');
 }
