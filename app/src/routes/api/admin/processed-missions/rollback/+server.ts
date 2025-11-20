@@ -54,14 +54,12 @@ export const POST: RequestHandler = async ({ request }) => {
 					.set({ quantity: existing.quantity + record.quantityLost })
 					.where(eq(table.playerShips.id, existing.id));
 			} else {
-				await ctx
-					.insert(table.playerShips)
-					.values({
-						id: crypto.randomUUID(),
-						userId: record.userId,
-						shipTemplateId: record.shipTemplateId,
-						quantity: record.quantityLost
-					});
+				await ctx.insert(table.playerShips).values({
+					id: crypto.randomUUID(),
+					userId: record.userId,
+					shipTemplateId: record.shipTemplateId,
+					quantity: record.quantityLost
+				});
 			}
 		}
 

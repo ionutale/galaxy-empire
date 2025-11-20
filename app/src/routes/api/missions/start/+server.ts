@@ -46,17 +46,15 @@ export const POST: RequestHandler = async (event) => {
 			}
 			const now = Date.now();
 			const eta = now + 60 * 1000; // 60s mission for demo
-			await ctx
-				.insert(table.missions)
-				.values({
-					id: crypto.randomUUID(),
-					userId: user.id,
-					shipTemplateId,
-					quantity,
-					startedAt: new Date(now),
-					eta: new Date(eta),
-					status: 'in_progress'
-				});
+			await ctx.insert(table.missions).values({
+				id: crypto.randomUUID(),
+				userId: user.id,
+				shipTemplateId,
+				quantity,
+				startedAt: new Date(now),
+				eta: new Date(eta),
+				status: 'in_progress'
+			});
 		});
 	} catch (err: any) {
 		if (err.message === 'insufficient_ships') {

@@ -208,26 +208,22 @@ export async function processBuilds(tickSeconds = 5) {
 								.set({ quantity: existing.quantity + count })
 								.where(eq(table.playerShips.id, existing.id));
 						} else {
-							await db
-								.insert(table.playerShips)
-								.values({
-									id: crypto.randomUUID(),
-									userId: entryUserId,
-									shipTemplateId: t,
-									quantity: count
-								});
-						}
-						// record processed build
-						await db
-							.insert(table.processedBuilds)
-							.values({
+							await db.insert(table.playerShips).values({
 								id: crypto.randomUUID(),
 								userId: entryUserId,
-								type: 'ship',
 								shipTemplateId: t,
-								quantity: count,
-								processedAt: new Date()
+								quantity: count
 							});
+						}
+						// record processed build
+						await db.insert(table.processedBuilds).values({
+							id: crypto.randomUUID(),
+							userId: entryUserId,
+							type: 'ship',
+							shipTemplateId: t,
+							quantity: count,
+							processedAt: new Date()
+						});
 						// Remove from buildQueue
 						await db.delete(table.buildQueue).where(eq(table.buildQueue.id, b.id));
 					} catch (err) {

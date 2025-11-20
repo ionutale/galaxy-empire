@@ -38,24 +38,20 @@ export const POST: RequestHandler = async (event) => {
 							.set({ quantity: existing.quantity + item.quantity })
 							.where(eq(table.playerShips.id, existing.id));
 					} else {
-						await db
-							.insert(table.playerShips)
-							.values({
-								id: crypto.randomUUID(),
-								userId: user.id,
-								shipTemplateId: item.shipTemplateId,
-								quantity: item.quantity
-							});
-					}
-					await db
-						.insert(table.processedBuilds)
-						.values({
+						await db.insert(table.playerShips).values({
 							id: crypto.randomUUID(),
 							userId: user.id,
 							shipTemplateId: item.shipTemplateId,
-							quantity: item.quantity,
-							processedAt: new Date()
+							quantity: item.quantity
 						});
+					}
+					await db.insert(table.processedBuilds).values({
+						id: crypto.randomUUID(),
+						userId: user.id,
+						shipTemplateId: item.shipTemplateId,
+						quantity: item.quantity,
+						processedAt: new Date()
+					});
 					await db.delete(table.buildQueue).where(eq(table.buildQueue.id, item.id));
 				},
 				DEFAULT_RETRY_ATTEMPTS,

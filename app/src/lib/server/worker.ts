@@ -122,14 +122,12 @@ export function startBuildProcessor(intervalMs = 5000) {
 										.set({ quantity: existing.quantity + survivors })
 										.where(eq(table.playerShips.id, existing.id));
 								} else {
-									await ctx
-										.insert(table.playerShips)
-										.values({
-											id: crypto.randomUUID(),
-											userId: ms.userId,
-											shipTemplateId: ms.shipTemplateId,
-											quantity: survivors
-										});
+									await ctx.insert(table.playerShips).values({
+										id: crypto.randomUUID(),
+										userId: ms.userId,
+										shipTemplateId: ms.shipTemplateId,
+										quantity: survivors
+									});
 								}
 							}
 						});
