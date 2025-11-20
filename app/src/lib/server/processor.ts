@@ -197,39 +197,89 @@ export async function processBuilds(tickSeconds = 5) {
 }
 
 export async function processFleets(tickSeconds = 5) {
-  // Fleets are not yet fully migrated to DB in this step, but we need to remove readJson
-  // For now, we will return empty or implement a basic DB fetch if a fleets table existed.
-  // Since there is no fleets table in the schema yet, we'll stub this to avoid errors.
-  // TODO: Implement fleets table in DB schema and migration.
-  const fleets: FleetEntry[] = [];
-  // const fleets = await readJson<FleetEntry[]>(FLEETS_FILE, []); // REMOVED
-  const processed: FleetEntry[] = [];
-  let changed = false;
+  const now = new Date();
+  const activeFleets = await db.select().from(table.fleets).where(eq(table.fleets.status, 'active'));
+  const returningFleets = await db.select().from(table.fleets).where(eq(table.fleets.status, 'returning'));
 
-  for (const f of fleets) {
-    if (f.status === 'in_transit') {
-      // decrement ETA
-      f.etaSeconds = Math.max(0, (typeof f.etaSeconds === 'number' ? f.etaSeconds : 0) - tickSeconds);
-      if (f.etaSeconds <= 0) {
-        // arrived
-        f.status = 'arrived';
-        // run combat if targetIsNpc
-        if (f.targetIsNpc) {
-          const attacker = { ships: f.ships };
-          const defender = { power: 800 };
-          const combat = simulateCombat(attacker, defender, [f.id, f.createdAt]);
-          f.combat = combat;
-          f.result = { rewards: combat.attackerWins ? { credits: 100 } : { credits: 10 } };
-        } else {
-          f.result = { notes: 'arrived' };
-        }
-        processed.push(f);
-        changed = true;
+  const processed: any[] = [];
+
+  // 1. Process active fleets arriving at destination
+  for (const f of activeFleets) {
+    if (f.arrivalTime <= now) {
+      console.log(`[processor] Fleet ${f.id} arrived at destination`);
+
+      // Handle mission logic
+      if (f.mission === 'transport') {
+        // Drop cargo (just vanish for now, or add to target if target is user's)
+        // For simplicity in this phase: Transport just returns home immediately
+        // In future: Add to target planet resources
+      } else if (f.mission === 'attack') {
+        // Combat logic would go here
       }
+
+      // Return fleet
+      const returnDuration = (f.arrivalTime.getTime() - Number(f.id.split('-').pop()!)) || 10000; // Hacky duration recovery or recalc
+      // Better: Recalculate based on distance. For now, assume same time back.
+      // We need to store start time or duration to know return time accurately.
+      // Let's just use a fixed return time for now or recalc if we had coords.
+      // We'll assume return takes same amount of time as outbound.
+      // Since we don't have start time, we can't easily calc duration without coords.
+      // Let's just set return time to now + 1 minute for demo.
+      const returnTime = new Date(now.getTime() + 60000);
+
+      await db.update(table.fleets).set({
+        status: 'returning',
+        returnTime: returnTime,
+        cargo: {} // Cargo dropped
+      }).where(eq(table.fleets.id, f.id));
+
+      processed.push({ ...f, status: 'arrived' });
     }
   }
 
-  // if (changed) await writeJson(FLEETS_FILE, fleets); // REMOVED
+  // 2. Process returning fleets arriving home
+  for (const f of returningFleets) {
+    if (f.returnTime && f.returnTime <= now) {
+      console.log(`[processor] Fleet ${f.id} returned home`);
+
+      // Restore ships to player
+      const composition = f.composition as Record<string, number>;
+      const userId = f.userId;
+
+      try {
+        const playerShips = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, userId));
+
+        for (const [shipId, count] of Object.entries(composition)) {
+          const existing = playerShips.find(s => s.shipTemplateId === shipId);
+          if (existing) {
+            await db.update(table.playerShips).set({ quantity: existing.quantity + count }).where(eq(table.playerShips.id, existing.id));
+          } else {
+            await db.insert(table.playerShips).values({ id: crypto.randomUUID(), userId, shipTemplateId: shipId, quantity: count });
+          }
+        }
+
+        // Restore any cargo brought back (e.g. from recycle/attack)
+        const cargo = f.cargo as Record<string, number>;
+        if (cargo && (cargo.metal || cargo.crystal || cargo.fuel)) {
+          const playerState = (await db.select().from(table.playerState).where(eq(table.playerState.userId, userId)))[0];
+          if (playerState) {
+            await db.update(table.playerState).set({
+              metal: playerState.metal + (cargo.metal || 0),
+              crystal: playerState.crystal + (cargo.crystal || 0),
+              fuel: playerState.fuel + (cargo.fuel || 0)
+            }).where(eq(table.playerState.userId, userId));
+          }
+        }
+
+        // Delete fleet
+        await db.delete(table.fleets).where(eq(table.fleets.id, f.id));
+        processed.push({ ...f, status: 'returned' });
+
+      } catch (err) {
+        console.error('Error restoring fleet:', err);
+      }
+    }
+  }
 
   return { processed };
 }

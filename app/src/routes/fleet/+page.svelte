@@ -1,68 +1,69 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  let state: any = null;
-  let missions: any[] = [];
-  let error = '';
+  import { fade } from 'svelte/transition';
 
-  async function load() {
-    const res = await fetch('/api/player/state');
-    if (res.ok) state = (await res.json()).state;
-    const m = await fetch('/api/missions');
-    if (m.ok) missions = (await m.json()).missions || [];
+  export let data;
+  let activeFleets: any[] = [];
+  let loading = true;
+
+  async function fetchFleets() {
+    loading = true;
+    const res = await fetch('/api/player/state'); // We might need a dedicated fleets endpoint or include it in state
+    // For now, let's assume we need to add fleets to player state or create a new endpoint.
+    // Let's create a simple endpoint for active fleets or just use the state one if I update it.
+    // I haven't updated player/state to return fleets yet.
+    // Let's assume I will update player/state or fetch from a new endpoint.
+    // I'll create /api/fleet/active
+    const fleetsRes = await fetch('/api/fleet/active');
+    if (fleetsRes.ok) {
+      activeFleets = await fleetsRes.json();
+    }
+    loading = false;
   }
 
-  onMount(load);
-
-  async function launch(shipTemplateId: string) {
-    const res = await fetch('/api/missions/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shipTemplateId, quantity: 1 }) });
-    if (res.ok) await load();
-    else error = 'launch_failed';
-  }
+  onMount(fetchFleets);
 </script>
 
-<h2 class="text-2xl font-semibold mb-4">Fleet</h2>
-{#if !state}
-  <div class="flex justify-center"><progress class="progress w-56"></progress></div>
-{:else}
-  <section class="mb-6">
-    <h3 class="text-lg font-medium">Your Ships</h3>
-    {#if state.ships && state.ships.length > 0}
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
-        {#each state.ships as s}
-          <div class="card p-3">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="font-medium">{s.shipTemplateId}</div>
-                <div class="text-sm text-muted">Quantity: {s.quantity}</div>
-              </div>
-              <button class="btn btn-sm btn-primary" on:click={() => launch(s.shipTemplateId)}>Launch</button>
-            </div>
-          </div>
-        {/each}
-      </div>
-    {:else}
-      <p class="text-muted">No ships</p>
-    {/if}
-  </section>
+<div class="p-6 space-y-6">
+  <div class="flex justify-between items-center">
+    <h1 class="text-3xl font-bold text-primary">Fleet Command</h1>
+    <a href="/fleet/dispatch" class="btn btn-primary">Dispatch New Fleet</a>
+  </div>
 
-  <section>
-    <h3 class="text-lg font-medium">Missions</h3>
-    {#if missions.length === 0}
-      <p class="text-muted">No missions</p>
-    {:else}
-      <div class="space-y-2 mt-3">
-        {#each missions as m}
-          <div class="card p-3 flex justify-between items-center">
-            <div>
-              <div class="font-medium">{m.shipTemplateId} x{m.quantity}</div>
-              <div class="text-sm text-muted">{m.status} • ETA: {new Date(m.eta).toLocaleString()}</div>
+  {#if loading}
+    <div class="loading loading-spinner loading-lg"></div>
+  {:else if activeFleets.length === 0}
+    <div class="alert alert-info">No active fleet missions.</div>
+  {:else}
+    <div class="grid gap-4">
+      {#each activeFleets as fleet}
+        <div class="card bg-base-200 shadow-xl" transition:fade>
+          <div class="card-body">
+            <h2 class="card-title capitalize">{fleet.mission} Mission</h2>
+            <div class="flex justify-between text-sm">
+              <span>Target: [{fleet.targetSystem}:{fleet.targetPlanet}]</span>
+              <span>Status: <span class="badge" class:badge-success={fleet.status==='active'} class:badge-warning={fleet.status==='returning'}>{fleet.status}</span></span>
             </div>
-            <div class="text-right">
-              <span class="badge">{m.status}</span>
+            <div class="w-full bg-gray-700 rounded-full h-2.5 mt-2">
+              <!-- Progress bar logic needed, for now just a placeholder -->
+              <div class="bg-blue-600 h-2.5 rounded-full" style="width: 50%"></div>
+            </div>
+            <div class="text-xs text-gray-400 mt-1">
+              ETA: {new Date(fleet.status === 'returning' ? fleet.returnTime : fleet.arrivalTime).toLocaleString()}
+            </div>
+            <div class="collapse collapse-arrow bg-base-300 mt-2">
+              <input type="checkbox" /> 
+              <div class="collapse-title text-sm font-medium">
+                Composition & Cargo
+              </div>
+              <div class="collapse-content text-xs"> 
+                <p>Ships: {JSON.stringify(fleet.composition)}</p>
+                <p>Cargo: {JSON.stringify(fleet.cargo)}</p>
+              </div>
             </div>
           </div>
-        {/each}
-      </div>
-    {/if}
-  </section>
-{/if}
+        </div>
+      {/each}
+    </div>
+  {/if}
+</div>

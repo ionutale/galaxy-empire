@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, timestamp, jsonb } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('user', {
 	id: text('id').primaryKey(),
@@ -93,6 +93,24 @@ export const processedBuilds = pgTable('processed_builds', {
 	rolledBackAt: timestamp('rolled_back_at', { mode: 'date' })
 });
 
+export const fleets = pgTable('fleets', {
+	id: text('id').primaryKey(),
+	userId: text('user_id').notNull().references(() => user.id),
+	originSystem: integer('origin_system').default(1),
+	originPlanet: integer('origin_planet').default(1),
+	targetSystem: integer('target_system').notNull(),
+	targetPlanet: integer('target_planet').notNull(),
+	mission: text('mission').notNull(), // 'transport', 'attack', 'spy', 'colonize', 'recycle'
+	status: text('status').notNull().default('active'), // 'active', 'returning', 'completed'
+	arrivalTime: timestamp('arrival_time', { mode: 'date' }).notNull(),
+	returnTime: timestamp('return_time', { mode: 'date' }),
+	composition: jsonb('composition').notNull().$type<Record<string, number>>(),
+	cargo: jsonb('cargo').notNull().default({}).$type<Record<string, number>>()
+});
+
+export type Fleet = typeof fleets.$inferSelect;
+
+// Deprecated: missions table (replaced by fleets)
 export const missions = pgTable('missions', {
 	id: text('id').primaryKey(),
 	userId: text('user_id').notNull().references(() => user.id),
