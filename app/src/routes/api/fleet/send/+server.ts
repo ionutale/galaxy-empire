@@ -5,11 +5,10 @@ import { eq } from 'drizzle-orm';
 import { SHIP_TEMPLATES } from '$lib/data/gameData';
 
 export async function POST({ request, locals }) {
-  const session = await locals.auth();
-  if (!session?.user) {
+  if (!locals.user) {
     return json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const userId = session.user.id;
+  const userId = locals.user.id;
   const { targetSystem, targetPlanet, mission, ships, cargo } = await request.json();
 
   // 1. Validate inputs
