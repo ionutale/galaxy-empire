@@ -72,6 +72,24 @@
 	$: maxCargo = getMaxCargo();
 	$: totalCargoSelected = cargo.metal + cargo.crystal + cargo.fuel;
 
+	$: minSpeed = Object.entries(selectedShips).reduce((min, [id, count]) => {
+		if (count > 0) {
+			const template = SHIP_TEMPLATES.find((t) => t.shipId === id);
+			if (template) return Math.min(min, template.speed || 100);
+		}
+		return min;
+	}, 999999);
+
+	$: travelSeconds = (() => {
+		if (minSpeed === 999999) return 0;
+		const originSystem = 1;
+		const originPlanet = 1;
+		const dist = Math.abs(targetSystem - originSystem) * 20000 + Math.abs(targetPlanet - originPlanet) * 200 + 1000;
+		return Math.max(10, Math.ceil(dist / minSpeed));
+	})();
+
+	$: arrivalTime = new Date(Date.now() + travelSeconds * 1000);
+
 	async function dispatchFleet() {
 		submitting = true;
 		error = '';
@@ -155,7 +173,7 @@
 						</div>
 					</div>
 
-					<div class="form-control w-full">
+					<div class="form-control w-full mb-4">
 						<label class="label" for="mission-select"><span class="label-text text-slate-300">Mission Type</span></label>
 						<select id="mission-select" bind:value={mission} class="select select-bordered bg-white/5 border-white/10 text-white focus:border-neon-blue focus:outline-none">
 							<option value="transport">Transport</option>
@@ -165,6 +183,32 @@
 							<option value="recycle">Recycle</option>
 						</select>
 					</div>
+
+					{#if travelSeconds > 0}
+						<div class="mt-4 p-4 rounded-lg bg-white/5 border border-white/10 space-y-2">
+							<div class="flex justify-between text-sm">
+								<span class="text-slate-400">Distance:</span>
+								<span class="text-white font-mono">{Math.abs(targetSystem - 1) * 20000 + Math.abs(targetPlanet - 1) * 200 + 1000} km</span>
+							</div>
+							<div class="flex justify-between text-sm">
+								<span class="text-slate-400">Fleet Speed:</span>
+								<span class="text-white font-mono">{minSpeed === 999999 ? '-' : minSpeed}</span>
+							</div>
+							<div class="divider my-1 before:bg-white/10 after:bg-white/10"></div>
+							<div class="flex justify-between items-center">
+								<span class="text-slate-300 font-medium">Travel Time:</span>
+								<span class="text-neon-blue font-mono font-bold text-lg">
+									{new Date(travelSeconds * 1000).toISOString().substr(11, 8)}
+								</span>
+							</div>
+							<div class="flex justify-between items-center text-xs">
+								<span class="text-slate-500">Arrival:</span>
+								<span class="text-slate-300 font-mono">
+									{arrivalTime.toLocaleTimeString()}
+								</span>
+							</div>
+						</div>
+					{/if}
 				</div>
 
 				<div class="glass-panel p-6 rounded-xl">
