@@ -41,6 +41,7 @@
   }
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div class="relative w-full h-[600px] glass-panel overflow-hidden rounded-xl"
      role="application"
      aria-label="Galaxy Map"
@@ -73,14 +74,15 @@
            class="cursor-pointer hover:opacity-80 transition-opacity"
            on:click|stopPropagation={() => selectSystem(sys)}>
           <circle r={4/transform.k + 2} 
-                  fill={selectedSystem?.id === sys.id ? '#fbbf24' : (sys.id === userHomeSystem ? '#fbbf24' : '#00f3ff')} 
+                  fill={selectedSystem?.id === sys.id ? '#fbbf24' : (sys.id === userHomeSystem ? '#ff0000' : '#00f3ff')} 
                   class:filter={selectedSystem?.id === sys.id || sys.id === userHomeSystem}
-                  class:drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]={selectedSystem?.id === sys.id || sys.id === userHomeSystem}
+                  class:drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]={selectedSystem?.id === sys.id}
+                  class:drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]={sys.id === userHomeSystem && selectedSystem?.id !== sys.id}
                   class:drop-shadow-[0_0_5px_rgba(0,243,255,0.6)]={selectedSystem?.id !== sys.id && sys.id !== userHomeSystem}
           />
           <text y={-10/transform.k} 
                 text-anchor="middle" 
-                fill="white" 
+                fill={sys.id === userHomeSystem ? '#ff0000' : 'white'} 
                 font-size={12/transform.k} 
                 class="pointer-events-none select-none opacity-80 font-display tracking-wider text-shadow-sm">
             {sys.name}
