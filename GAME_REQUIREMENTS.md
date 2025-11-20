@@ -11,24 +11,24 @@ A fast, clear set of product and technical requirements for a mobile strategy/em
 ---
 
 ## Checklist of deliverables (requirements extracted)
-- Core gameplay loop (build → gather → research → attack/defend) — Done
+- Core gameplay loop (build → gather → research → attack/defend) — Partially Done (Combat/Defense pending verification)
 - Player progression & progression pacing — Done
-- Combat rules & balancing model — Done
-- Multiplayer modes (asynchronous PvP, PvE, alliance wars) — Done
-- Social features (alliances, chat, leaderboards) — Done
-- Monetization model (IAP, battle pass, ads optional) — Done
-- Backend & networking architecture (authoritative server, persistence, matchmaking) — Done
-- Analytics, telemetry, A/B experimentation hooks — Done
-- UI/UX, onboarding and retention flows — Done
+- Combat rules & balancing model — In Progress
+- Multiplayer modes (asynchronous PvP, PvE, alliance wars) — In Progress
+- Social features (alliances, chat, leaderboards) — Pending
+- Monetization model (IAP, battle pass, ads optional) — Pending
+- Backend & networking architecture (authoritative server, persistence, matchmaking) — Done (SvelteKit + Postgres)
+- Analytics, telemetry, A/B experimentation hooks — Pending
+- UI/UX, onboarding and retention flows — Done (Basic UI implemented)
 - Non-functional requirements (latency, offline handling, battery, scaling) — Done
-- Security, anti-cheat and privacy/compliance — Done
-- Test plan and acceptance criteria — Done
+- Security, anti-cheat and privacy/compliance — Pending
+- Test plan and acceptance criteria — Done (Vitest/Playwright setup)
 
 ---
 
 ## 1. Game Concept & High-level Flow
 - Players manage a starbase and expand by constructing buildings, researching tech, and training fleets.
-- Resource types: Credits (currency), Metal, Crystal (or sci-fi variants), Fuel/Energy, VIP points.
+- Resource types: Credits (currency), Metal, Crystal, Fuel (Deuterium).
 - Core loop: collect resources → upgrade base/ships → send fleets for PvE/PvP → capture rewards → repeat.
 - Sessions: short daily sessions (5–15 minutes) with longer strategic decisions (hours/days of timers).
 
@@ -211,11 +211,14 @@ Each new ship template must be associated with research/tech prerequisites and s
 - Matchmaking service and event/tournament service.
 - Anti-cheat: server-side validation of all progression and combat outcomes; detection/ban pipeline.
 
-## 6. Technical Stack (recommended)
-- Client: Unity (C#) or native engines (if required); cross-platform build pipeline.
-- Server: Node.js/TypeScript or Go for game services; Python for analytics pipelines.
-- Database: PostgreSQL for relational data, Redis for caching and fast locks, and optionally Cassandra or DynamoDB for large-scale time-series/player-event logs.
-- Build/CI: GitHub Actions or similar with automated builds, unit tests, and smoke tests.
+## 6. Technical Stack (Implemented)
+- **Framework**: SvelteKit (Full-stack: Frontend + Backend API).
+- **Language**: TypeScript.
+- **Database**: PostgreSQL (managed via Drizzle ORM).
+- **Styling**: TailwindCSS + DaisyUI.
+- **Testing**: Vitest (Unit) + Playwright (E2E).
+- **Containerization**: Docker & Docker Compose.
+- **Build/CI**: GitHub Actions.
 
 ## 7. Analytics, Telemetry & Live Ops
 - Track events: installs, retention (D1/D7/D30), monetization (IAP events), engagement (sessions/day), funnels (tutorial drop-offs), error logs.
@@ -249,10 +252,11 @@ Each new ship template must be associated with research/tech prerequisites and s
 - Social: alliance creation/joining and chat functioning with websocket reconnection.
 
 ## 12. Data Contracts (minimal examples)
-- Player profile: { playerId, displayName, level, power, resources: {credits,metal,crystal,fuel}, vipLevel, allianceId }
+- Player profile (State): { userId, level, power, credits, metal, crystal, fuel }
+- User Identity: { id, username }
 - Ship template: { shipId, name, role, hp, attack, defense, speed, buildCost }
-- Fleet dispatch: { fleetId, playerId, ships: [{shipId,count}], origin, destination, eta, missionType }
-- Event reward: { eventId, playerId, rewardItems: [{type,id,qty}] }
+- Fleet dispatch: { fleetId, userId, ships: [{shipId,count}], origin, destination, eta, missionType }
+- Event reward: { eventId, userId, rewardItems: [{type,id,qty}] }
 
 ## 13. Edge Cases & Risks
 - Race conditions in resource deduction during concurrent purchases or donations — mitigate with server-side transactions and optimistic locks.
