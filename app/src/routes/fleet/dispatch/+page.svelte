@@ -46,8 +46,8 @@
 		const res = await fetch('/api/player/state');
 		if (res.ok) {
 			const data = await res.json();
-			ships = data.ships || [];
-			resources = data.resources || { metal: 0, crystal: 0, fuel: 0 };
+			ships = data.state?.ships || [];
+			resources = data.state?.resources || { metal: 0, crystal: 0, fuel: 0 };
 			// Initialize selected ships with 0
 			ships.forEach((s) => (selectedShips[s.shipTemplateId] = 0));
 		}
