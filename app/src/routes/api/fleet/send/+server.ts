@@ -119,6 +119,7 @@ export async function POST({ request, locals }) {
 			targetPlanet: Number(targetPlanet),
 			mission,
 			status: 'active',
+			startTime: now,
 			arrivalTime,
 			composition: fleetComposition,
 			cargo: { metal, crystal, fuel }

@@ -1,13 +1,15 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 
 	let activeFleets: any[] = [];
 	let loading = true;
+	let interval: any;
+	let now = Date.now();
 
 	async function fetchFleets() {
 		loading = true;
-		const res = await fetch('/api/player/state'); // We might need a dedicated fleets endpoint or include it in state
+		// We might need a dedicated fleets endpoint or include it in state
 		// For now, let's assume we need to add fleets to player state or create a new endpoint.
 		// Let's create a simple endpoint for active fleets or just use the state one if I update it.
 		// I haven't updated player/state to return fleets yet.
@@ -20,7 +22,38 @@
 		loading = false;
 	}
 
-	onMount(fetchFleets);
+	function getProgress(fleet: any) {
+		const startTime = new Date(fleet.startTime).getTime();
+		const arrivalTime = new Date(fleet.arrivalTime).getTime();
+		const returnTime = fleet.returnTime ? new Date(fleet.returnTime).getTime() : 0;
+		
+		let start = startTime;
+		let end = arrivalTime;
+
+		if (fleet.status === 'returning') {
+			start = arrivalTime;
+			end = returnTime;
+		}
+
+		const totalDuration = end - start;
+		const elapsed = now - start;
+		
+		if (totalDuration <= 0) return 100;
+		return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+	}
+
+	onMount(() => {
+		fetchFleets();
+		interval = setInterval(() => {
+			now = Date.now();
+			// Optional: refresh fleets periodically to catch status changes
+			// if (now % 5000 < 1000) fetchFleets(); 
+		}, 1000);
+	});
+
+	onDestroy(() => {
+		if (interval) clearInterval(interval);
+	});
 </script>
 
 <div class="space-y-6 p-6">
@@ -59,7 +92,7 @@
 								<span>{new Date(fleet.status === 'returning' ? fleet.returnTime : fleet.arrivalTime).toLocaleTimeString()}</span>
 							</div>
 							<div class="h-2 w-full rounded-full bg-white/10 overflow-hidden">
-								<div class="h-full rounded-full bg-neon-blue shadow-[0_0_10px_var(--color-neon-blue)] relative overflow-hidden" style="width: 50%">
+								<div class="h-full rounded-full bg-neon-blue shadow-[0_0_10px_var(--color-neon-blue)] relative overflow-hidden" style="width: {getProgress(fleet)}%">
 									<div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
 								</div>
 							</div>

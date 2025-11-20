@@ -118,6 +118,7 @@ export const fleets = pgTable('fleets', {
 	targetPlanet: integer('target_planet').notNull(),
 	mission: text('mission').notNull(), // 'transport', 'attack', 'spy', 'colonize', 'recycle'
 	status: text('status').notNull().default('active'), // 'active', 'returning', 'completed'
+	startTime: timestamp('start_time', { mode: 'date' }).notNull().defaultNow(),
 	arrivalTime: timestamp('arrival_time', { mode: 'date' }).notNull(),
 	returnTime: timestamp('return_time', { mode: 'date' }),
 	composition: jsonb('composition').notNull().$type<Record<string, number>>(),
