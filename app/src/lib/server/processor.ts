@@ -497,6 +497,7 @@ export async function processProduction(tickSeconds = 5) {
 					if (bid === 'metalMine') produced.metal = (produced.metal ?? 0) + perTick;
 					if (bid === 'crystalSynthesizer') produced.crystal = (produced.crystal ?? 0) + perTick;
 					if (bid === 'deuteriumRefinery') produced.fuel = (produced.fuel ?? 0) + perTick;
+					if (bid === 'controlCenter') produced.credits = (produced.credits ?? 0) + perTick;
 				}
 			}
 		}
@@ -520,7 +521,8 @@ export async function processProduction(tickSeconds = 5) {
 					.set({
 						metal: playerRow.metal + (produced.metal || 0),
 						crystal: playerRow.crystal + (produced.crystal || 0),
-						fuel: playerRow.fuel + (produced.fuel || 0)
+						fuel: playerRow.fuel + (produced.fuel || 0),
+						credits: playerRow.credits + (produced.credits || 0)
 					})
 					.where(eq(table.playerState.userId, userId));
 

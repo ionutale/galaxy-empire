@@ -47,7 +47,8 @@ export const BUILDING_DATA: Record<string, BuildingDef> = {
 			crystal: Math.round(50 * Math.pow(1.8, level))
 		}),
 		time: (level: number) => Math.round(60 * Math.pow(1.5, level)),
-		benefit: (level: number) => `Unlocks new building options.`
+		production: (level: number) => Math.round(20 * level * Math.pow(1.1, level)),
+		benefit: (level: number) => `Unlocks new building options. Produces ${Math.round(20 * level * Math.pow(1.1, level))} credits/hr.`
 	},
 	metalMine: {
 		name: 'Metal Mine',
