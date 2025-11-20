@@ -165,4 +165,24 @@ export const processedMissions = pgTable('processed_missions', {
 
 export type ProcessedBuild = typeof processedBuilds.$inferSelect;
 export type Mission = typeof missions.$inferSelect;
-export type ProcessedMission = typeof processedMissions.$inferSelect;
+export const systems = pgTable('systems', {
+	id: integer('id').primaryKey(),
+	x: integer('x').notNull(),
+	y: integer('y').notNull(),
+	name: text('name').notNull()
+});
+
+export const planets = pgTable('planets', {
+	id: text('id').primaryKey(),
+	systemId: integer('system_id')
+		.notNull()
+		.references(() => systems.id),
+	orbitIndex: integer('orbit_index').notNull(),
+	name: text('name').notNull(),
+	type: text('type').notNull(), // 'terrestrial', 'gas_giant', 'ice', 'lava', 'ocean'
+	ownerId: text('owner_id').references(() => user.id),
+	resources: jsonb('resources').$type<{ metal: number; crystal: number; fuel: number }>()
+});
+
+export type System = typeof systems.$inferSelect;
+export type Planet = typeof planets.$inferSelect;
