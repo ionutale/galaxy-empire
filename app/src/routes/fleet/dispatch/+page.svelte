@@ -410,9 +410,11 @@
 						<div class="flex items-center justify-between rounded-lg bg-white/5 border border-white/5 p-3 hover:bg-white/10 transition-colors">
 							<div>
 								<div class="font-bold text-slate-200">{template?.name || ship.shipTemplateId}</div>
-								<div class="flex gap-3 text-xs text-slate-400">
+								<div class="flex flex-wrap gap-3 text-xs text-slate-400 mt-1">
 									<span>Available: <span class="text-white font-mono">{available}</span></span>
 									<span>Loot: <span class="text-emerald-400 font-mono">{capacity}</span></span>
+									<span class="flex items-center gap-1" title="Attack">⚔️ <span class="text-red-400 font-mono">{template?.attack || 0}</span></span>
+									<span class="flex items-center gap-1" title="Defense">🛡️ <span class="text-green-400 font-mono">{template?.defense || 0}</span></span>
 								</div>
 							</div>
 							<div class="flex items-center gap-2">

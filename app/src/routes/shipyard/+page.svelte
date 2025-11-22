@@ -11,6 +11,8 @@
 		costMetal?: number;
 		costCrystal?: number;
 		costFuel?: number;
+		attack?: number;
+		defense?: number;
 	};
 
 	let templates: Template[] = [];
@@ -136,6 +138,17 @@
 							<div>
 								<h3 class="text-lg font-bold font-display text-white group-hover:text-neon-blue transition-colors">{t.name}</h3>
 								<div class="mt-1 badge badge-sm border-white/20 text-slate-300 bg-white/5">{t.role}</div>
+								
+								<div class="flex gap-3 mt-2 text-xs font-mono">
+									<div class="flex items-center gap-1 text-red-400" title="Attack Power">
+										<span>⚔️</span>
+										<span>{t.attack || 0}</span>
+									</div>
+									<div class="flex items-center gap-1 text-green-400" title="Defense">
+										<span>🛡️</span>
+										<span>{t.defense || 0}</span>
+									</div>
+								</div>
 							</div>
 						</div>
 						<div class="text-right text-xs font-mono text-slate-400">
