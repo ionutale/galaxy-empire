@@ -3,15 +3,31 @@
   
   let reports: any[] = [];
   let loading = true;
+  let page = 1;
+  let loadingMore = false;
+
+  async function fetchReports(p: number) {
+    const res = await fetch(`/api/reports?page=${p}&limit=20`);
+    if (res.ok) {
+      const newReports = await res.json();
+      if (p === 1) {
+        reports = newReports;
+      } else {
+        reports = [...reports, ...newReports];
+      }
+    }
+    return res.ok;
+  }
+
+  async function loadMore() {
+    loadingMore = true;
+    page++;
+    await fetchReports(page);
+    loadingMore = false;
+  }
 
   onMount(async () => {
-    const res = await fetch('/api/reports');
-    if (res.ok) {
-      reports = await res.json();
-      console.log('Fetched reports:', reports);
-    } else {
-      console.error('Failed to fetch reports');
-    }
+    await fetchReports(1);
     loading = false;
   });
 </script>
@@ -55,5 +71,16 @@
         </a>
       {/each}
     </div>
+    
+    {#if !loading && reports.length > 0}
+      <div class="mt-6 text-center">
+        <button class="btn btn-outline btn-primary" on:click={loadMore} disabled={loadingMore}>
+          {#if loadingMore}
+            <span class="loading loading-spinner"></span>
+          {/if}
+          Load More
+        </button>
+      </div>
+    {/if}
   {/if}
 </div>

@@ -402,10 +402,18 @@
 
 				<div class="max-h-[600px] space-y-3 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
 					{#each ships as ship}
+						{@const template = SHIP_TEMPLATES.find(t => t.shipId === ship.shipTemplateId)}
+						{@const capacity = template?.capacity || 0}
+						{@const selected = selectedShips[ship.shipTemplateId] || 0}
+						{@const available = Math.max(0, ship.quantity - selected)}
+						
 						<div class="flex items-center justify-between rounded-lg bg-white/5 border border-white/5 p-3 hover:bg-white/10 transition-colors">
 							<div>
-								<div class="font-bold text-slate-200">{getShipName(ship.shipTemplateId)}</div>
-								<div class="text-xs text-slate-400">Available: <span class="text-white">{ship.quantity}</span></div>
+								<div class="font-bold text-slate-200">{template?.name || ship.shipTemplateId}</div>
+								<div class="flex gap-3 text-xs text-slate-400">
+									<span>Available: <span class="text-white font-mono">{available}</span></span>
+									<span>Loot: <span class="text-emerald-400 font-mono">{capacity}</span></span>
+								</div>
 							</div>
 							<div class="flex items-center gap-2">
 								<button
@@ -413,7 +421,7 @@
 									on:click={() =>
 										(selectedShips[ship.shipTemplateId] = Math.max(
 											0,
-											(selectedShips[ship.shipTemplateId] || 0) - 1
+											selected - 1
 										))}>-</button
 								>
 								<input
@@ -428,7 +436,7 @@
 									on:click={() =>
 										(selectedShips[ship.shipTemplateId] = Math.min(
 											ship.quantity,
-											(selectedShips[ship.shipTemplateId] || 0) + 1
+											selected + 1
 										))}>+</button
 								>
 								<button
@@ -454,33 +462,45 @@
 			</div>
 		{/if}
 
-		<div class="mt-8 flex flex-col items-end gap-2">
-            {#if totalCargoSelected > maxCargo}
-                <div class="text-error text-sm">Cargo exceeds fleet capacity.</div>
-            {:else if Object.keys(selectedShips).every(k => !selectedShips[k])}
-                <div class="text-error text-sm">Select at least one ship.</div>
-            {/if}
-			<div class="flex gap-2 w-full md:w-auto">
-				<button
-					class="btn btn-lg btn-outline border-neon-blue text-neon-blue hover:bg-neon-blue/10 hover:border-neon-blue font-bold tracking-wide w-full md:w-auto"
-					on:click={() => dispatchFleet(false)}
-					disabled={submitting || totalCargoSelected > maxCargo || Object.keys(selectedShips).every(k => !selectedShips[k])}
-				>
-					{#if submitting}
-						<span class="loading loading-spinner"></span>
+		<div class="mt-8 sticky bottom-4 z-20">
+			<div class="glass-panel p-4 rounded-xl border border-white/10 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4 bg-black/80 backdrop-blur-xl">
+				<div class="flex flex-col">
+					{#if totalCargoSelected > maxCargo}
+						<div class="text-error text-sm font-bold">Cargo exceeds fleet capacity!</div>
+					{:else if Object.keys(selectedShips).every(k => !selectedShips[k])}
+						<div class="text-warning text-sm">Select ships to dispatch.</div>
+					{:else}
+						<div class="text-sm text-slate-300">
+							Ready to dispatch <span class="text-white font-bold">{Object.values(selectedShips).reduce((a, b) => a + b, 0)}</span> ships
+						</div>
+						<div class="text-xs text-slate-500">
+							Total Capacity: <span class="text-neon-blue">{maxCargo}</span>
+						</div>
 					{/if}
-					Dispatch
-				</button>
-				<button
-					class="btn btn-lg bg-neon-blue text-black border-neon-blue hover:bg-neon-blue/80 hover:border-neon-blue font-bold tracking-wide shadow-[0_0_15px_rgba(0,243,255,0.4)] w-full md:w-auto"
-					on:click={() => dispatchFleet(true)}
-					disabled={submitting || totalCargoSelected > maxCargo || Object.keys(selectedShips).every(k => !selectedShips[k])}
-				>
-					{#if submitting}
-						<span class="loading loading-spinner"></span>
-					{/if}
-					Dispatch & View Fleet
-				</button>
+				</div>
+
+				<div class="flex gap-2 w-full md:w-auto">
+					<button
+						class="btn btn-outline border-neon-blue text-neon-blue hover:bg-neon-blue/10 hover:border-neon-blue font-bold tracking-wide flex-1 md:flex-none"
+						on:click={() => dispatchFleet(false)}
+						disabled={submitting || totalCargoSelected > maxCargo || Object.keys(selectedShips).every(k => !selectedShips[k])}
+					>
+						{#if submitting}
+							<span class="loading loading-spinner"></span>
+						{/if}
+						Dispatch
+					</button>
+					<button
+						class="btn bg-neon-blue text-black border-neon-blue hover:bg-neon-blue/80 hover:border-neon-blue font-bold tracking-wide shadow-[0_0_15px_rgba(0,243,255,0.4)] flex-1 md:flex-none"
+						on:click={() => dispatchFleet(true)}
+						disabled={submitting || totalCargoSelected > maxCargo || Object.keys(selectedShips).every(k => !selectedShips[k])}
+					>
+						{#if submitting}
+							<span class="loading loading-spinner"></span>
+						{/if}
+						Dispatch & View
+					</button>
+				</div>
 			</div>
 		</div>
 	{/if}

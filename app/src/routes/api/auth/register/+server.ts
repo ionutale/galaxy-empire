@@ -44,25 +44,26 @@ export const POST: RequestHandler = async (event) => {
 
 			// Find a starting planet (prefer terrestrial, owned by NPC or unowned)
 			// We assume 'npc_faction' owns all generated planets initially.
-			const starterPlanet = await ctx
+			const availablePlanets = await ctx
 				.select()
 				.from(table.planets)
-				.where(and(eq(table.planets.ownerId, 'npc_faction'), eq(table.planets.type, 'terrestrial')))
-				.limit(1);
-			
+				.where(and(eq(table.planets.ownerId, 'npc_faction'), eq(table.planets.type, 'terrestrial')));
+
 			let planetIdToAssign: string | null = null;
 
-			if (starterPlanet.length > 0) {
-				planetIdToAssign = starterPlanet[0].id;
+			if (availablePlanets.length > 0) {
+				// Pick random
+				const idx = Math.floor(Math.random() * availablePlanets.length);
+				planetIdToAssign = availablePlanets[idx].id;
 			} else {
 				// Fallback to any planet if no terrestrial available
-				const anyPlanet = await ctx
+				const anyPlanets = await ctx
 					.select()
 					.from(table.planets)
-					.where(eq(table.planets.ownerId, 'npc_faction'))
-					.limit(1);
-				if (anyPlanet.length > 0) {
-					planetIdToAssign = anyPlanet[0].id;
+					.where(eq(table.planets.ownerId, 'npc_faction'));
+				if (anyPlanets.length > 0) {
+					const idx = Math.floor(Math.random() * anyPlanets.length);
+					planetIdToAssign = anyPlanets[idx].id;
 				}
 			}
 
@@ -71,18 +72,18 @@ export const POST: RequestHandler = async (event) => {
 					.update(table.planets)
 					.set({ ownerId: id })
 					.where(eq(table.planets.id, planetIdToAssign));
+
+				// create default starting buildings on the home planet
+				await ctx.insert(table.playerBuildings).values([
+					{ id: crypto.randomUUID(), userId: id, buildingId: 'controlCenter', planetId: planetIdToAssign, level: 1 },
+					{ id: crypto.randomUUID(), userId: id, buildingId: 'metalMine', planetId: planetIdToAssign, level: 1 },
+					{ id: crypto.randomUUID(), userId: id, buildingId: 'crystalSynthesizer', planetId: planetIdToAssign, level: 1 },
+					{ id: crypto.randomUUID(), userId: id, buildingId: 'metalStorage', planetId: planetIdToAssign, level: 1 },
+					{ id: crypto.randomUUID(), userId: id, buildingId: 'crystalStorage', planetId: planetIdToAssign, level: 1 }
+				]);
 			} else {
 				console.warn('No starter planet found for user', id);
 			}
-
-			// create default starting buildings: give new players some basic structures at level 1
-			await ctx.insert(table.playerBuildings).values([
-				{ id: crypto.randomUUID(), userId: id, buildingId: 'controlCenter', level: 1 },
-				{ id: crypto.randomUUID(), userId: id, buildingId: 'metalMine', level: 1 },
-				{ id: crypto.randomUUID(), userId: id, buildingId: 'crystalSynthesizer', level: 1 },
-				{ id: crypto.randomUUID(), userId: id, buildingId: 'metalStorage', level: 1 },
-				{ id: crypto.randomUUID(), userId: id, buildingId: 'crystalStorage', level: 1 }
-			]);
 		});
 	} catch (err) {
 		console.error('Failed to register user transactionally', err);

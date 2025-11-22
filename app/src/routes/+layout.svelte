@@ -5,7 +5,7 @@
 	import { page } from '$app/stores';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import ResourceBar from '$lib/components/ResourceBar.svelte';
-	import ChipsPanel from '$lib/components/ChipsPanel.svelte';
+
 	import Toast from '$lib/components/Toast.svelte';
 	import favicon from '$lib/assets/favicon.svg';
 	import { writable } from 'svelte/store';
@@ -169,6 +169,47 @@
 			console.error('Failed to cancel build', e);
 		}
 	}
+
+	let historyPage = 1;
+	let loadingHistory = false;
+
+	async function loadMoreHistory() {
+		loadingHistory = true;
+		historyPage++;
+		try {
+			const res = await fetch(`/api/player/builds/history?page=${historyPage}&limit=10`);
+			if (res.ok) {
+				const newHistory = await res.json();
+				if (newHistory.length > 0) {
+					// Map history to match build structure
+					const mappedHistory = newHistory.map((b: any) => ({
+						id: b.id,
+						type: b.type,
+						buildingId: b.buildingId,
+						shipTemplateId: b.shipTemplateId,
+						techId: b.techId,
+						quantity: b.quantity,
+						status: 'completed',
+						createdAt: b.processedAt,
+						durationSeconds: 0,
+						remainingSeconds: 0,
+						level: b.level
+					}));
+					
+					// Append to state.builds
+					// We need to be careful not to duplicate if state reloads
+					// For now, just append. If state reloads, it resets to top 10, so we might lose these.
+					// Ideally, state should handle this, but for "Load More" transient appending is often acceptable.
+					// Or we keep a separate `historyBuilds` array and merge it.
+					state.builds = [...state.builds, ...mappedHistory];
+				}
+			}
+		} catch (e) {
+			console.error('Failed to load history', e);
+		} finally {
+			loadingHistory = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -269,9 +310,7 @@
 								<p class="text-sm opacity-70">Command center</p>
 							</div>
 							<Sidebar on:navigate={closeDrawerOnMobile} />
-							<div class="mt-4">
-								<ChipsPanel />
-							</div>
+
 						</aside>
 						<!-- global toast container -->
 					</div>
@@ -346,6 +385,15 @@
 									</div>
 								</div>
 							{/each}
+						</div>
+						
+						<div class="mt-4 text-center">
+							<button class="btn btn-xs btn-ghost text-slate-400" on:click={loadMoreHistory} disabled={loadingHistory}>
+								{#if loadingHistory}
+									<span class="loading loading-spinner loading-xs"></span>
+								{/if}
+								Load More
+							</button>
 						</div>
 					{/if}
 				</div>

@@ -6,6 +6,7 @@
   let loading = true;
 
   let userHomeSystem: number | null = null;
+  let userId: string | null = null;
 
   onMount(async () => {
     const [galaxyRes, playerRes] = await Promise.all([
@@ -20,6 +21,7 @@
     if (playerRes.ok) {
       const playerData = await playerRes.json();
       userHomeSystem = playerData.state.homeSystem;
+      userId = playerData.state.playerId;
     }
     
     loading = false;
@@ -35,7 +37,7 @@
     </div>
   {:else}
     <div class="flex-1 bg-base-300 rounded-lg shadow-inner overflow-hidden">
-      <GalaxyMap {systems} {userHomeSystem} />
+      <GalaxyMap {systems} {userHomeSystem} userId={userId} />
     </div>
   {/if}
 </div>

@@ -121,9 +121,22 @@
 			<div class="glass-panel p-0 rounded-xl overflow-hidden border border-white/10 hover:border-neon-blue/50 transition-colors duration-300 group">
 				<div class="p-5">
 					<div class="flex items-start justify-between mb-4">
-						<div>
-							<h3 class="text-lg font-bold font-display text-white group-hover:text-neon-blue transition-colors">{t.name}</h3>
-							<div class="mt-1 badge badge-sm border-white/20 text-slate-300 bg-white/5">{t.role}</div>
+						<div class="flex items-center gap-3">
+							<div class="w-10 h-10 rounded-lg bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center text-2xl shadow-inner border border-white/10">
+								{#if t.id === 'fighter'}🚀
+								{:else if t.id === 'cruiser'}🛸
+								{:else if t.id === 'battleship'}⚔️
+								{:else if t.id === 'carrier'}🛳️
+								{:else if t.id === 'transport'}📦
+								{:else if t.id === 'colonyShip'}🌱
+								{:else if t.id === 'spyProbe'}👁️
+								{:else if t.id === 'recycler'}♻️
+								{:else}🛸{/if}
+							</div>
+							<div>
+								<h3 class="text-lg font-bold font-display text-white group-hover:text-neon-blue transition-colors">{t.name}</h3>
+								<div class="mt-1 badge badge-sm border-white/20 text-slate-300 bg-white/5">{t.role}</div>
+							</div>
 						</div>
 						<div class="text-right text-xs font-mono text-slate-400">
 							<span class="text-white">{t.buildTime}s</span>

@@ -77,6 +77,7 @@ export const playerBuildings = pgTable('player_buildings', {
 		.notNull()
 		.references(() => user.id),
 	buildingId: text('building_id').notNull(),
+	planetId: text('planet_id').references(() => planets.id), // Nullable for backward compatibility or global buildings? Better make it specific.
 	level: integer('level').notNull()
 });
 
