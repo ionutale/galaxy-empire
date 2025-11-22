@@ -425,11 +425,13 @@ export async function processFleets(tickSeconds = 5) {
 
 				// Restore any cargo brought back (e.g. from recycle/attack)
 				const cargo = f.cargo as Record<string, number>;
+				console.log(`[processor] Fleet ${f.id} cargo to restore:`, cargo);
 				if (cargo && (cargo.metal || cargo.crystal || cargo.fuel)) {
 					const playerState = (
 						await db.select().from(table.playerState).where(eq(table.playerState.userId, userId))
 					)[0];
 					if (playerState) {
+						console.log(`[processor] Adding cargo to player ${userId}. Before: M=${playerState.metal}, C=${playerState.crystal}`);
 						await db
 							.update(table.playerState)
 							.set({
@@ -438,7 +440,12 @@ export async function processFleets(tickSeconds = 5) {
 								fuel: playerState.fuel + (cargo.fuel || 0)
 							})
 							.where(eq(table.playerState.userId, userId));
+						console.log(`[processor] Cargo added.`);
+					} else {
+						console.error(`[processor] Player state not found for ${userId}`);
 					}
+				} else {
+					console.log(`[processor] No cargo to restore for fleet ${f.id}`);
 				}
 
 				// Delete fleet
