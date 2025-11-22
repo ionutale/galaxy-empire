@@ -1,0 +1,13 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#0F172A"/>
+  <rect x="20" y="20" width="472" height="472" stroke="#1E293B" stroke-width="4"/>
+  <path d="M0 0L512 512" stroke="#1E293B" stroke-width="2" stroke-opacity="0.5"/>
+  <path d="M512 0L0 512" stroke="#1E293B" stroke-width="2" stroke-opacity="0.5"/>
+  <circle cx="256" cy="256" r="100" stroke="#00F3FF" stroke-width="2" stroke-dasharray="10 5" opacity="0.5"/>
+  <circle cx="256" cy="256" r="120" stroke="#00F3FF" stroke-width="1" opacity="0.3"/>
+  <path d="M256 156V356" stroke="#00F3FF" stroke-width="1" opacity="0.3"/>
+  <path d="M156 256H356" stroke="#00F3FF" stroke-width="1" opacity="0.3"/>
+  <text x="256" y="400" font-family="monospace" font-size="24" fill="#00F3FF" text-anchor="middle" opacity="0.8">NO IMAGE DATA</text>
+  <text x="256" y="430" font-family="monospace" font-size="16" fill="#64748B" text-anchor="middle">CLASSIFIED</text>
+  <rect x="246" y="246" width="20" height="20" stroke="#00F3FF" stroke-width="2"/>
+</svg>

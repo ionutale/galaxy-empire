@@ -21,6 +21,41 @@
 	let qty: Record<string, number> = {};
 	let playerState: any = null;
 
+	function getShipIcon(id: string) {
+		switch (id) {
+			case 'fighter': return '🚀';
+			case 'cruiser': return '🛸';
+			case 'battleship': return '⚔️';
+			case 'carrier': return '🛳️';
+			case 'transport': return '📦';
+			case 'colonyShip': return '🌱';
+			case 'spyProbe': return '👁️';
+			case 'recycler': return '♻️';
+			case 'scout': return '🔭';
+			case 'corvette': return '🚤';
+			case 'frigate': return '🛥️';
+			case 'destroyer': return '🧨';
+			case 'bomber': return '💣';
+			case 'torpedoBoat': return '🐠';
+			case 'supportRepair': return '🔧';
+			case 'stealth': return '👻';
+			case 'miningVessel': return '⛏️';
+			case 'interceptor': return '⚡';
+			case 'battlecruiser': return '🛡️';
+			case 'dreadnought': return '☠️';
+			case 'drone': return '🤖';
+			case 'droneCarrier': return '👾';
+			case 'electronicWarfare': return '📡';
+			case 'pointDefense': return '🛑';
+			case 'missileCruiser': return '🚀';
+			case 'sentinel': return '💂';
+			case 'siegeEngine': return '🏰';
+			case 'heavyTransport': return '🚛';
+			case 'commando': return '🥷';
+			default: return '🛸';
+		}
+	}
+
 	async function load() {
 		loading = true;
 		try {
@@ -123,21 +158,22 @@
 			<div class="glass-panel-unified p-0 overflow-hidden border border-white/10 hover:border-neon-blue/50 transition-colors duration-300 group">
 				<div class="relative h-32 bg-black/50 flex items-center justify-center overflow-hidden group-hover:border-b group-hover:border-neon-blue/30 transition-colors">
 					<!-- Ship Image with Fallback -->
-					<img
-						src="/images/ships/ship_{t.id}.png"
+					<!-- Ship Image with Placeholder Fallback -->
+					<img 
+						src="/images/ships/ship_{t.id}.png" 
 						alt={t.name}
 						class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
 						on:error={(e) => {
 							const target = e.currentTarget;
 							if (target instanceof HTMLImageElement) {
-								target.style.display = 'none';
-								const next = target.nextElementSibling;
-								if (next instanceof HTMLElement) {
-									next.style.display = 'flex';
-								}
+								target.src = '/images/ships/placeholder.svg';
 							}
 						}}
 					/>
+					
+					<div class="absolute top-2 right-2 badge badge-sm bg-black/60 backdrop-blur text-xs border-white/10">
+						ID: {t.id}
+					</div>
 					<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3">
 						<h3 class="text-lg font-bold font-display text-white group-hover:text-neon-blue transition-colors">{t.name}</h3>
 					</div>
