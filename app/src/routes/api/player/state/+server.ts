@@ -156,4 +156,8 @@ export const GET: RequestHandler = async (event) => {
 			status: 200,
 			headers: { 'content-type': 'application/json' }
 		});
-	};
+	} catch (e) {
+		console.error('Failed to load player state', e);
+		return new Response(JSON.stringify({ error: 'internal_server_error' }), { status: 500 });
+	}
+};
