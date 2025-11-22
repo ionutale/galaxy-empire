@@ -42,16 +42,7 @@
 			<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
 				{#each themes as theme}
 					<button
-						class="btn btn-sm capitalize"
-						class:btn-primary={currentTheme === theme}
-						class:bg-neon-blue={currentTheme === theme}
-						class:text-black={currentTheme === theme}
-						class:border-neon-blue={currentTheme === theme}
-						class:btn-outline={currentTheme !== theme}
-						class:text-slate-300={currentTheme !== theme}
-						class:border-white/20={currentTheme !== theme}
-						class:hover:bg-white/10={currentTheme !== theme}
-						class:hover:text-white={currentTheme !== theme}
+						class="btn btn-sm capitalize {currentTheme === theme ? 'btn-primary bg-neon-blue text-black border-neon-blue' : 'btn-outline text-slate-300 border-white/20 hover:bg-white/10 hover:text-white'}"
 						on:click={() => setTheme(theme)}
 					>
 						{theme}

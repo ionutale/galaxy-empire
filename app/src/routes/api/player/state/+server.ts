@@ -3,7 +3,7 @@ import { validateSessionToken } from '$lib/server/auth';
 import { sessionCookieName } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 interface Build {
 	id: string;
@@ -41,7 +41,12 @@ export const GET: RequestHandler = async (event) => {
 		ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id));
 
 		// Determine which planet to show
-		let planetQuery = db
+		const conditions = [eq(table.planets.ownerId, user.id)];
+		if (planetIdParam) {
+			conditions.push(eq(table.planets.id, planetIdParam));
+		}
+
+		const planetQuery = db
 			.select({
 				id: table.planets.id,
 				systemId: table.planets.systemId,
@@ -51,15 +56,11 @@ export const GET: RequestHandler = async (event) => {
 			})
 			.from(table.planets)
 			.innerJoin(table.systems, eq(table.planets.systemId, table.systems.id))
-			.where(eq(table.planets.ownerId, user.id));
+			.where(and(...conditions));
 
-		if (planetIdParam) {
-			planetQuery = planetQuery.where(eq(table.planets.id, planetIdParam));
-		}
-		
 		// Get the requested planet, or the first one found (home)
 		const planetsFound = await planetQuery.limit(1);
-		
+
 		if (planetsFound.length > 0) {
 			currentPlanet = planetsFound[0];
 		} else if (!planetIdParam) {
@@ -89,7 +90,7 @@ export const GET: RequestHandler = async (event) => {
 					.innerJoin(table.systems, eq(table.planets.systemId, table.systems.id))
 					.where(eq(table.planets.id, availablePlanet[0].id))
 					.limit(1);
-				
+
 				if (newHome.length > 0) {
 					currentPlanet = newHome[0];
 				}
@@ -204,8 +205,8 @@ export const GET: RequestHandler = async (event) => {
 		username: user.username,
 		level: stateRow?.level ?? 1,
 		power: stateRow?.power ?? 10,
-		homeSystem: currentPlanet?.systemId ?? 1,
-		homePlanet: currentPlanet?.orbitIndex ?? 1,
+		homeSystem: currentPlanet ? currentPlanet.systemId : 1,
+		homePlanet: currentPlanet ? currentPlanet.orbitIndex : 1,
 		systemName: currentPlanet?.systemName ?? 'Unknown System',
 		planetName: currentPlanet?.name ?? 'Unknown Planet',
 		planetId: currentPlanet?.id,

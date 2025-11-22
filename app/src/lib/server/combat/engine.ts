@@ -27,7 +27,7 @@ export interface CombatReportData {
 
 function createCombatFleet(composition: Record<string, number>): CombatShip[] {
   return Object.entries(composition).map(([id, count]) => {
-    const template = SHIP_TEMPLATES.find(s => s.id === id);
+    const template = SHIP_TEMPLATES.find(s => s.shipId === id);
     if (!template) throw new Error(`Invalid ship template: ${id}`);
     // Basic stats - in a real game these would come from the DB/Template
     // For now, we'll hardcode some stats based on role or ID if not in template
