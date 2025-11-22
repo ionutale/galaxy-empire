@@ -23,6 +23,8 @@ export const GET: RequestHandler = async (event) => {
 	const { user } = await validateSessionToken(token);
 	if (!user) return new Response(JSON.stringify({ error: 'unauthenticated' }), { status: 401 });
 
+	const planetIdParam = event.url.searchParams.get('planetId');
+
 	// starter player state
 	let stateRow: any = null;
 	let ships: any[] = [];
@@ -30,7 +32,7 @@ export const GET: RequestHandler = async (event) => {
 	let buildingsResult: any[] = [];
 	let research: Record<string, { level: number }> = {};
 	let buildings: Record<string, number> = {};
-	let homePlanet: { systemId: number; orbitIndex: number; systemName: string } | null = null;
+	let currentPlanet: { id: string; systemId: number; orbitIndex: number; systemName: string; name: string } | null = null;
 
 	try {
 		stateRow = (
@@ -38,20 +40,29 @@ export const GET: RequestHandler = async (event) => {
 		)[0];
 		ships = await db.select().from(table.playerShips).where(eq(table.playerShips.userId, user.id));
 
-		const homePlanetResult = await db
+		// Determine which planet to show
+		let planetQuery = db
 			.select({
+				id: table.planets.id,
 				systemId: table.planets.systemId,
 				orbitIndex: table.planets.orbitIndex,
-				systemName: table.systems.name
+				systemName: table.systems.name,
+				name: table.planets.name
 			})
 			.from(table.planets)
 			.innerJoin(table.systems, eq(table.planets.systemId, table.systems.id))
-			.where(eq(table.planets.ownerId, user.id))
-			.limit(1);
+			.where(eq(table.planets.ownerId, user.id));
+
+		if (planetIdParam) {
+			planetQuery = planetQuery.where(eq(table.planets.id, planetIdParam));
+		}
 		
-		if (homePlanetResult.length > 0) {
-			homePlanet = homePlanetResult[0];
-		} else {
+		// Get the requested planet, or the first one found (home)
+		const planetsFound = await planetQuery.limit(1);
+		
+		if (planetsFound.length > 0) {
+			currentPlanet = planetsFound[0];
+		} else if (!planetIdParam) {
 			// Fallback: Assign a planet if user has none (lazy migration for existing users)
 			const availablePlanet = await db
 				.select()
@@ -68,9 +79,11 @@ export const GET: RequestHandler = async (event) => {
 				// Fetch the newly assigned planet details
 				const newHome = await db
 					.select({
+						id: table.planets.id,
 						systemId: table.planets.systemId,
 						orbitIndex: table.planets.orbitIndex,
-						systemName: table.systems.name
+						systemName: table.systems.name,
+						name: table.planets.name
 					})
 					.from(table.planets)
 					.innerJoin(table.systems, eq(table.planets.systemId, table.systems.id))
@@ -78,7 +91,7 @@ export const GET: RequestHandler = async (event) => {
 					.limit(1);
 				
 				if (newHome.length > 0) {
-					homePlanet = newHome[0];
+					currentPlanet = newHome[0];
 				}
 			}
 		}
@@ -191,9 +204,11 @@ export const GET: RequestHandler = async (event) => {
 		username: user.username,
 		level: stateRow?.level ?? 1,
 		power: stateRow?.power ?? 10,
-		homeSystem: homePlanet?.systemId ?? 1,
-		homePlanet: homePlanet?.orbitIndex ?? 1,
-		systemName: homePlanet?.systemName ?? 'Unknown System',
+		homeSystem: currentPlanet?.systemId ?? 1,
+		homePlanet: currentPlanet?.orbitIndex ?? 1,
+		systemName: currentPlanet?.systemName ?? 'Unknown System',
+		planetName: currentPlanet?.name ?? 'Unknown Planet',
+		planetId: currentPlanet?.id,
 		resources: {
 			credits: stateRow?.credits ?? 1000,
 			metal: stateRow?.metal ?? 500,

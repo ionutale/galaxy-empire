@@ -67,7 +67,12 @@
 
 	onMount(() => {
 		(async () => {
-			const res = await fetch('/api/player/state');
+			// Check for planetId in URL
+			const urlParams = new URLSearchParams(window.location.search);
+			const planetId = urlParams.get('planetId');
+			const query = planetId ? `?planetId=${planetId}` : '';
+			
+			const res = await fetch(`/api/player/state${query}`);
 			if (res.ok) {
 				const body = await res.json();
 				state = body.state;
@@ -133,7 +138,7 @@
 		<div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
 			<div class="glass-panel p-6 rounded-xl">
 				<h3 class="text-xl font-display font-bold text-neon-blue tracking-wide">Commander: {state.username}</h3>
-				<p class="text-slate-400 text-sm mt-1">Colony: <span class="text-white">{state.username} Prime</span> <span class="text-neon-blue font-mono ml-2">[{state.homeSystem ?? 1}:{state.homePlanet ?? 1}] {state.systemName ?? ''}</span></p>
+				<p class="text-slate-400 text-sm mt-1">Colony: <span class="text-white">{state.planetName ?? state.username + ' Prime'}</span> <span class="text-neon-blue font-mono ml-2">[{state.homeSystem ?? 1}:{state.homePlanet ?? 1}] {state.systemName ?? ''}</span></p>
 				<p class="text-slate-400 text-sm mt-1">Level: <span class="text-white">{state.level}</span> · Power: <span class="text-white">{state.power}</span></p>
 				<div class="divider my-4 before:bg-white/10 after:bg-white/10"></div>
 				<h4 class="font-medium text-slate-200 mb-2">Resources</h4>
