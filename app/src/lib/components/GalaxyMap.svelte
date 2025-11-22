@@ -1,196 +1,80 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { fade, scale } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 
 	export let systems: any[] = [];
 	export let activeSystemId: string | null = null;
-	export let userId: string; // Current user ID for checking ownership
+	export let userId: string;
 
-	let selectedSystem: any = null;
-	let container: HTMLElement;
-
-	// Grid configuration
-	const GRID_SIZE = 20; // 20x20 grid
-	const CELL_SIZE = 60; // px
-
-	// Helper to map coordinates to grid style
-	function getGridStyle(x: number, y: number) {
-		// Map -100..100 to 0..20 roughly
-		const gx = Math.floor((x + 100) / 10);
-		const gy = Math.floor((y + 100) / 10);
-		return `grid-column: ${gx + 1}; grid-row: ${gy + 1};`;
-	}
-
-	function selectSystem(sys: any) {
-		selectedSystem = sys;
-	}
-
-	function closePopup() {
-		selectedSystem = null;
-	}
-
-	// Calculate distance for travel time estimation
+	// Helper to calculate distance (optional, if needed for display)
 	function getDistance(s1: any, s2: any) {
 		const dx = s1.x - s2.x;
 		const dy = s1.y - s2.y;
 		return Math.sqrt(dx * dx + dy * dy).toFixed(1);
 	}
-	let transform = { x: 0, y: 0, k: 1 };
-	let isDragging = false;
-	let startX = 0;
-	let startY = 0;
-
-	// Center on mount
-	onMount(() => {
-		if (container) {
-			const cx = container.clientWidth / 2;
-			const cy = container.clientHeight / 2;
-			transform.x = cx;
-			transform.y = cy;
-		}
-	});
-
-	function handleWheel(e: WheelEvent) {
-		e.preventDefault();
-		const zoomIntensity = 0.1;
-		const delta = e.deltaY > 0 ? -zoomIntensity : zoomIntensity;
-		const newScale = Math.max(0.1, Math.min(5, transform.k * (1 + delta)));
-		
-		// Zoom towards mouse pointer
-		// This is a simplified zoom, centering is easier
-		transform.k = newScale;
-	}
-
-	function handleMouseDown(e: MouseEvent) {
-		isDragging = true;
-		startX = e.clientX - transform.x;
-		startY = e.clientY - transform.y;
-	}
-
-	function handleMouseMove(e: MouseEvent) {
-		if (!isDragging) return;
-		transform.x = e.clientX - startX;
-		transform.y = e.clientY - startY;
-	}
-
-	function handleMouseUp() {
-		isDragging = false;
-	}
 	
 	$: userHomeSystem = systems.find(s => s.planets.some((p: any) => p.ownerId === userId))?.id;
 </script>
 
-<div 
-	class="relative w-full h-[calc(100vh-6rem)] bg-black overflow-hidden cursor-move select-none"
-	bind:this={container}
-	role="application"
-	aria-label="Galaxy Map"
-	on:wheel={handleWheel}
-	on:mousedown={handleMouseDown}
-	on:mousemove={handleMouseMove}
-	on:mouseup={handleMouseUp}
-	on:mouseleave={handleMouseUp}
->
-	<!-- Starfield Background (Static) -->
-	<div class="absolute inset-0 opacity-50 pointer-events-none" 
-		 style="background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px;">
-	</div>
-
-	<svg width="100%" height="100%">
-		<g transform="translate({transform.x}, {transform.y}) scale({transform.k})">
-			<!-- Grid Lines (Optional) -->
-			<g opacity="0.1" stroke="white" stroke-width={1/transform.k}>
-				{#each Array(21) as _, i}
-					<line x1={-1000} y1={(i-10)*100} x2={1000} y2={(i-10)*100} />
-					<line x1={(i-10)*100} y1={-1000} x2={(i-10)*100} y2={1000} />
-				{/each}
-			</g>
-
-			{#each systems as sys (sys.id)}
-				<!-- svelte-ignore a11y-click-events-have-key-events -->
-				<g transform="translate({sys.x}, {sys.y})" 
-				   role="button"
-				   tabindex="0"
-				   aria-label="System {sys.name}"
-				   on:click|stopPropagation={() => selectSystem(sys)}
-				   class="cursor-pointer hover:opacity-100 transition-opacity duration-200"
-				   class:opacity-100={selectedSystem?.id === sys.id}
-				   class:opacity-60={selectedSystem?.id !== sys.id}>
-					
-					<circle r={4/transform.k + 2} 
-							fill={selectedSystem?.id === sys.id ? '#fbbf24' : (sys.id === userHomeSystem ? '#ff0000' : '#00f3ff')} 
-							class:filter={selectedSystem?.id === sys.id || sys.id === userHomeSystem}
-							class:drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]={selectedSystem?.id === sys.id}
-							class:drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]={sys.id === userHomeSystem && selectedSystem?.id !== sys.id}
-							class:drop-shadow-[0_0_5px_rgba(0,243,255,0.6)]={selectedSystem?.id !== sys.id && sys.id !== userHomeSystem}
-					/>
-					<text y={-10/transform.k} 
-						  text-anchor="middle" 
-						  fill={sys.id === userHomeSystem ? '#ff0000' : 'white'} 
-						  font-size={12/transform.k} 
-						  class="pointer-events-none select-none opacity-80 font-display tracking-wider text-shadow-sm">
+<div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto h-[calc(100vh-6rem)] scrollbar-thin scrollbar-thumb-white/10">
+	{#each systems as sys (sys.id)}
+		<div class="glass-panel-unified relative group hover:border-neon-blue/50 transition-all duration-300"
+			 class:border-neon-blue={sys.id === userHomeSystem}
+			 class:shadow-[0_0_15px_rgba(0,243,255,0.2)]={sys.id === userHomeSystem}>
+			
+			<!-- Header -->
+			<div class="flex justify-between items-start mb-4 border-b border-white/10 pb-3">
+				<div>
+					<h3 class="text-xl font-bold font-display text-white tracking-wide flex items-center gap-2">
 						{sys.name}
-					</text>
-				</g>
-			{/each}
-		</g>
-	</svg>
+						{#if sys.id === userHomeSystem}
+							<span class="badge badge-sm badge-info gap-1">
+								🏠 Home
+							</span>
+						{/if}
+					</h3>
+					<div class="text-xs font-mono text-slate-400 mt-1">
+						COORDS: <span class="text-neon-blue">[{sys.x}, {sys.y}]</span>
+					</div>
+				</div>
+				<div class="text-2xl opacity-50 group-hover:opacity-100 transition-opacity">
+					🌌
+				</div>
+			</div>
 
-  <!-- System Details Panel -->
-  {#if selectedSystem}
-    <div class="absolute top-4 right-4 w-72 glass-panel-unified p-4 rounded-lg shadow-2xl border border-white/10 backdrop-blur-xl" 
-         transition:fade
-         on:wheel|stopPropagation>
-      <div class="flex justify-between items-start mb-3 border-b border-white/10 pb-2">
-        <h3 class="font-display font-bold text-lg text-neon-blue tracking-wide">{selectedSystem.name}</h3>
-        <button class="btn btn-ghost btn-xs text-white/50 hover:text-white" on:click={() => selectedSystem = null}>✕</button>
-      </div>
-      <p class="text-xs text-slate-400 mb-4 font-mono">COORDS: [{selectedSystem.x}, {selectedSystem.y}]</p>
-      
-      <h4 class="font-display font-semibold text-sm mb-3 text-slate-200 uppercase tracking-wider">Planets Detected</h4>
-      <div class="space-y-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10">
-        {#each selectedSystem.planets as planet}
-          <div class="bg-white/5 p-2 rounded border border-white/5 flex items-center gap-3 justify-between group hover:bg-white/10 transition-colors">
-            <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full shadow-[0_0_5px_currentColor]" 
-                   class:text-blue-400={planet.type==='ocean'} class:bg-blue-400={planet.type==='ocean'}
-                   class:text-green-500={planet.type==='terrestrial'} class:bg-green-500={planet.type==='terrestrial'}
-                   class:text-red-500={planet.type==='lava'} class:bg-red-500={planet.type==='lava'}
-                   class:text-cyan-200={planet.type==='ice'} class:bg-cyan-200={planet.type==='ice'}
-                   class:text-orange-300={planet.type==='gas_giant'} class:bg-orange-300={planet.type==='gas_giant'}
-                   class:text-yellow-200={planet.type==='desert'} class:bg-yellow-200={planet.type==='desert'}
-                   class:text-gray-400={planet.type==='barren'} class:bg-gray-400={planet.type==='barren'}>
-              </div>
-              <div>
-                <div class="font-medium text-slate-200 text-sm">{planet.name}</div>
-                <div class="text-[10px] opacity-60 uppercase tracking-wide">{planet.type}</div>
-              </div>
-            </div>
-            {#if planet.ownerId !== userId}
-            <a href="/fleet/dispatch?targetSystem={selectedSystem.id}&planet={planet.orbitIndex}" 
-               class="btn btn-xs btn-outline border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 opacity-0 group-hover:opacity-100 transition-all">
-              Attack
-            </a>
-            {/if}
-          </div>
-        {/each}
-      </div>
+			<!-- Planets Grid -->
+			<div class="mb-6">
+				<div class="text-xs text-slate-500 uppercase tracking-wider mb-2">Planets Detected ({sys.planets.length})</div>
+				<div class="grid grid-cols-4 gap-2">
+					{#each sys.planets as planet}
+						<div class="tooltip" data-tip="{planet.name} ({planet.type})">
+							<div class="aspect-square rounded-lg bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 transition-colors relative overflow-hidden">
+								<div class="w-3 h-3 rounded-full shadow-[0_0_5px_currentColor]" 
+									class:text-blue-400={planet.type==='ocean'} class:bg-blue-400={planet.type==='ocean'}
+									class:text-green-500={planet.type==='terrestrial'} class:bg-green-500={planet.type==='terrestrial'}
+									class:text-red-500={planet.type==='lava'} class:bg-red-500={planet.type==='lava'}
+									class:text-cyan-200={planet.type==='ice'} class:bg-cyan-200={planet.type==='ice'}
+									class:text-orange-300={planet.type==='gas_giant'} class:bg-orange-300={planet.type==='gas_giant'}
+									class:text-yellow-200={planet.type==='desert'} class:bg-yellow-200={planet.type==='desert'}
+									class:text-gray-400={planet.type==='barren'} class:bg-gray-400={planet.type==='barren'}>
+								</div>
+								{#if planet.ownerId && planet.ownerId !== userId}
+									<div class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-bl-md"></div>
+								{:else if planet.ownerId === userId}
+									<div class="absolute top-0 right-0 w-2 h-2 bg-neon-blue rounded-bl-md"></div>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
 
-      <div class="mt-4 pt-4 border-t border-white/10">
-        <a
-							href="/fleet/dispatch?targetSystem={selectedSystem.id}&planet=1"
-							class="btn btn-sm bg-neon-blue text-black border-neon-blue hover:bg-neon-blue/80 hover:border-neon-blue font-bold"
-						>
-							Dispatch Fleet
-						</a>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Controls -->
-  <div class="absolute bottom-4 right-4 flex flex-col gap-2">
-    <button class="btn btn-square btn-sm glass-panel hover:bg-white/10 text-white" on:click={() => transform.k = Math.min(5, transform.k * 1.2)}>+</button>
-    <button class="btn btn-square btn-sm glass-panel hover:bg-white/10 text-white" on:click={() => transform.k = Math.max(0.1, transform.k / 1.2)}>-</button>
-    <button class="btn btn-square btn-sm glass-panel hover:bg-white/10 text-white" on:click={() => { transform = { x: 0, y: 0, k: 1 }; }}>⟲</button>
-  </div>
+			<!-- Actions -->
+			<div class="flex gap-2 mt-auto">
+				<a href="/fleet/dispatch?targetSystem={sys.id}&planet=1" 
+				   class="btn btn-sm flex-1 bg-white/5 border-white/10 hover:bg-neon-blue hover:text-black hover:border-neon-blue transition-all group-hover:bg-white/10">
+					Dispatch Fleet
+				</a>
+			</div>
+		</div>
+	{/each}
 </div>
