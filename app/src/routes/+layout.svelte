@@ -347,9 +347,17 @@
 			<label for="builds-drawer" class="drawer-overlay"></label>
 			<div class="menu min-h-full w-80 glass-panel p-4 text-slate-200">
 				<!-- Tabbed Drawer Content -->
-				<div role="tablist" class="tabs tabs-boxed bg-transparent mb-4">
-					<input type="radio" name="drawer_tabs" role="tab" class="tab" aria-label="Builds" checked />
-					<div role="tabpanel" class="tab-content pt-4">
+				<!-- Tabbed Drawer Content -->
+				<div role="tablist" class="tabs tabs-bordered grid grid-cols-2 mb-4">
+					<input 
+						type="radio" 
+						name="drawer_tabs" 
+						role="tab" 
+						class="tab text-slate-400 checked:text-neon-blue checked:border-neon-blue font-bold tracking-wide" 
+						aria-label="Builds" 
+						checked 
+					/>
+					<div role="tabpanel" class="tab-content pt-4 border-none">
 						<h2 class="text-xl font-bold text-neon-blue mb-4 flex items-center gap-2">
 							<span>🏗️</span> Construction Queue
 						</h2>
@@ -405,8 +413,14 @@
 						{/if}
 					</div>
 
-					<input type="radio" name="drawer_tabs" role="tab" class="tab" aria-label="Fleets" />
-					<div role="tabpanel" class="tab-content pt-4 h-full">
+					<input 
+						type="radio" 
+						name="drawer_tabs" 
+						role="tab" 
+						class="tab text-slate-400 checked:text-neon-blue checked:border-neon-blue font-bold tracking-wide" 
+						aria-label="Fleets" 
+					/>
+					<div role="tabpanel" class="tab-content pt-4 h-full border-none">
 						<FleetDrawer fleets={fleets || []} />
 					</div>
 				</div>

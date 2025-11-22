@@ -14,7 +14,6 @@
 		{
 			name: 'Command',
 			items: [
-				{ href: '/', label: 'Home', icon: 'home' },
 				{ href: '/base', label: 'Base', icon: 'target' },
 				{ href: '/research', label: 'Research', icon: 'play' }
 			]
@@ -23,7 +22,6 @@
 			name: 'Operations',
 			items: [
 				{ href: '/galaxy', label: 'Galaxy Map', icon: 'globe' },
-				{ href: '/fleet', label: 'Fleet', icon: 'menu' },
 				{ href: '/shipyard', label: 'Shipyard', icon: 'dock' },
 				{ href: '/reports', label: 'Reports', icon: 'clipboard' }
 			]
