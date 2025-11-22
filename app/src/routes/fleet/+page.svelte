@@ -84,13 +84,13 @@
 	{#if loading}
 		<div class="flex justify-center"><span class="loading loading-spinner loading-lg text-neon-blue"></span></div>
 	{:else if activeFleets.length === 0}
-		<div class="glass-panel p-6 rounded-xl text-center">
+		<div class="glass-panel-unified p-6 text-center">
 			<p class="text-slate-400 italic">No active fleet missions. Systems nominal.</p>
 		</div>
 	{:else}
 		<div class="grid gap-4">
 			{#each activeFleets as fleet}
-				<div class="glass-panel p-0 rounded-xl overflow-hidden border border-white/10" transition:fade>
+				<div class="glass-panel-unified p-0 overflow-hidden border border-white/10" transition:fade>
 					<div class="p-5">
 						<div class="flex justify-between items-start mb-4">
 							<div>

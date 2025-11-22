@@ -35,30 +35,110 @@
 		const dy = s1.y - s2.y;
 		return Math.sqrt(dx * dx + dy * dy).toFixed(1);
 	}
+	let transform = { x: 0, y: 0, k: 1 };
+	let isDragging = false;
+	let startX = 0;
+	let startY = 0;
+
+	// Center on mount
+	onMount(() => {
+		if (container) {
+			const cx = container.clientWidth / 2;
+			const cy = container.clientHeight / 2;
+			transform.x = cx;
+			transform.y = cy;
+		}
+	});
+
+	function handleWheel(e: WheelEvent) {
+		e.preventDefault();
+		const zoomIntensity = 0.1;
+		const delta = e.deltaY > 0 ? -zoomIntensity : zoomIntensity;
+		const newScale = Math.max(0.1, Math.min(5, transform.k * (1 + delta)));
+		
+		// Zoom towards mouse pointer
+		// This is a simplified zoom, centering is easier
+		transform.k = newScale;
+	}
+
+	function handleMouseDown(e: MouseEvent) {
+		isDragging = true;
+		startX = e.clientX - transform.x;
+		startY = e.clientY - transform.y;
+	}
+
+	function handleMouseMove(e: MouseEvent) {
+		if (!isDragging) return;
+		transform.x = e.clientX - startX;
+		transform.y = e.clientY - startY;
+	}
+
+	function handleMouseUp() {
+		isDragging = false;
+	}
+	
+	$: userHomeSystem = systems.find(s => s.planets.some((p: any) => p.ownerId === userId))?.id;
 </script>
 
-          <circle r={4/transform.k + 2} 
-                  fill={selectedSystem?.id === sys.id ? '#fbbf24' : (sys.id === userHomeSystem ? '#ff0000' : '#00f3ff')} 
-                  class:filter={selectedSystem?.id === sys.id || sys.id === userHomeSystem}
-                  class:drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]={selectedSystem?.id === sys.id}
-                  class:drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]={sys.id === userHomeSystem && selectedSystem?.id !== sys.id}
-                  class:drop-shadow-[0_0_5px_rgba(0,243,255,0.6)]={selectedSystem?.id !== sys.id && sys.id !== userHomeSystem}
-          />
-          <text y={-10/transform.k} 
-                text-anchor="middle" 
-                fill={sys.id === userHomeSystem ? '#ff0000' : 'white'} 
-                font-size={12/transform.k} 
-                class="pointer-events-none select-none opacity-80 font-display tracking-wider text-shadow-sm">
-            {sys.name}
-          </text>
-        </g>
-      {/each}
-    </g>
-  </svg>
+<div 
+	class="relative w-full h-[calc(100vh-6rem)] bg-black overflow-hidden cursor-move select-none"
+	bind:this={container}
+	role="application"
+	aria-label="Galaxy Map"
+	on:wheel={handleWheel}
+	on:mousedown={handleMouseDown}
+	on:mousemove={handleMouseMove}
+	on:mouseup={handleMouseUp}
+	on:mouseleave={handleMouseUp}
+>
+	<!-- Starfield Background (Static) -->
+	<div class="absolute inset-0 opacity-50 pointer-events-none" 
+		 style="background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px;">
+	</div>
+
+	<svg width="100%" height="100%">
+		<g transform="translate({transform.x}, {transform.y}) scale({transform.k})">
+			<!-- Grid Lines (Optional) -->
+			<g opacity="0.1" stroke="white" stroke-width={1/transform.k}>
+				{#each Array(21) as _, i}
+					<line x1={-1000} y1={(i-10)*100} x2={1000} y2={(i-10)*100} />
+					<line x1={(i-10)*100} y1={-1000} x2={(i-10)*100} y2={1000} />
+				{/each}
+			</g>
+
+			{#each systems as sys (sys.id)}
+				<!-- svelte-ignore a11y-click-events-have-key-events -->
+				<g transform="translate({sys.x}, {sys.y})" 
+				   role="button"
+				   tabindex="0"
+				   aria-label="System {sys.name}"
+				   on:click|stopPropagation={() => selectSystem(sys)}
+				   class="cursor-pointer hover:opacity-100 transition-opacity duration-200"
+				   class:opacity-100={selectedSystem?.id === sys.id}
+				   class:opacity-60={selectedSystem?.id !== sys.id}>
+					
+					<circle r={4/transform.k + 2} 
+							fill={selectedSystem?.id === sys.id ? '#fbbf24' : (sys.id === userHomeSystem ? '#ff0000' : '#00f3ff')} 
+							class:filter={selectedSystem?.id === sys.id || sys.id === userHomeSystem}
+							class:drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]={selectedSystem?.id === sys.id}
+							class:drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]={sys.id === userHomeSystem && selectedSystem?.id !== sys.id}
+							class:drop-shadow-[0_0_5px_rgba(0,243,255,0.6)]={selectedSystem?.id !== sys.id && sys.id !== userHomeSystem}
+					/>
+					<text y={-10/transform.k} 
+						  text-anchor="middle" 
+						  fill={sys.id === userHomeSystem ? '#ff0000' : 'white'} 
+						  font-size={12/transform.k} 
+						  class="pointer-events-none select-none opacity-80 font-display tracking-wider text-shadow-sm">
+						{sys.name}
+					</text>
+				</g>
+			{/each}
+		</g>
+	</svg>
 
   <!-- System Details Panel -->
   {#if selectedSystem}
-    <div class="absolute top-4 right-4 w-72 glass-panel p-4 rounded-lg shadow-2xl border border-white/10 backdrop-blur-xl" 
+    <div class="absolute top-4 right-4 w-72 glass-panel-unified p-4 rounded-lg shadow-2xl border border-white/10 backdrop-blur-xl" 
          transition:fade
          on:wheel|stopPropagation>
       <div class="flex justify-between items-start mb-3 border-b border-white/10 pb-2">
