@@ -72,7 +72,6 @@ The game will be available at `http://localhost:5173`.
 - **Research**: Unlock new technologies in the Research Lab.
 - **Shipyard**: Build a fleet of ships, from Scouts to Battleships.
 - **Game Loop**: Server-side tick processor handles construction queues, resource production, and fleet movements.
-- **Admin Panel**: Inspect active queues and manage game state at `/admin/overview`.
 
 ## 📜 Scripts
 

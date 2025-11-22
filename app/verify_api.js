@@ -93,16 +93,6 @@ async function runTests() {
 	// 7. Admin Endpoints
 	console.log(`\n7. Testing Admin Endpoints...`);
 	const adminHeaders = { ...headers, 'x-admin-key': ADMIN_KEY };
-
-	const processedMissionsRes = await fetch(`${BASE_URL}/api/admin/processed-missions`, {
-		headers: adminHeaders
-	});
-	console.log('Admin Processed Missions status:', processedMissionsRes.status);
-
-	const processedBuildsRes = await fetch(`${BASE_URL}/api/admin/processed-builds`, {
-		headers: adminHeaders
-	});
-	console.log('Admin Processed Builds status:', processedBuildsRes.status);
 }
 
 runTests().catch(console.error);

@@ -27,12 +27,6 @@
 				{ href: '/shipyard', label: 'Shipyard', icon: 'dock' },
 				{ href: '/reports', label: 'Reports', icon: 'clipboard' }
 			]
-		},
-		{
-			name: 'Administration',
-			items: [
-				{ href: '/admin', label: 'Admin Dashboard', icon: 'user-plus' }
-			]
 		}
 	];
 
