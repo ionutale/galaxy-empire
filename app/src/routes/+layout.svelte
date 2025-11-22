@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import Sidebar from '$lib/components/Sidebar.svelte';
+	import ChatBox from '$lib/components/ChatBox.svelte';
 	import ResourceBar from '$lib/components/ResourceBar.svelte';
 
 	import Toast from '$lib/components/Toast.svelte';
@@ -318,6 +319,9 @@
 			</div>
 		</div>
 		<Toast />
+		{#if user}
+			<ChatBox />
+		{/if}
 		<div class="drawer-side z-50">
 			<label for="builds-drawer" class="drawer-overlay"></label>
 			<div class="menu min-h-full w-80 glass-panel p-4 text-slate-200">

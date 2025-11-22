@@ -201,3 +201,44 @@ export const combatReports = pgTable('combat_reports', {
 });
 
 export type CombatReport = typeof combatReports.$inferSelect;
+
+export const userPoints = pgTable('user_points', {
+	userId: text('user_id')
+		.primaryKey()
+		.references(() => user.id),
+	total: integer('total').notNull().default(0),
+	mines: integer('mines').notNull().default(0),
+	fleets: integer('fleets').notNull().default(0),
+	defense: integer('defense').notNull().default(0),
+	ranking: integer('ranking').notNull().default(0)
+});
+
+export type UserPoints = typeof userPoints.$inferSelect;
+
+export const chatMessages = pgTable('chat_messages', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
+	channel: text('channel').notNull().default('global'), // 'global', 'alliance:ID'
+	content: text('content').notNull(),
+	type: text('type').notNull().default('text'), // 'text', 'image', 'report'
+	timestamp: timestamp('timestamp', { mode: 'date' }).notNull().defaultNow()
+});
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+
+export const privateMessages = pgTable('private_messages', {
+	id: text('id').primaryKey(),
+	senderId: text('sender_id')
+		.notNull()
+		.references(() => user.id),
+	receiverId: text('receiver_id')
+		.notNull()
+		.references(() => user.id),
+	content: text('content').notNull(),
+	read: integer('read').notNull().default(0), // 0 = unread, 1 = read
+	timestamp: timestamp('timestamp', { mode: 'date' }).notNull().defaultNow()
+});
+
+export type PrivateMessage = typeof privateMessages.$inferSelect;

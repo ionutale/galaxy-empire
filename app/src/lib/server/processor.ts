@@ -460,11 +460,80 @@ export async function processFleets(tickSeconds = 5) {
 	return { processed };
 }
 
+async function calculatePoints() {
+	try {
+		const allUsers = await db.select().from(table.user);
+
+		for (const u of allUsers) {
+			// 1. Calculate Building Points
+			const buildings = await db
+				.select()
+				.from(table.playerBuildings)
+				.where(eq(table.playerBuildings.userId, u.id));
+
+			let buildingPoints = 0;
+			for (const b of buildings) {
+				buildingPoints += b.level * 10;
+			}
+
+			// 2. Calculate Fleet Points
+			const ships = await db
+				.select()
+				.from(table.playerShips)
+				.where(eq(table.playerShips.userId, u.id));
+
+			let fleetPoints = 0;
+			for (const s of ships) {
+				fleetPoints += s.quantity;
+			}
+
+			// 3. Calculate Research Points
+			const research = await db
+				.select()
+				.from(table.playerResearch)
+				.where(eq(table.playerResearch.userId, u.id));
+
+			let researchPoints = 0;
+			for (const r of research) {
+				researchPoints += r.level * 20;
+			}
+
+			const total = buildingPoints + fleetPoints + researchPoints;
+
+			// Update or Insert
+			await db
+				.insert(table.userPoints)
+				.values({
+					userId: u.id,
+					total,
+					mines: buildingPoints,
+					fleets: fleetPoints,
+					defense: 0,
+					ranking: 0
+				})
+				.onConflictDoUpdate({
+					target: table.userPoints.userId,
+					set: {
+						total,
+						mines: buildingPoints,
+						fleets: fleetPoints
+					}
+				});
+		}
+	} catch (e) {
+		console.error('Failed to calculate points', e);
+	}
+}
+
 export async function processTick(tickSeconds = 5) {
 	const buildsRes = await processBuilds(tickSeconds);
 	const fleetsRes = await processFleets(tickSeconds);
 	const researchRes = await processResearch(tickSeconds);
 	const productionRes = await processProduction(tickSeconds);
+
+	// Calculate points every tick (or maybe less frequently in production)
+	await calculatePoints();
+
 	return {
 		builds: buildsRes.processed,
 		fleets: fleetsRes.processed,
