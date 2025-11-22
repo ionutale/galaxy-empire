@@ -12,7 +12,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { writable } from 'svelte/store';
 	import type { LayoutData } from './$types';
-	import { BUILDING_DATA, SHIP_TEMPLATES } from '$lib/data/gameData';
+	import { BUILDING_DATA, SHIP_TEMPLATES, RESEARCH_DATA } from '$lib/data/gameData';
 
 	export let data: LayoutData;
 
@@ -129,6 +129,26 @@
 	);
 	$: activeBuilds = builds.filter((b: any) => b.status === 'in-progress' || b.status === 'queued');
 	$: activeBuildsCount = activeBuilds.length;
+	$: processedBuilds = builds.filter((b: any) => b.status === 'completed');
+	$: fleets = state?.fleets || [];
+
+	function formatName(id: string) {
+		if (!id) return 'Unknown';
+		if (BUILDING_DATA[id]) return BUILDING_DATA[id].name;
+		if (SHIP_DATA[id]) return SHIP_DATA[id].name;
+		if (RESEARCH_DATA[id as keyof typeof RESEARCH_DATA]) return RESEARCH_DATA[id as keyof typeof RESEARCH_DATA].name;
+		return id;
+	}
+
+	function formatTime(seconds: number) {
+		if (seconds == null) return '-';
+		const h = Math.floor(seconds / 3600);
+		const m = Math.floor((seconds % 3600) / 60);
+		const s = Math.floor(seconds % 60);
+		if (h > 0) return `${h}h ${m}m ${s}s`;
+		if (m > 0) return `${m}m ${s}s`;
+		return `${s}s`;
+	}
 
 	function getRemainingTime(build: any, currentNow: number) {
 		if (build.status === 'completed') return 'Completed';
@@ -326,23 +346,69 @@
 		<div class="drawer-side z-50">
 			<label for="builds-drawer" class="drawer-overlay"></label>
 			<div class="menu min-h-full w-80 glass-panel p-4 text-slate-200">
-										<div class="text-xs opacity-50">
-											{new Date(build.createdAt).toLocaleDateString()}
+				<!-- Tabbed Drawer Content -->
+				<div role="tablist" class="tabs tabs-boxed bg-transparent mb-4">
+					<input type="radio" name="drawer_tabs" role="tab" class="tab" aria-label="Builds" checked />
+					<div role="tabpanel" class="tab-content pt-4">
+						<h2 class="text-xl font-bold text-neon-blue mb-4 flex items-center gap-2">
+							<span>🏗️</span> Construction Queue
+						</h2>
+						{#if !user}
+							<div class="p-4 text-center opacity-50">Log in to view queue</div>
+						{:else if (!builds || builds.length === 0) && (!processedBuilds || processedBuilds.length === 0)}
+							<div class="p-4 text-center opacity-50">Queue is empty</div>
+						{:else}
+							<!-- Active Builds -->
+							{#if builds && builds.length > 0}
+								<div class="space-y-2 mb-6">
+									<h3 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">In Progress</h3>
+									{#each builds as build (build.id)}
+										<div class="card bg-white/5 border border-white/10 p-3 relative overflow-hidden group">
+											<div class="flex justify-between items-start relative z-10">
+												<div>
+													<div class="font-bold text-sm">{formatName(build.buildingId || build.techId || build.shipTemplateId || 'Unknown')}</div>
+													<div class="text-xs opacity-70 flex items-center gap-1">
+														<span>⏱️</span>
+														<span class="font-mono">{formatTime(build.remainingSeconds)}</span>
+													</div>
+												</div>
+												<div class="badge badge-sm badge-primary">{build.type}</div>
+											</div>
+											<!-- Progress Bar -->
+											<div class="absolute bottom-0 left-0 h-1 bg-neon-blue/50 transition-all duration-1000" style="width: {((build.totalDuration - build.remainingSeconds) / build.totalDuration) * 100}%"></div>
 										</div>
+									{/each}
+								</div>
+							{/if}
+
+							<!-- History -->
+							{#if processedBuilds && processedBuilds.length > 0}
+								<div class="space-y-2">
+									<h3 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Completed</h3>
+									{#each processedBuilds as build (build.id)}
+										<div class="card bg-white/5 border border-white/5 p-2 opacity-70 hover:opacity-100 transition-opacity">
+											<div class="flex justify-between items-center">
+												<div class="text-sm">{formatName(build.buildingId || build.techId || build.shipTemplateId || 'Unknown')}</div>
+												<div class="text-xs text-green-400">Done</div>
+											</div>
+											<div class="text-[10px] text-slate-500">{new Date(build.processedAt).toLocaleString()}</div>
+										</div>
+									{/each}
+									
+									<div class="pt-2 flex justify-center">
+										<button class="btn btn-xs btn-ghost text-slate-500" on:click={loadMoreHistory}>
+											Load More
+										</button>
 									</div>
 								</div>
-							{/each}
-						</div>
-						
-						<div class="mt-4 text-center">
-							<button class="btn btn-xs btn-ghost text-slate-400" on:click={loadMoreHistory} disabled={loadingHistory}>
-								{#if loadingHistory}
-									<span class="loading loading-spinner loading-xs"></span>
-								{/if}
-								Load More
-							</button>
-						</div>
-					{/if}
+							{/if}
+						{/if}
+					</div>
+
+					<input type="radio" name="drawer_tabs" role="tab" class="tab" aria-label="Fleets" />
+					<div role="tabpanel" class="tab-content pt-4 h-full">
+						<FleetDrawer fleets={fleets || []} />
+					</div>
 				</div>
 			</div>
 		</div>
