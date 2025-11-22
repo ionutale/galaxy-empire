@@ -46,8 +46,14 @@
 		fetchFleets();
 		interval = setInterval(() => {
 			now = Date.now();
-			// Optional: refresh fleets periodically to catch status changes
-			// if (now % 5000 < 1000) fetchFleets(); 
+			// Trigger reactivity for progress bars by re-assigning activeFleets if needed, 
+			// but 'now' is used in getProgress, so we just need to make sure getProgress is reactive.
+			// Since getProgress is a function called in the template, updating 'now' (which is a top-level let) 
+			// should trigger re-render of the block if Svelte tracks it.
+			// However, in Svelte 3/4/5, we might need to force update or make getProgress reactive statement.
+			// Better: activeFleets = activeFleets; to force re-evaluation of the each block?
+			// Or just rely on 'now' being updated.
+			activeFleets = [...activeFleets]; // Force update
 		}, 1000);
 	});
 

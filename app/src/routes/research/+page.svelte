@@ -61,12 +61,12 @@
 	}
 
 	function canAfford(cost: any) {
-		if (!state) return false;
+		if (!state || !state.resources) return false;
 		return (
-			state.metal >= (cost.metal || 0) &&
-			state.crystal >= (cost.crystal || 0) &&
-			state.fuel >= (cost.deuterium || 0) &&
-			state.credits >= (cost.credits || 0)
+			state.resources.metal >= (cost.metal || 0) &&
+			state.resources.crystal >= (cost.crystal || 0) &&
+			state.resources.fuel >= (cost.deuterium || 0) &&
+			state.resources.credits >= (cost.credits || 0)
 		);
 	}
 </script>

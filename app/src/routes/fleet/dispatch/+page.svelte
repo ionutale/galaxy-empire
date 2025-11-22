@@ -90,7 +90,7 @@
 
 	$: arrivalTime = new Date(Date.now() + travelSeconds * 1000);
 
-	async function dispatchFleet() {
+	async function dispatchFleet(redirect: boolean = true) {
 		submitting = true;
 		error = '';
 
@@ -127,7 +127,14 @@
 		});
 
 		if (res.ok) {
-			goto('/fleet');
+			import('$lib/stores/toast').then((m) => m.pushToast('Fleet dispatched successfully', 'success'));
+			if (redirect) {
+				goto('/fleet');
+			} else {
+				// Reset form or just stay? Let's reset selection to avoid double send
+				ships.forEach((s) => (selectedShips[s.shipTemplateId] = 0));
+				cargo = { metal: 0, crystal: 0, fuel: 0 };
+			}
 		} else {
 			const data = await res.json();
 			error = data.error || 'Failed to dispatch fleet';
@@ -345,16 +352,28 @@
             {:else if Object.keys(selectedShips).every(k => !selectedShips[k])}
                 <div class="text-error text-sm">Select at least one ship.</div>
             {/if}
-			<button
-				class="btn btn-lg bg-neon-blue text-black border-neon-blue hover:bg-neon-blue/80 hover:border-neon-blue font-bold tracking-wide shadow-[0_0_15px_rgba(0,243,255,0.4)] w-full md:w-auto"
-				on:click={dispatchFleet}
-				disabled={submitting || totalCargoSelected > maxCargo || Object.keys(selectedShips).every(k => !selectedShips[k])}
-			>
-				{#if submitting}
-					<span class="loading loading-spinner"></span>
-				{/if}
-				Dispatch Fleet
-			</button>
+			<div class="flex gap-2 w-full md:w-auto">
+				<button
+					class="btn btn-lg btn-outline border-neon-blue text-neon-blue hover:bg-neon-blue/10 hover:border-neon-blue font-bold tracking-wide w-full md:w-auto"
+					on:click={() => dispatchFleet(false)}
+					disabled={submitting || totalCargoSelected > maxCargo || Object.keys(selectedShips).every(k => !selectedShips[k])}
+				>
+					{#if submitting}
+						<span class="loading loading-spinner"></span>
+					{/if}
+					Dispatch
+				</button>
+				<button
+					class="btn btn-lg bg-neon-blue text-black border-neon-blue hover:bg-neon-blue/80 hover:border-neon-blue font-bold tracking-wide shadow-[0_0_15px_rgba(0,243,255,0.4)] w-full md:w-auto"
+					on:click={() => dispatchFleet(true)}
+					disabled={submitting || totalCargoSelected > maxCargo || Object.keys(selectedShips).every(k => !selectedShips[k])}
+				>
+					{#if submitting}
+						<span class="loading loading-spinner"></span>
+					{/if}
+					Dispatch & View Fleet
+				</button>
+			</div>
 		</div>
 	{/if}
 </div>
