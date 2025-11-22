@@ -121,30 +121,23 @@
 			{@const affordable = canAfford(t, q)}
 
 			<div class="glass-panel-unified p-0 overflow-hidden border border-white/10 hover:border-neon-blue/50 transition-colors duration-300 group">
-				<div class="relative h-32 bg-black/50 overflow-hidden">
-					<img 
-						src={`/images/ships/ship_${t.id}.png`} 
+				<div class="relative h-32 bg-black/50 flex items-center justify-center overflow-hidden group-hover:border-b group-hover:border-neon-blue/30 transition-colors">
+					<!-- Ship Image with Fallback -->
+					<img
+						src="/images/ships/ship_{t.id}.png"
 						alt={t.name}
-						class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500"
+						class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
 						on:error={(e) => {
-							// Fallback to emoji if image fails
-							const img = e.currentTarget as HTMLImageElement;
-							img.style.display = 'none';
-							const fallback = img.nextElementSibling as HTMLElement;
-							if (fallback) fallback.style.display = 'flex';
+							const target = e.currentTarget;
+							if (target instanceof HTMLImageElement) {
+								target.style.display = 'none';
+								const next = target.nextElementSibling;
+								if (next instanceof HTMLElement) {
+									next.style.display = 'flex';
+								}
+							}
 						}}
 					/>
-					<div class="hidden absolute inset-0 items-center justify-center text-4xl bg-white/5">
-						{#if t.id === 'fighter'}🚀
-						{:else if t.id === 'cruiser'}🛸
-						{:else if t.id === 'battleship'}⚔️
-						{:else if t.id === 'carrier'}🛳️
-						{:else if t.id === 'transport'}📦
-						{:else if t.id === 'colonyShip'}🌱
-						{:else if t.id === 'spyProbe'}👁️
-						{:else if t.id === 'recycler'}♻️
-						{:else}🛸{/if}
-					</div>
 					<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3">
 						<h3 class="text-lg font-bold font-display text-white group-hover:text-neon-blue transition-colors">{t.name}</h3>
 					</div>
