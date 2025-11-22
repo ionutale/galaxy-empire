@@ -3,6 +3,7 @@
 	import { RESEARCH_DATA } from '$lib/data/gameData';
 	import ResearchIcon from '$lib/icons/ResearchIcon.svelte';
 	import { fade } from 'svelte/transition';
+	import { formatDuration } from '$lib/utils';
 
 	let state: any = null;
 	let error = '';
@@ -119,7 +120,7 @@
 								{#if cost.deuterium}<span class="badge badge-outline border-emerald-500/50 text-emerald-200 text-xs">Fuel: {cost.deuterium}</span>{/if}
 
 							</div>
-							<div class="text-xs text-slate-500 mt-2 font-mono text-right">Time: <span class="text-white">{time}s</span></div>
+							<div class="text-xs text-slate-500 mt-2 font-mono text-right">Time: <span class="text-white">{formatDuration(time)}</span></div>
 						</div>
 
 						<div class="mt-4 flex justify-end">

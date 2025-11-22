@@ -12,7 +12,7 @@
 	let poll: ReturnType<typeof setInterval> | null = null;
 
 	async function load() {
-		loading = true;
+		if (!state) loading = true;
 		usingDemo = false;
 		try {
 			let res = await fetch('/api/player/state');
@@ -25,10 +25,13 @@
 				const body = await res.json();
 				state = body.state ?? body;
 			} else {
-				state = null;
+				// Only reset state if we really failed and had no state? 
+				// Or maybe keep old state on error to avoid flicker?
+				// For now, let's just keep old state if fetch fails to avoid UI jumping
+				if (!state) state = null;
 			}
 		} catch (e) {
-			state = null;
+			if (!state) state = null;
 		} finally {
 			loading = false;
 		}

@@ -142,7 +142,66 @@
 		submitting = false;
 	}
 
-	onMount(loadData);
+	// Templates
+	let templates: Record<string, Record<string, number>> = {};
+	let newTemplateName = '';
+
+	function loadTemplates() {
+		try {
+			const saved = localStorage.getItem('ge:fleet_templates');
+			if (saved) {
+				templates = JSON.parse(saved);
+			}
+		} catch {}
+	}
+
+	function saveTemplate() {
+		if (!newTemplateName.trim()) return;
+		
+		// Filter out 0 count ships
+		const templateShips: Record<string, number> = {};
+		for (const [id, count] of Object.entries(selectedShips)) {
+			if (count > 0) templateShips[id] = count;
+		}
+
+		if (Object.keys(templateShips).length === 0) {
+			import('$lib/stores/toast').then((m) => m.pushToast('Cannot save empty template', 'error'));
+			return;
+		}
+
+		templates[newTemplateName.trim()] = templateShips;
+		localStorage.setItem('ge:fleet_templates', JSON.stringify(templates));
+		newTemplateName = '';
+		import('$lib/stores/toast').then((m) => m.pushToast('Template saved', 'success'));
+	}
+
+	function deleteTemplate(name: string) {
+		delete templates[name];
+		templates = templates; // trigger reactivity
+		localStorage.setItem('ge:fleet_templates', JSON.stringify(templates));
+	}
+
+	function applyTemplate(name: string) {
+		const template = templates[name];
+		if (!template) return;
+
+		// Reset current selection
+		Object.keys(selectedShips).forEach(k => selectedShips[k] = 0);
+
+		// Apply template, capped by available ships
+		for (const [id, count] of Object.entries(template)) {
+			const ship = ships.find(s => s.shipTemplateId === id);
+			if (ship) {
+				selectedShips[id] = Math.min(ship.quantity, count);
+			}
+		}
+		import('$lib/stores/toast').then((m) => m.pushToast(`Template "${name}" loaded`, 'info'));
+	}
+
+	onMount(() => {
+		loadData();
+		loadTemplates();
+	});
 </script>
 
 <div class="mx-auto max-w-4xl p-6">
@@ -292,6 +351,55 @@
 			<!-- Right Column: Fleet Composition -->
 			<div class="glass-panel p-6 rounded-xl">
 				<h2 class="text-xl font-bold font-display text-neon-blue mb-4 tracking-wide">Select Ships</h2>
+				
+				<!-- Templates Section -->
+				<div class="mb-6 p-4 bg-white/5 rounded-lg border border-white/10">
+					<h3 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">Fleet Templates</h3>
+					
+					<div class="flex gap-2 mb-4">
+						<input 
+							type="text" 
+							bind:value={newTemplateName} 
+							placeholder="Template Name" 
+							class="input input-sm input-bordered bg-black/30 border-white/10 text-white focus:border-neon-blue w-full"
+						/>
+						<button 
+							class="btn btn-sm btn-square btn-outline border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black"
+							on:click={saveTemplate}
+							disabled={!newTemplateName.trim()}
+							title="Save current selection as template"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+							</svg>
+						</button>
+					</div>
+
+					{#if Object.keys(templates).length > 0}
+						<div class="flex flex-wrap gap-2">
+							{#each Object.keys(templates) as name}
+								<div class="join">
+									<button 
+										class="btn btn-xs join-item btn-outline border-white/20 text-slate-300 hover:bg-white/10 hover:text-white hover:border-white/30"
+										on:click={() => applyTemplate(name)}
+									>
+										{name}
+									</button>
+									<button 
+										class="btn btn-xs join-item btn-outline border-white/20 text-error hover:bg-error/20 hover:border-error/50"
+										on:click={() => deleteTemplate(name)}
+										title="Delete template"
+									>
+										×
+									</button>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<div class="text-xs text-slate-500 italic">No saved templates</div>
+					{/if}
+				</div>
+
 				<div class="max-h-[600px] space-y-3 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
 					{#each ships as ship}
 						<div class="flex items-center justify-between rounded-lg bg-white/5 border border-white/5 p-3 hover:bg-white/10 transition-colors">
