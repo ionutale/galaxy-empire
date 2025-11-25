@@ -7,7 +7,8 @@ export async function GET({ params, locals }) {
   const user = locals.user;
   if (!user) return json({ error: 'Unauthorized' }, { status: 401 });
 
-  const report = await db
+  // Try combat reports
+  let report = await db
     .select()
     .from(table.combatReports)
     .where(and(
@@ -16,7 +17,23 @@ export async function GET({ params, locals }) {
     ))
     .limit(1);
 
-  if (!report.length) return json({ error: 'Not found' }, { status: 404 });
+  if (report.length) {
+    return json({ ...report[0], type: 'combat' });
+  }
 
-  return json(report[0]);
+  // Try espionage reports
+  const spyReport = await db
+    .select()
+    .from(table.espionageReports)
+    .where(and(
+      eq(table.espionageReports.id, params.id),
+      or(eq(table.espionageReports.userId, user.id), eq(table.espionageReports.targetId, user.id))
+    ))
+    .limit(1);
+
+  if (spyReport.length) {
+    return json({ ...spyReport[0], type: 'espionage' });
+  }
+
+  return json({ error: 'Not found' }, { status: 404 });
 }

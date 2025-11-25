@@ -31,7 +31,7 @@
 	function getMissionColor(mission: string) {
 		switch (mission) {
 			case 'attack': return 'text-red-400';
-			case 'transport': return 'text-green-400';
+			case 'transport': return 'text-emerald-400';
 			case 'espionage': return 'text-yellow-400';
 			case 'colonize': return 'text-blue-400';
 			case 'recycle': return 'text-purple-400';
@@ -62,9 +62,9 @@
 			<p>No active fleets</p>
 		</div>
 	{:else}
-		<div class="flex-1 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-white/10">
+		<div class="flex-1 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-white/10 pr-2">
 			{#each fleets as fleet (fleet.id)}
-				<div class="bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 transition-colors" transition:slide>
+				<div class="relative overflow-hidden rounded-lg bg-white/5 border border-white/10 p-3 hover:bg-white/10 transition-colors group" transition:slide>
 					<div class="flex justify-between items-start mb-2">
 						<div class="flex items-center gap-2">
 							<span class="text-lg">{getMissionIcon(fleet.mission)}</span>
@@ -73,7 +73,7 @@
 									{fleet.mission}
 								</div>
 								<div class="text-xs text-slate-400">
-									Target: {fleet.targetSystem}:{fleet.targetPlanet}
+									Target: <span class="text-white font-mono">{fleet.targetSystem}:{fleet.targetPlanet}</span>
 								</div>
 							</div>
 						</div>
@@ -81,21 +81,30 @@
 							<div class="font-mono text-sm font-bold text-white">
 								{getEta(fleet)}
 							</div>
-							<div class="text-[10px] text-slate-500 uppercase">
+							<div class="text-[10px] text-slate-500 uppercase tracking-widest">
 								{fleet.status}
 							</div>
 						</div>
 					</div>
 
 					<!-- Composition Preview -->
-					<div class="flex flex-wrap gap-1 mt-2">
-						{#each Object.entries(fleet.composition || {}) as [shipId, count]}
-							<div class="badge badge-xs badge-ghost gap-1 text-[10px] border-white/10">
-								<span>{count}</span>
-								<span class="opacity-70">{shipId}</span>
-							</div>
-						{/each}
-					</div>
+					{#if fleet.composition && Object.keys(fleet.composition).length > 0}
+						<div class="flex flex-wrap gap-1 mt-2 pt-2 border-t border-white/5">
+							{#each Object.entries(fleet.composition) as [shipId, count]}
+								<div class="badge badge-xs badge-ghost gap-1 text-[10px] border-white/10 bg-black/30">
+									<span class="font-mono text-neon-blue">{count}</span>
+									<span class="opacity-70">{shipId}</span>
+								</div>
+							{/each}
+						</div>
+					{/if}
+					
+					<!-- Progress Bar (Approximate based on status) -->
+					{#if fleet.status === 'active'}
+						<div class="absolute bottom-0 left-0 h-0.5 w-full bg-white/5">
+							<div class="h-full bg-neon-blue/30 w-1/2 animate-pulse"></div>
+						</div>
+					{/if}
 				</div>
 			{/each}
 		</div>

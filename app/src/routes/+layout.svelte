@@ -7,32 +7,23 @@
 	import ChatBox from '$lib/components/ChatBox.svelte';
 	import ResourceBar from '$lib/components/ResourceBar.svelte';
 	import FleetDrawer from '$lib/components/FleetDrawer.svelte';
+	import BuildQueue from '$lib/components/BuildQueue.svelte';
 
 	import Toast from '$lib/components/Toast.svelte';
 	import favicon from '$lib/assets/favicon.svg';
 	import { writable } from 'svelte/store';
 	import type { LayoutData } from './$types';
-	import { BUILDING_DATA, SHIP_TEMPLATES, RESEARCH_DATA } from '$lib/data/gameData';
 
 	export let data: LayoutData;
 
 	const session = writable(data);
 	setContext('session', session);
 
-	const SHIP_DATA = SHIP_TEMPLATES.reduce(
-		(acc, s) => {
-			acc[s.shipId] = s;
-			return acc;
-		},
-		{} as Record<string, any>
-	);
-
 	$: session.set(data);
 	$: user = $session.user;
 
 	const year = new Date().getFullYear();
 	let theme = 'light';
-	const themes = ['light', 'dark'] as const;
 	let drawerOpen = false;
 	let buildsDrawerOpen = false;
 	let state: any = null;
@@ -50,7 +41,6 @@
 
 	function applyTheme(t: string) {
 		theme = t;
-		// set data-theme on html element (daisyUI reads this)
 		try {
 			document.documentElement.setAttribute('data-theme', t);
 		} catch (e) {}
@@ -91,7 +81,6 @@
 				now = Date.now();
 			}, 1000);
 
-			// Game loop: tick the server every 5 seconds to process builds/fleets
 			const tickInterval = setInterval(async () => {
 				try {
 					const res = await fetch('/api/demo/process/tick', {
@@ -101,7 +90,6 @@
 					});
 					if (res.ok) {
 						const data = await res.json();
-						// if anything was processed, reload state to reflect changes
 						if (
 							(data.builds && data.builds.length > 0) ||
 							(data.fleets && data.fleets.length > 0)
@@ -124,95 +112,24 @@
 	});
 
 	$: isPhoneDemo = $page.url.pathname.startsWith('/demo/phone');
-	$: builds = [...(state?.builds ?? [])]
-		.map((b) => {
-			if (b.status === 'completed') return { ...b, remainingSeconds: 0 };
-			if (b.status === 'queued') return { ...b, remainingSeconds: b.durationSeconds };
-
-			const startTime = new Date(b.createdAt).getTime();
-			const endTime = startTime + b.durationSeconds * 1000;
-			const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
-			return { ...b, remainingSeconds: remaining };
-		})
-		.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-	$: activeBuilds = builds.filter((b: any) => b.status === 'in-progress' || b.status === 'queued');
-	$: activeBuildsCount = activeBuilds.length;
-	$: processedBuilds = builds.filter((b: any) => b.status === 'completed');
+	
+	// Builds are passed raw to BuildQueue, which handles processing
+	$: builds = state?.builds || [];
+	
+	// Active builds count for the badge
+	$: activeBuildsCount = builds.filter((b: any) => b.status === 'in-progress' || b.status === 'queued').length;
+	
 	$: fleets = state?.fleets || [];
 
-	function formatName(id: string) {
-		if (!id) return 'Unknown';
-		if (BUILDING_DATA[id]) return BUILDING_DATA[id].name;
-		if (SHIP_DATA[id]) return SHIP_DATA[id].name;
-		if (RESEARCH_DATA[id as keyof typeof RESEARCH_DATA]) return RESEARCH_DATA[id as keyof typeof RESEARCH_DATA].name;
-		return id;
-	}
-
-	function formatTime(seconds: number) {
-		if (seconds == null) return '-';
-		const h = Math.floor(seconds / 3600);
-		const m = Math.floor((seconds % 3600) / 60);
-		const s = Math.floor(seconds % 60);
-		if (h > 0) return `${h}h ${m}m ${s}s`;
-		if (m > 0) return `${m}m ${s}s`;
-		return `${s}s`;
-	}
-
-	function getRemainingTime(build: any, currentNow: number) {
-		if (build.status === 'completed') return 'Completed';
-
-		let remaining = 0;
-		if (build.status === 'queued') {
-			remaining = build.durationSeconds;
-		} else {
-			const startTime = new Date(build.createdAt).getTime();
-			const endTime = startTime + build.durationSeconds * 1000;
-			remaining = Math.max(0, Math.floor((endTime - currentNow) / 1000));
-			if (remaining <= 0) return 'Finishing...';
-		}
-
-		const hours = Math.floor(remaining / 3600);
-		const minutes = Math.floor((remaining % 3600) / 60);
-		const seconds = remaining % 60;
-
-		if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
-		if (minutes > 0) return `${minutes}m ${seconds}s`;
-		return `${seconds}s`;
-	}
-
-	async function cancelBuild(buildId: string) {
-		try {
-			const res = await fetch('/api/demo/builds/cancel', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ buildId })
-			});
-			if (res.ok) {
-				const body = await res.json();
-				if (body.state) {
-					state = body.state;
-				} else {
-					await loadState();
-				}
-			}
-		} catch (e) {
-			console.error('Failed to cancel build', e);
-		}
-	}
-
 	let historyPage = 1;
-	let loadingHistory = false;
 
 	async function loadMoreHistory() {
-		loadingHistory = true;
 		historyPage++;
 		try {
 			const res = await fetch(`/api/player/builds/history?page=${historyPage}&limit=10`);
 			if (res.ok) {
 				const newHistory = await res.json();
 				if (newHistory.length > 0) {
-					// Map history to match build structure
 					const mappedHistory = newHistory.map((b: any) => ({
 						id: b.id,
 						type: b.type,
@@ -224,21 +141,16 @@
 						createdAt: b.processedAt,
 						durationSeconds: 0,
 						remainingSeconds: 0,
-						level: b.level
+						level: b.level,
+						processedAt: b.processedAt
 					}));
 					
 					// Append to state.builds
-					// We need to be careful not to duplicate if state reloads
-					// For now, just append. If state reloads, it resets to top 10, so we might lose these.
-					// Ideally, state should handle this, but for "Load More" transient appending is often acceptable.
-					// Or we keep a separate `historyBuilds` array and merge it.
 					state.builds = [...state.builds, ...mappedHistory];
 				}
 			}
 		} catch (e) {
 			console.error('Failed to load history', e);
-		} finally {
-			loadingHistory = false;
 		}
 	}
 </script>
@@ -354,82 +266,29 @@
 		{/if}
 		<div class="drawer-side z-50">
 			<label for="builds-drawer" class="drawer-overlay"></label>
-			<div class="menu min-h-full w-80 glass-panel p-4 text-slate-200">
+			<div class="menu min-h-full w-80 glass-panel p-0 text-slate-200 overflow-hidden flex flex-col">
 				<!-- Tabbed Drawer Content -->
-				<!-- Tabbed Drawer Content -->
-				<div role="tablist" class="tabs tabs-bordered grid grid-cols-2 mb-4">
+				<div role="tablist" class="tabs tabs-lifted tabs-lg grid grid-cols-2 bg-black/20">
 					<input 
 						type="radio" 
 						name="drawer_tabs" 
 						role="tab" 
-						class="tab text-slate-400 checked:text-neon-blue checked:border-neon-blue font-bold tracking-wide" 
+						class="tab text-slate-400 checked:text-neon-blue checked:bg-transparent checked:border-b-2 checked:border-neon-blue font-bold tracking-wide h-14" 
 						aria-label="Builds" 
 						checked 
 					/>
-					<div role="tabpanel" class="tab-content pt-4 border-none">
-						<h2 class="text-xl font-bold text-neon-blue mb-4 flex items-center gap-2">
-							<span>🏗️</span> Construction Queue
-						</h2>
-						{#if !user}
-							<div class="p-4 text-center opacity-50">Log in to view queue</div>
-						{:else if (!builds || builds.length === 0) && (!processedBuilds || processedBuilds.length === 0)}
-							<div class="p-4 text-center opacity-50">Queue is empty</div>
-						{:else}
-							<!-- Active Builds -->
-							{#if activeBuilds && activeBuilds.length > 0}
-								<div class="space-y-2 mb-6">
-									<h3 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">In Progress</h3>
-									{#each activeBuilds as build (build.id)}
-										<div class="card bg-white/5 border border-white/10 p-3 relative overflow-hidden group">
-											<div class="flex justify-between items-start relative z-10">
-												<div>
-													<div class="font-bold text-sm">{formatName(build.buildingId || build.techId || build.shipTemplateId || 'Unknown')}</div>
-													<div class="text-xs opacity-70 flex items-center gap-1">
-														<span>⏱️</span>
-														<span class="font-mono">{formatTime(build.remainingSeconds)}</span>
-													</div>
-												</div>
-												<div class="badge badge-sm badge-primary">{build.type}</div>
-											</div>
-											<!-- Progress Bar -->
-											<div class="absolute bottom-0 left-0 h-1 bg-neon-blue/50 transition-all duration-1000" style="width: {((build.totalDuration - build.remainingSeconds) / build.totalDuration) * 100}%"></div>
-										</div>
-									{/each}
-								</div>
-							{/if}
-
-							<!-- History -->
-							{#if processedBuilds && processedBuilds.length > 0}
-								<div class="space-y-2">
-									<h3 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Completed</h3>
-									{#each processedBuilds as build (build.id)}
-										<div class="card bg-white/5 border border-white/5 p-2 opacity-70 hover:opacity-100 transition-opacity">
-											<div class="flex justify-between items-center">
-												<div class="text-sm">{formatName(build.buildingId || build.techId || build.shipTemplateId || 'Unknown')}</div>
-												<div class="text-xs text-green-400">Done</div>
-											</div>
-											<div class="text-[10px] text-slate-500">{new Date(build.processedAt).toLocaleString()}</div>
-										</div>
-									{/each}
-									
-									<div class="pt-2 flex justify-center">
-										<button class="btn btn-xs btn-ghost text-slate-500" on:click={loadMoreHistory}>
-											Load More
-										</button>
-									</div>
-								</div>
-							{/if}
-						{/if}
+					<div role="tabpanel" class="tab-content h-[calc(100vh-3.5rem)] bg-transparent border-none p-0 overflow-hidden">
+						<BuildQueue {builds} {user} on:loadMore={loadMoreHistory} />
 					</div>
 
 					<input 
 						type="radio" 
 						name="drawer_tabs" 
 						role="tab" 
-						class="tab text-slate-400 checked:text-neon-blue checked:border-neon-blue font-bold tracking-wide" 
+						class="tab text-slate-400 checked:text-neon-blue checked:bg-transparent checked:border-b-2 checked:border-neon-blue font-bold tracking-wide h-14" 
 						aria-label="Fleets" 
 					/>
-					<div role="tabpanel" class="tab-content pt-4 h-full border-none">
+					<div role="tabpanel" class="tab-content h-[calc(100vh-3.5rem)] bg-transparent border-none p-0 overflow-hidden">
 						<FleetDrawer fleets={fleets || []} />
 					</div>
 				</div>
