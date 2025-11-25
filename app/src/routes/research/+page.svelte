@@ -83,8 +83,10 @@
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 			{#each Object.entries(RESEARCH_DATA) as [id, def]}
 				{@const level = getLevel(id)}
-				{@const cost = getCost(id, level)}
-				{@const time = getTime(id, level)}
+				{@const queued = state?.builds?.filter((b: any) => b.techId === id && b.status === 'in-progress').length ?? 0}
+				{@const nextLevel = level + queued}
+				{@const cost = getCost(id, nextLevel)}
+				{@const time = getTime(id, nextLevel)}
 				{@const affordable = canAfford(cost)}
 				
 				<div class="glass-panel p-0 rounded-xl overflow-hidden border border-white/10 hover:border-neon-purple/50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] group">
@@ -108,7 +110,7 @@
 						<div class="text-sm bg-white/5 rounded-lg p-3 border border-white/5">
 							<div class="font-semibold mb-1 text-slate-300 text-xs uppercase tracking-wide">Next Level Effect</div>
 							<div class="text-neon-blue font-mono text-xs">
-								{typeof def.effect === 'function' ? def.effect(level + 1) : def.effect}
+								{typeof def.effect === 'function' ? def.effect(nextLevel + 1) : def.effect}
 							</div>
 						</div>
 
@@ -132,7 +134,7 @@
 								{#if researching.has(id)}
 									<span class="loading loading-spinner loading-xs"></span>
 								{:else}
-									Research
+									Research (Lvl {nextLevel + 1})
 								{/if}
 							</button>
 						</div>

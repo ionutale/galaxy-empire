@@ -39,7 +39,8 @@
 	}
 
 	// computed helper used by modal template
-	$: nextLevel = selectedBuilding ? (state?.buildings?.[selectedBuilding] ?? 0) + 1 : 1;
+	$: queuedBuilds = selectedBuilding && state?.builds ? state.builds.filter((b: any) => b.buildingId === selectedBuilding && b.status === 'in-progress').length : 0;
+	$: nextLevel = selectedBuilding ? (state?.buildings?.[selectedBuilding] ?? 0) + 1 + queuedBuilds : 1;
 	$: resources = state?.resources ?? { metal: 0, crystal: 0, fuel: 0, credits: 0 };
 	$: upgradeCost = selectedBuilding ? BUILDING_DATA[selectedBuilding]?.cost?.(nextLevel) : null;
 	$: canAffordUpgrade =
@@ -306,7 +307,7 @@
 							on:click={() => {
 								upgradeBuilding(selectedBuilding!);
 								closeModal();
-							}}>Upgrade</button
+							}}>Upgrade (Lvl {nextLevel})</button
 						>
 						{#if !canAffordUpgrade}
 							<div class="text-error text-xs font-bold">Insufficient resources</div>
