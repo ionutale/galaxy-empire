@@ -65,6 +65,17 @@ export async function generateGalaxy(width = 100, height = 100, systemCount = 50
         resources
       });
     }
+
+    // Add a Nebula to every system (at the end of orbit)
+    const nebulaIndex = planetCount + 1;
+    planets.push({
+      id: `p-${id}-${nebulaIndex}`,
+      systemId: id,
+      orbitIndex: nebulaIndex,
+      name: `${name} Nebula`,
+      type: 'nebula',
+      resources: { metal: 0, crystal: 0, fuel: 0 } // Nebulas don't have passive production usually
+    });
   }
 
   // Create NPC user if not exists

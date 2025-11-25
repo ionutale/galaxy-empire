@@ -533,6 +533,91 @@ export async function processFleets(tickSeconds = 5) {
 
 				processed.push({ ...f, status: 'arrived', intelLevel });
 				continue;
+			} else if (f.mission === 'explore') {
+				// Exploration Logic
+				const outcomeRoll = Math.random();
+				let outcome = 'nothing';
+				let loot: any = {};
+				let foundShips: Record<string, number> = {};
+
+				if (outcomeRoll < 0.3) {
+					// 30% chance: Find Resources
+					outcome = 'resources';
+					loot = {
+						metal: Math.floor(Math.random() * 5000) + 1000,
+						crystal: Math.floor(Math.random() * 3000) + 500,
+						fuel: Math.floor(Math.random() * 1000) + 100
+					};
+				} else if (outcomeRoll < 0.4) {
+					// 10% chance: Find Ships (Abandoned)
+					outcome = 'ships';
+					const shipTypes = ['fighter', 'cruiser', 'transportSmall'];
+					const type = shipTypes[Math.floor(Math.random() * shipTypes.length)];
+					const count = Math.floor(Math.random() * 5) + 1;
+					foundShips[type] = count;
+				} else if (outcomeRoll < 0.5) {
+					// 10% chance: Pirates! (Combat)
+					// For simplicity, just lose some ships or return damaged.
+					// Let's say 10% damage to fleet.
+					outcome = 'pirates';
+					// Apply damage logic here if desired, or just flavor text.
+				} else {
+					// 50% chance: Nothing found
+					outcome = 'nothing';
+				}
+
+				// If ships found, add to fleet composition for return
+				let finalComposition = { ...(f.composition as Record<string, number>) };
+				if (outcome === 'ships') {
+					for (const [type, count] of Object.entries(foundShips)) {
+						finalComposition[type] = (finalComposition[type] || 0) + count;
+					}
+				}
+
+				// Cap loot based on capacity
+				let maxCapacity = 0;
+				for (const [shipId, count] of Object.entries(finalComposition)) {
+					const template = SHIP_TEMPLATES.find(t => t.shipId === shipId);
+					if (template) maxCapacity += (template.capacity || 0) * count;
+				}
+
+				let totalLoot = (loot.metal || 0) + (loot.crystal || 0) + (loot.fuel || 0);
+				if (totalLoot > maxCapacity) {
+					const ratio = maxCapacity / totalLoot;
+					loot.metal = Math.floor((loot.metal || 0) * ratio);
+					loot.crystal = Math.floor((loot.crystal || 0) * ratio);
+					loot.fuel = Math.floor((loot.fuel || 0) * ratio);
+				}
+
+				// Save Report (using espionage report table for now or a new one? Let's use chatMessages for "Log" or just rely on return cargo)
+				// Ideally we should have an 'exploration_reports' table.
+				// For now, let's send a private message to the user with the result.
+				await db.insert(table.privateMessages).values({
+					id: crypto.randomUUID(),
+					senderId: 'system',
+					receiverId: f.userId,
+					content: `Exploration Report [${f.targetSystem}:${f.targetPlanet}]: Outcome: ${outcome}. ` +
+						(outcome === 'resources' ? `Found resources: ${JSON.stringify(loot)}` : '') +
+						(outcome === 'ships' ? `Found ships: ${JSON.stringify(foundShips)}` : '') +
+						(outcome === 'pirates' ? `Encountered pirates! Fleet escaped with minor damage.` : '') +
+						(outcome === 'nothing' ? `The nebula was empty.` : ''),
+					timestamp: now
+				});
+
+				// Return fleet
+				const returnTime = new Date(now.getTime() + 60000);
+				await db
+					.update(table.fleets)
+					.set({
+						status: 'returning',
+						returnTime: returnTime,
+						composition: finalComposition,
+						cargo: loot
+					})
+					.where(eq(table.fleets.id, f.id));
+
+				processed.push({ ...f, status: 'arrived', outcome });
+				continue;
 			}
 
 			// Return fleet

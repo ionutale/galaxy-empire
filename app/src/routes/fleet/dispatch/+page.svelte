@@ -247,6 +247,7 @@
 							<option value="spy">Espionage</option>
 							<option value="colonize">Colonize</option>
 							<option value="recycle">Recycle</option>
+							<option value="explore">Explore Nebula</option>
 						</select>
 					</div>
 
