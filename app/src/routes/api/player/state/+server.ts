@@ -129,6 +129,36 @@ export const GET: RequestHandler = async (event) => {
 
 		// ... (rest of build processing)
 
+		const fleets = await db
+			.select()
+			.from(table.fleets)
+			.where(eq(table.fleets.userId, user.id));
+
+		builds = [
+			...rawBuilds.map((b) => ({
+				id: b.id,
+				type: b.type as 'building' | 'ship',
+				buildingId: b.buildingId,
+				shipTemplateId: b.shipTemplateId,
+				techId: b.techId,
+				createdAt: b.startedAt.toISOString(),
+				durationSeconds: b.totalDuration,
+				status: 'in-progress' as const,
+				level: null
+			})),
+			...processedBuilds.map((b) => ({
+				id: b.id,
+				type: b.type as 'building' | 'ship',
+				buildingId: b.buildingId,
+				shipTemplateId: b.shipTemplateId,
+				techId: b.techId,
+				createdAt: b.processedAt.toISOString(),
+				durationSeconds: 0,
+				status: 'completed' as const,
+				level: b.level
+			}))
+		];
+
 		const state = {
 			playerId: user.id,
 			username: user.username,
@@ -148,6 +178,7 @@ export const GET: RequestHandler = async (event) => {
 			},
 			ships,
 			builds,
+			fleets,
 			buildings,
 			research
 		};

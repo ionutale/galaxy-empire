@@ -4,12 +4,28 @@
 
 	export let fleets: any[] = [];
 	
+	let now = Date.now();
+
+	onMount(() => {
+		const interval = setInterval(() => {
+			now = Date.now();
+		}, 1000);
+		return () => clearInterval(interval);
+	});
+
 	function formatTime(seconds: number) {
 		if (seconds < 0) return '00:00:00';
 		const h = Math.floor(seconds / 3600);
 		const m = Math.floor((seconds % 3600) / 60);
 		const s = Math.floor(seconds % 60);
 		return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+	}
+
+	function getEta(fleet: any) {
+		if (!fleet.arrivalTime) return 'Unknown';
+		const arrival = new Date(fleet.arrivalTime).getTime();
+		const seconds = Math.max(0, Math.floor((arrival - now) / 1000));
+		return formatTime(seconds);
 	}
 
 	function getMissionColor(mission: string) {
@@ -63,7 +79,7 @@
 						</div>
 						<div class="text-right">
 							<div class="font-mono text-sm font-bold text-white">
-								{formatTime(fleet.etaSeconds)}
+								{getEta(fleet)}
 							</div>
 							<div class="text-[10px] text-slate-500 uppercase">
 								{fleet.status}

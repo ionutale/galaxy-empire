@@ -124,9 +124,18 @@
 	});
 
 	$: isPhoneDemo = $page.url.pathname.startsWith('/demo/phone');
-	$: builds = [...(state?.builds ?? [])].sort(
-		(a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-	);
+	$: builds = [...(state?.builds ?? [])]
+		.map((b) => {
+			if (b.status === 'completed') return { ...b, remainingSeconds: 0 };
+			if (b.status === 'queued') return { ...b, remainingSeconds: b.durationSeconds };
+
+			const startTime = new Date(b.createdAt).getTime();
+			const endTime = startTime + b.durationSeconds * 1000;
+			const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
+			return { ...b, remainingSeconds: remaining };
+		})
+		.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
 	$: activeBuilds = builds.filter((b: any) => b.status === 'in-progress' || b.status === 'queued');
 	$: activeBuildsCount = activeBuilds.length;
 	$: processedBuilds = builds.filter((b: any) => b.status === 'completed');
@@ -367,10 +376,10 @@
 							<div class="p-4 text-center opacity-50">Queue is empty</div>
 						{:else}
 							<!-- Active Builds -->
-							{#if builds && builds.length > 0}
+							{#if activeBuilds && activeBuilds.length > 0}
 								<div class="space-y-2 mb-6">
 									<h3 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">In Progress</h3>
-									{#each builds as build (build.id)}
+									{#each activeBuilds as build (build.id)}
 										<div class="card bg-white/5 border border-white/10 p-3 relative overflow-hidden group">
 											<div class="flex justify-between items-start relative z-10">
 												<div>
