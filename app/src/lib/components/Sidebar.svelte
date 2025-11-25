@@ -15,6 +15,7 @@
 			name: 'Command',
 			items: [
 				{ href: '/base', label: 'Base', icon: 'target' },
+				{ href: '/planets', label: 'Planets', icon: 'home' },
 				{ href: '/research', label: 'Research', icon: 'play' }
 			]
 		},

@@ -4,10 +4,10 @@ import * as table from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-  const session = await locals.auth();
-  if (!session?.user) {
+  if (!locals.user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
+  const user = locals.user;
 
   const body = await request.json();
   const { planetId, name } = body;
@@ -21,7 +21,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const planet = await db
       .select()
       .from(table.planets)
-      .where(and(eq(table.planets.id, planetId), eq(table.planets.ownerId, session.user.id)))
+      .where(and(eq(table.planets.id, planetId), eq(table.planets.ownerId, user.id)))
       .limit(1);
 
     if (planet.length === 0) {
