@@ -242,3 +242,18 @@ export const privateMessages = pgTable('private_messages', {
 });
 
 export type PrivateMessage = typeof privateMessages.$inferSelect;
+
+export const espionageReports = pgTable('espionage_reports', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id), // The user who initiated the spy mission
+	targetId: text('target_id').references(() => user.id), // The user being spied on (optional if unowned)
+	targetSystem: integer('target_system').notNull(),
+	targetPlanet: integer('target_planet').notNull(),
+	timestamp: timestamp('timestamp', { mode: 'date' }).notNull(),
+	level: integer('level').notNull(), // 0=failed, 1=resources, 2=fleet, 3=defense, 4=buildings, 5=tech
+	content: jsonb('content').notNull().$type<any>() // The actual data revealed
+});
+
+export type EspionageReport = typeof espionageReports.$inferSelect;

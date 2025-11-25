@@ -74,6 +74,11 @@
 				   class="btn btn-sm flex-1 bg-white/5 border-white/10 hover:bg-neon-blue hover:text-black hover:border-neon-blue transition-all group-hover:bg-white/10">
 					Dispatch Fleet
 				</a>
+				<a href="/fleet/dispatch?targetSystem={sys.id}&planet=1&mission=spy" 
+				   class="btn btn-sm bg-white/5 border-white/10 hover:bg-yellow-400 hover:text-black hover:border-yellow-400 transition-all group-hover:bg-white/10"
+				   title="Spy Mission">
+					👁️
+				</a>
 			</div>
 		</div>
 	{/each}

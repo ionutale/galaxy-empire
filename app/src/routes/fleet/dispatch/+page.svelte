@@ -32,11 +32,11 @@
 	// So here I will just read `targetSystem` and `planet` (which maps to `targetPlanet`).
 	
 	let targetPlanet = Number($page.url.searchParams.get('planet') || 1);
-	let mission = 'transport';
+	let mission = $page.url.searchParams.get('mission') || 'transport';
     
-    // If planet param is present, default to attack if it's not my planet? 
+    // If planet param is present and no mission specified, default to attack if it's not my planet? 
     // For now just default to attack if came from "Attack" button (which implies intent).
-    if ($page.url.searchParams.has('planet')) {
+    if ($page.url.searchParams.has('planet') && !$page.url.searchParams.has('mission')) {
         mission = 'attack';
     }
 	let selectedShips: Record<string, number> = {};

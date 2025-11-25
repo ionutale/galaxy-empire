@@ -369,6 +369,170 @@ export async function processFleets(tickSeconds = 5) {
 
 				processed.push({ ...f, status: 'arrived', combatResult });
 				continue; // Skip the default return logic below
+			} else if (f.mission === 'spy') {
+				// Espionage Logic
+				const targetPlanet = await db
+					.select()
+					.from(table.planets)
+					.where(and(eq(table.planets.systemId, f.targetSystem), eq(table.planets.orbitIndex, f.targetPlanet)))
+					.limit(1);
+
+				const defenderId = targetPlanet[0]?.ownerId;
+				const composition = f.composition as Record<string, number>;
+				const probeCount = composition['spyProbe'] || 0;
+
+				// Constants (could be imported from missionConfig)
+				const baseDetection = 0.0;
+				const detectionPerProbe = 0.05;
+
+				// Calculate detection chance
+				// TODO: Factor in defender's espionage tech vs attacker's espionage tech
+				let detectionChance = baseDetection + (probeCount * detectionPerProbe);
+				detectionChance = Math.min(0.9, Math.max(0, detectionChance));
+
+				const detected = Math.random() < detectionChance;
+				let intelLevel = 0;
+
+				if (!detected) {
+					// Successful spy
+					// Intel level depends on probe count (and tech diff)
+					// 1 probe = Resources
+					// 2 probes = +Fleet
+					// 3 probes = +Defense
+					// 5 probes = +Buildings
+					// 7 probes = +Tech
+					if (probeCount >= 1) intelLevel = 1;
+					if (probeCount >= 2) intelLevel = 2;
+					if (probeCount >= 3) intelLevel = 3;
+					if (probeCount >= 5) intelLevel = 4;
+					if (probeCount >= 7) intelLevel = 5;
+				} else {
+					// Detected! Probes destroyed?
+					// For now, let's say 50% chance to lose probes if detected
+					if (Math.random() < 0.5) {
+						// All probes lost
+						await db.delete(table.fleets).where(eq(table.fleets.id, f.id));
+
+						// Create report saying probes were destroyed
+						await db.insert(table.espionageReports).values({
+							id: crypto.randomUUID(),
+							userId: f.userId,
+							targetId: defenderId,
+							targetSystem: f.targetSystem,
+							targetPlanet: f.targetPlanet,
+							timestamp: now,
+							level: 0, // 0 means failed/destroyed
+							content: { message: 'Contact lost with spy probes. Probable destruction by enemy counter-intelligence.' }
+						});
+
+						processed.push({ ...f, status: 'destroyed' });
+						continue;
+					}
+				}
+
+				// Gather Intel Data
+				const reportContent: any = {};
+
+				if (defenderId) {
+					// 1. Resources
+					if (intelLevel >= 1) {
+						const defState = (
+							await db.select().from(table.playerState).where(eq(table.playerState.userId, defenderId))
+						)[0];
+						if (defState) {
+							reportContent.resources = {
+								metal: defState.metal,
+								crystal: defState.crystal,
+								fuel: defState.fuel,
+								credits: defState.credits
+							};
+						}
+					}
+
+					// 2. Fleet (Ships at planet)
+					if (intelLevel >= 2) {
+						const defShips = await db
+							.select()
+							.from(table.playerShips)
+							.where(eq(table.playerShips.userId, defenderId));
+
+						const ships: Record<string, number> = {};
+						const defense: Record<string, number> = {};
+
+						for (const s of defShips) {
+							const template = SHIP_TEMPLATES.find(t => t.shipId === s.shipTemplateId);
+							if (template?.role === 'defense' || template?.role === 'sentinel' || template?.role === 'pointDefense') {
+								defense[s.shipTemplateId] = s.quantity;
+							} else {
+								ships[s.shipTemplateId] = s.quantity;
+							}
+						}
+						reportContent.ships = ships;
+
+						// 3. Defense
+						if (intelLevel >= 3) {
+							reportContent.defense = defense;
+						}
+					}
+
+					// 4. Buildings
+					if (intelLevel >= 4) {
+						const defBuildings = await db
+							.select()
+							.from(table.playerBuildings)
+							.where(eq(table.playerBuildings.userId, defenderId));
+
+						const buildings: Record<string, number> = {};
+						for (const b of defBuildings) {
+							buildings[b.buildingId] = b.level;
+						}
+						reportContent.buildings = buildings;
+					}
+
+					// 5. Research
+					if (intelLevel >= 5) {
+						const defResearch = await db
+							.select()
+							.from(table.playerResearch)
+							.where(eq(table.playerResearch.userId, defenderId));
+
+						const research: Record<string, number> = {};
+						for (const r of defResearch) {
+							research[r.techId] = r.level;
+						}
+						reportContent.research = research;
+					}
+				} else {
+					// Unowned planet
+					reportContent.message = "Planet is uninhabited.";
+					reportContent.resources = targetPlanet[0]?.resources || { metal: 0, crystal: 0, fuel: 0 };
+				}
+
+				// Save Report
+				await db.insert(table.espionageReports).values({
+					id: crypto.randomUUID(),
+					userId: f.userId,
+					targetId: defenderId,
+					targetSystem: f.targetSystem,
+					targetPlanet: f.targetPlanet,
+					timestamp: now,
+					level: intelLevel,
+					content: reportContent
+				});
+
+				// Return fleet
+				const returnTime = new Date(now.getTime() + 60000); // Mock return time
+				await db
+					.update(table.fleets)
+					.set({
+						status: 'returning',
+						returnTime: returnTime,
+						cargo: {}
+					})
+					.where(eq(table.fleets.id, f.id));
+
+				processed.push({ ...f, status: 'arrived', intelLevel });
+				continue;
 			}
 
 			// Return fleet

@@ -552,6 +552,18 @@ export const SHIP_TEMPLATES: ShipTemplate[] = [
 		capacity: 2000,
 		buildCost: { metal: 5000, crystal: 2000, fuel: 1000, credits: 8000 },
 		buildTime: 7200
+	},
+	{
+		shipId: 'spyProbe',
+		name: 'Spy Probe',
+		role: 'espionage',
+		hp: 20,
+		attack: 0,
+		defense: 1,
+		speed: 1000,
+		capacity: 1,
+		buildCost: { metal: 1000, crystal: 500, fuel: 500, credits: 1000 },
+		buildTime: 60
 	}
 ];
 
