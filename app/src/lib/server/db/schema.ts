@@ -54,7 +54,8 @@ export const playerState = pgTable('player_state', {
 	credits: integer('credits').notNull().default(1000),
 	metal: integer('metal').notNull().default(500),
 	crystal: integer('crystal').notNull().default(200),
-	fuel: integer('fuel').notNull().default(100)
+	fuel: integer('fuel').notNull().default(100),
+	tutorialStep: integer('tutorial_step').notNull().default(0)
 });
 
 export const playerShips = pgTable('player_ships', {

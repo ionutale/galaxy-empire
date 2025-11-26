@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
+  import EspionageReport from '$lib/components/reports/EspionageReport.svelte';
   
   let report: any = null;
   let loading = true;
@@ -23,6 +24,8 @@
     <div class="flex justify-center"><span class="loading loading-spinner loading-lg"></span></div>
   {:else if !report}
     <div class="alert alert-error">Report not found</div>
+  {:else if report.type === 'espionage'}
+    <EspionageReport {report} />
   {:else}
     <div class="card bg-base-200 shadow-xl">
       <div class="card-body">

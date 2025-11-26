@@ -8,6 +8,7 @@
 	import ResourceBar from '$lib/components/ResourceBar.svelte';
 	import FleetDrawer from '$lib/components/FleetDrawer.svelte';
 	import BuildQueue from '$lib/components/BuildQueue.svelte';
+	import TaskList from '$lib/components/TaskList.svelte';
 
 	import Toast from '$lib/components/Toast.svelte';
 	import favicon from '$lib/assets/favicon.svg';
@@ -268,7 +269,7 @@
 			<label for="builds-drawer" class="drawer-overlay"></label>
 			<div class="menu min-h-full w-80 glass-panel p-0 text-slate-200 overflow-hidden flex flex-col">
 				<!-- Tabbed Drawer Content -->
-				<div role="tablist" class="tabs tabs-lifted tabs-lg grid grid-cols-2 bg-black/20">
+				<div role="tablist" class="tabs tabs-lifted tabs-lg grid grid-cols-3 bg-black/20">
 					<input 
 						type="radio" 
 						name="drawer_tabs" 
@@ -290,6 +291,17 @@
 					/>
 					<div role="tabpanel" class="tab-content h-[calc(100vh-3.5rem)] bg-transparent border-none p-0 overflow-hidden">
 						<FleetDrawer fleets={fleets || []} />
+					</div>
+
+					<input 
+						type="radio" 
+						name="drawer_tabs" 
+						role="tab" 
+						class="tab text-slate-400 checked:text-neon-blue checked:bg-transparent checked:border-b-2 checked:border-neon-blue font-bold tracking-wide h-14" 
+						aria-label="Missions" 
+					/>
+					<div role="tabpanel" class="tab-content h-[calc(100vh-3.5rem)] bg-transparent border-none p-0 overflow-hidden p-4">
+						<TaskList step={state?.tutorialStep ?? 0} {state} on:claimed={loadState} />
 					</div>
 				</div>
 			</div>

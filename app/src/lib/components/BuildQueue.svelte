@@ -113,7 +113,7 @@
 							{#if build.status === 'in-progress'}
 								<div 
 									class="absolute bottom-0 left-0 h-1 bg-neon-blue shadow-[0_0_10px_var(--color-neon-blue)] transition-all duration-1000 ease-linear" 
-									style="width: {((build.totalDuration - build.remainingSeconds) / build.totalDuration) * 100}%"
+									style="width: {build.totalDuration > 0 ? ((build.totalDuration - build.remainingSeconds) / build.totalDuration) * 100 : 0}%"
 								></div>
 							{/if}
 							{#if build.status === 'queued'}

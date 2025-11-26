@@ -1,0 +1,1 @@
+ALTER TABLE "player_state" ADD COLUMN "tutorial_step" integer DEFAULT 0 NOT NULL;

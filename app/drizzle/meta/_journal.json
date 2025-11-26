@@ -36,6 +36,13 @@
       "when": 1764093013001,
       "tag": "0004_nasty_mongoose",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1764147484356,
+      "tag": "0005_nappy_moon_knight",
+      "breakpoints": true
     }
   ]
 }

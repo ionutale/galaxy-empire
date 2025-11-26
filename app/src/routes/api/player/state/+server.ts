@@ -163,6 +163,7 @@ export const GET: RequestHandler = async (event) => {
 			playerId: user.id,
 			username: user.username,
 			level: stateRow?.level ?? 1,
+			tutorialStep: stateRow?.tutorialStep ?? 0,
 			power: stateRow?.power ?? 10,
 			homeSystem: currentPlanet ? currentPlanet.systemId : 1,
 			homePlanet: currentPlanet ? currentPlanet.orbitIndex : 1,

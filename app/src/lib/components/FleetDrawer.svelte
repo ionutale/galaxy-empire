@@ -99,10 +99,18 @@
 						</div>
 					{/if}
 					
-					<!-- Progress Bar (Approximate based on status) -->
-					{#if fleet.status === 'active'}
+					<!-- Progress Bar -->
+					{#if fleet.status === 'active' && fleet.startTime && fleet.arrivalTime}
+						{@const start = new Date(fleet.startTime).getTime()}
+						{@const end = new Date(fleet.arrivalTime).getTime()}
+						{@const total = end - start}
+						{@const elapsed = now - start}
+						{@const progress = Math.min(100, Math.max(0, (elapsed / total) * 100))}
 						<div class="absolute bottom-0 left-0 h-0.5 w-full bg-white/5">
-							<div class="h-full bg-neon-blue/30 w-1/2 animate-pulse"></div>
+							<div 
+								class="h-full bg-neon-blue/50 shadow-[0_0_5px_var(--color-neon-blue)] transition-all duration-1000 ease-linear" 
+								style="width: {progress}%"
+							></div>
 						</div>
 					{/if}
 				</div>
