@@ -18,7 +18,7 @@ COPY . .
 # Ensure a local sqlite file exists so server-side build steps that expect DATABASE_URL pass
 RUN mkdir -p $(dirname "$DATABASE_URL") || true && touch "$DATABASE_URL"
 
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --no-frozen-lockfile --jobs 1
 RUN pnpm build
 
 FROM node:20-bullseye-slim AS runner
