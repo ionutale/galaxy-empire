@@ -54,7 +54,7 @@
 	];
 
 	$: currentStep = TUTORIAL_STEPS.find(s => s.id === step);
-	$: isCompleted = currentStep ? currentStep.check(state) : false;
+	$: isCompleted = currentStep && state ? currentStep.check(state) : false;
 	$: isAllDone = step >= TUTORIAL_STEPS.length;
 
 	let claiming = false;

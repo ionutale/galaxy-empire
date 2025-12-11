@@ -10,6 +10,7 @@
   
   --color-neon-blue: #00f3ff;
   --color-neon-purple: #bc13fe;
+  --color-neon-gold: #ffd700;
   --color-deep-space: #0b0d17;
 }
 
@@ -54,4 +55,9 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .text-neon-purple {
   color: var(--color-neon-purple);
   text-shadow: 0 0 10px rgba(188, 19, 254, 0.5);
+}
+
+.text-neon-gold {
+  color: var(--color-neon-gold);
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }

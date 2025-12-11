@@ -192,21 +192,21 @@
 
 					<!-- Metal -->
 					<div class="flex flex-col items-center px-4 py-1 border-r border-white/5 min-w-[100px]">
-						<span class="text-[10px] uppercase tracking-widest opacity-50 font-display text-slate-300">Metal</span>
+						<span class="text-[10px] uppercase tracking-widest opacity-50 font-display text-neon-gold">Metal</span>
 						<span class="font-display text-lg font-bold text-slate-100">{state.resources?.metal ?? state.metal}</span>
 						<span class="text-[10px] text-slate-400">+{Math.round(prod.metal * 3600)}/h</span>
 					</div>
 
 					<!-- Crystal -->
 					<div class="flex flex-col items-center px-4 py-1 border-r border-white/5 min-w-[100px]">
-						<span class="text-[10px] uppercase tracking-widest opacity-50 font-display text-cyan-300">Crystal</span>
+						<span class="text-[10px] uppercase tracking-widest opacity-50 font-display text-neon-blue">Crystal</span>
 						<span class="font-display text-lg font-bold text-cyan-100">{state.resources?.crystal ?? state.crystal}</span>
 						<span class="text-[10px] text-cyan-400/70">+{Math.round(prod.crystal * 3600)}/h</span>
 					</div>
 
 					<!-- Fuel -->
 					<div class="flex flex-col items-center px-4 py-1 min-w-[100px]">
-						<span class="text-[10px] uppercase tracking-widest opacity-50 font-display text-emerald-300">Fuel</span>
+						<span class="text-[10px] uppercase tracking-widest opacity-50 font-display text-neon-purple">Fuel</span>
 						<span class="font-display text-lg font-bold text-emerald-100">{state.resources?.fuel ?? state.fuel}</span>
 						<span class="text-[10px] text-emerald-400/70">+{Math.round(prod.fuel * 3600)}/h</span>
 					</div>
