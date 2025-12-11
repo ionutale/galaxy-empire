@@ -12,17 +12,17 @@
 		"moduleResolution": "bundler"
 	},
 	"include": [
-		".svelte-kit/ambient.d.ts",
-		".svelte-kit/non-ambient.d.ts",
-		".svelte-kit/types/**/$types.d.ts",
-		"src/**/*.js",
-		"src/**/*.ts",
-		"src/**/*.svelte",
-		"tests/**/*.js",
-		"tests/**/*.ts",
-		"tests/**/*.svelte",
-		"*.ts",
-		"*.js"
+		"../app2/.svelte-kit/ambient.d.ts",
+		"../app2/.svelte-kit/non-ambient.d.ts",
+		"../app2/.svelte-kit/types/**/$types.d.ts",
+		"../app2/src/**/*.js",
+		"../app2/src/**/*.ts",
+		"../app2/src/**/*.svelte",
+		"../app2/tests/**/*.js",
+		"../app2/tests/**/*.ts",
+		"../app2/tests/**/*.svelte",
+		"../app2/*.ts",
+		"../app2/*.js"
 	]
 	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
 	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
