@@ -81,6 +81,13 @@ export const POST: RequestHandler = async (event) => {
 					{ id: crypto.randomUUID(), userId: id, buildingId: 'metalStorage', planetId: planetIdToAssign, level: 1 },
 					{ id: crypto.randomUUID(), userId: id, buildingId: 'crystalStorage', planetId: planetIdToAssign, level: 1 }
 				]);
+
+				// Give starting fleet for looting
+				await ctx.insert(table.playerShips).values([
+					{ id: crypto.randomUUID(), userId: id, shipTemplateId: 'fighter', quantity: 5 },
+					{ id: crypto.randomUUID(), userId: id, shipTemplateId: 'transport', quantity: 2 },
+					{ id: crypto.randomUUID(), userId: id, shipTemplateId: 'spyProbe', quantity: 1 }
+				]);
 			} else {
 				console.warn('No starter planet found for user', id);
 			}
