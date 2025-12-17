@@ -267,18 +267,18 @@
 		{/if}
 		<div class="drawer-side z-50">
 			<label for="builds-drawer" class="drawer-overlay"></label>
-			<div class="menu min-h-full w-80 glass-panel p-0 text-slate-200 overflow-hidden flex flex-col">
+			<div class="menu min-h-full w-96 glass-panel p-0 text-slate-200 overflow-hidden flex flex-col">
 				<!-- Tabbed Drawer Content -->
-				<div role="tablist" class="tabs tabs-lifted tabs-lg grid grid-cols-3 bg-black/20">
+				<div role="tablist" class="tabs tabs-boxed tabs-lg grid grid-cols-3 bg-black/40 p-1 gap-1 rounded-none">
 					<input 
 						type="radio" 
 						name="drawer_tabs" 
 						role="tab" 
-						class="tab text-slate-400 checked:text-neon-blue checked:bg-transparent checked:border-b-2 checked:border-neon-blue font-bold tracking-wide h-14" 
+						class="tab h-12 rounded-md text-slate-400 font-bold tracking-wide transition-all duration-200 hover:bg-white/5 checked:bg-neon-blue/20 checked:text-neon-blue checked:border checked:border-neon-blue/50" 
 						aria-label="Builds" 
 						checked 
 					/>
-					<div role="tabpanel" class="tab-content h-[calc(100vh-3.5rem)] bg-transparent border-none p-0 overflow-hidden">
+					<div role="tabpanel" class="tab-content col-span-3 h-[calc(100vh-4rem)] bg-transparent border-none p-0 overflow-hidden">
 						<BuildQueue {builds} {user} on:loadMore={loadMoreHistory} />
 					</div>
 
@@ -286,10 +286,10 @@
 						type="radio" 
 						name="drawer_tabs" 
 						role="tab" 
-						class="tab text-slate-400 checked:text-neon-blue checked:bg-transparent checked:border-b-2 checked:border-neon-blue font-bold tracking-wide h-14" 
+						class="tab h-12 rounded-md text-slate-400 font-bold tracking-wide transition-all duration-200 hover:bg-white/5 checked:bg-neon-blue/20 checked:text-neon-blue checked:border checked:border-neon-blue/50" 
 						aria-label="Fleets" 
 					/>
-					<div role="tabpanel" class="tab-content h-[calc(100vh-3.5rem)] bg-transparent border-none p-0 overflow-hidden">
+					<div role="tabpanel" class="tab-content col-span-3 h-[calc(100vh-4rem)] bg-transparent border-none p-0 overflow-hidden">
 						<FleetDrawer fleets={fleets || []} />
 					</div>
 
@@ -297,10 +297,10 @@
 						type="radio" 
 						name="drawer_tabs" 
 						role="tab" 
-						class="tab text-slate-400 checked:text-neon-blue checked:bg-transparent checked:border-b-2 checked:border-neon-blue font-bold tracking-wide h-14" 
+						class="tab h-12 rounded-md text-slate-400 font-bold tracking-wide transition-all duration-200 hover:bg-white/5 checked:bg-neon-blue/20 checked:text-neon-blue checked:border checked:border-neon-blue/50" 
 						aria-label="Missions" 
 					/>
-					<div role="tabpanel" class="tab-content h-[calc(100vh-3.5rem)] bg-transparent border-none p-0 overflow-hidden p-4">
+					<div role="tabpanel" class="tab-content col-span-3 h-[calc(100vh-4rem)] bg-transparent border-none p-0 overflow-hidden p-4">
 						<TaskList step={state?.tutorialStep ?? 0} {state} on:claimed={loadState} />
 					</div>
 				</div>

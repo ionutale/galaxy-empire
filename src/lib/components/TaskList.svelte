@@ -111,16 +111,16 @@
 			</div>
 
 			<button 
-				class="btn btn-sm w-full gap-2 {isCompleted ? 'btn-primary bg-neon-blue text-black border-neon-blue hover:bg-neon-blue/80' : 'btn-disabled bg-white/5 text-slate-500 border-white/10'}"
+				class="btn w-full gap-2 uppercase tracking-widest font-bold transition-all duration-300 {isCompleted ? 'btn-primary bg-neon-blue text-black border-neon-blue hover:bg-neon-blue/80 hover:shadow-[0_0_20px_rgba(0,243,255,0.4)]' : 'btn-disabled bg-white/5 text-slate-500 border-white/10'}"
 				disabled={!isCompleted || claiming}
 				on:click={claim}
 			>
 				{#if claiming}
-					<span class="loading loading-spinner loading-xs"></span>
+					<span class="loading loading-spinner loading-sm"></span>
 				{:else if isCompleted}
 					<span>✨ Claim Reward</span>
 				{:else}
-					<span>In Progress...</span>
+					<span class="opacity-50">In Progress...</span>
 				{/if}
 			</button>
 		</div>
