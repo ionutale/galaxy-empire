@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
+	import PlanetVisual from './PlanetVisual.svelte';
 
 	export let systems: any[] = [];
 	export let activeSystemId: string | null = null;
@@ -82,19 +83,13 @@
 									<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-[0_0_10px_white]"></div>
 								</div>
 							{:else}
-								<div class="w-3 h-3 rounded-full shadow-[0_0_5px_currentColor]" 
-									class:text-blue-400={planet.type==='ocean'} class:bg-blue-400={planet.type==='ocean'}
-									class:text-green-500={planet.type==='terrestrial'} class:bg-green-500={planet.type==='terrestrial'}
-									class:text-red-500={planet.type==='lava'} class:bg-red-500={planet.type==='lava'}
-									class:text-cyan-200={planet.type==='ice'} class:bg-cyan-200={planet.type==='ice'}
-									class:text-orange-300={planet.type==='gas_giant'} class:bg-orange-300={planet.type==='gas_giant'}
-									class:text-yellow-200={planet.type==='desert'} class:bg-yellow-200={planet.type==='desert'}
-									class:text-gray-400={planet.type==='barren'} class:bg-gray-400={planet.type==='barren'}>
+								<div class="w-8 h-8 transition-transform duration-300 hover:scale-110">
+									<PlanetVisual type={planet.type} />
 								</div>
 								{#if planet.ownerId && planet.ownerId !== userId}
-									<div class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-bl-md"></div>
+									<div class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-bl-md shadow-[0_0_5px_red]"></div>
 								{:else if planet.ownerId === userId}
-									<div class="absolute top-0 right-0 w-2 h-2 bg-neon-blue rounded-bl-md"></div>
+									<div class="absolute top-0 right-0 w-2 h-2 bg-neon-blue rounded-bl-md shadow-[0_0_5px_#00f3ff]"></div>
 								{/if}
 							{/if}
 						</button>
