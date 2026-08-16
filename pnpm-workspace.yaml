@@ -2,5 +2,6 @@ allowBuilds:
   esbuild: true
   "@tailwindcss/oxide": true
   better-sqlite3: true
-patchedDependencies:
-  cookie@0.6.0: patches/cookie@0.6.0.patch
+overrides:
+  cookie: 0.7.0
+  'esbuild@^0.18.20': 0.25.4
